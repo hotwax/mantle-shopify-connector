@@ -43,11 +43,14 @@ under the License.
     </service>
 
     <service verb="create" noun="Fulfillment">
+        <description>
+            Create a shopify fulfillment for given shopify line items and tracking number.
+        </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
-            <parameter name="trackingNumber" required="false" default-value="123456"/>
-            <parameter name="lineItems" required="false" type="List">
+            <parameter name="trackingNumber" required="false"/>
+            <parameter name="lineItems" required="true" type="List">
                 <parameter name="shopifyLineItemId" required="true"/>
                 <parameter name="quantity" required="true"/>
             </parameter>
