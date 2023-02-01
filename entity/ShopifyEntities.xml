@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/entity-definition-2.1.xsd">
+
+    <extend-entity entity-name="SystemMessageRemote" package="moqui.service.message">
+        <field name="accessScopeEnumId" type="id"/>
+        <relationship type="one" title="ShopifyShopAccessScope" related="moqui.basic.Enumeration" short-alias="access">
+            <key-map field-name="accessScopeEnumId"/>
+        </relationship>
+    </extend-entity>
+
+</entities>

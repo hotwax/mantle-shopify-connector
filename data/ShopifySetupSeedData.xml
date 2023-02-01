@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed">
+
+    <!-- Enumeration data for Shopify Shop Access Scope -->
+    <moqui.basic.EnumerationType description="Shopify Shop Access Scope" enumTypeId="ShopifyShopAccessScope"/>
+    <moqui.basic.Enumeration description="Shopify Shop No Access" enumId="SHOP_NO_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+    <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+    <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+
+</entity-facade-xml>

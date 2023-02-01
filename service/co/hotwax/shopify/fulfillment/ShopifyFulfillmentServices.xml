@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="get" noun="FulfillmentOrders">
+        <description>
+            Get Fulfillment Orders for a given shopifyOrderId.
+        </description>
+        <in-parameters>
+            <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="fulfillmentOrders" type="List" required="true"/>
+        </out-parameters>
+        <actions>
+            <set field="endPoint" value="orders/${shopifyOrderId}/fulfillment_orders.json"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:endPoint,
+                        requestType:'GET', contentType:'application/json']" out-map="fulfillmentOrderResponse"/>
+
+            <if condition="fulfillmentOrderResponse.statusCode != 200">
+                <return error="true" message="System message from SystemMessageRemote with ID
+                    ${systemMessageRemoteId} sent error response ${fulfillmentOrderResponse.statusCode}: ${fulfillmentOrderResponse.response}"/>
+            </if>
+
+            <set field="fulfillmentOrders" from="fulfillmentOrderResponse.response.fulfillment_orders"/>
+        </actions>
+    </service>
+
+    <service verb="create" noun="Fulfillment">
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="trackingNumber" required="false" default-value="123456"/>
+            <parameter name="lineItems" required="false" type="List">
+                <parameter name="shopifyLineItemId" required="true"/>
+                <parameter name="quantity" required="true"/>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrders" in-map="[shopifyOrderId:shopifyOrderId, systemMessageRemoteId:systemMessageRemoteId]" out-map="context"/>
+
+            <set field="lineItemsMapById" from="[:]"/>
+            <iterate list="fulfillmentOrders" entry="fulfillmentOrder">
+                <set field="lineItems" from="fulfillmentOrder.line_items"/>
+                <iterate list="lineItems" entry="lineItem">
+                    <script>lineItemsMapById.put(lineItem.line_item_id, lineItem)</script>
+                </iterate>
+            </iterate>
+
+            <set field="fulfillmentItemsByFulfillmentOrderId" from="[:]"/>
+            <iterate list="lineItems" entry="lineItem">
+                <set field="lineItemMap" from="lineItemsMapById.get(lineItem.shopifyLineItemId)"/>
+                <script>
+                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": lineItem.quantity], fulfillmentItemsByFulfillmentOrderId)
+                </script>
+            </iterate>
+
+            <set field="lineItemsByFulfillmentOrder" from="[]"/>
+            <iterate list="fulfillmentItemsByFulfillmentOrderId" entry="lineItems" key="fulfillmentOrderId">
+                <script>lineItemsByFulfillmentOrder.add(["fulfillment_order_id": fulfillmentOrderId, "fulfillment_order_line_items": lineItems])</script>
+            </iterate>
+
+            <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'tracking_info':['number': trackingNumber]]]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'fulfillments.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="createFulfillmentResponse"/>
+
+            <if condition="createFulfillmentResponse.statusCode != 201">
+                <return error="true" message="System message from SystemMessageRemote with ID
+                    ${systemMessageRemoteId} sent error response ${createFulfillmentResponse.statusCode}: ${createFulfillmentResponse.response}"/>
+            </if>
+
+            <log level="info" message="Fulfillments => ${createFulfillmentResponse.response}"/>
+        </actions>
+    </service>
+</services>
