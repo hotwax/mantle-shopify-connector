@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all">
+        <description>
+            Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
+            <iterate list="shipments" entry="shipment">
+                <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:'ShopifyConfig', messageText:messageText, sendNow:true]"
+                              out-map="context" transaction="force-new"/>
+            </iterate>
+        </actions>
+    </service>
+    <service verb="send" noun="ShopifyFulfillmentSystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Create Shopify Fulfillment API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="lineItems" from="[]"/>
+            <iterate list="shipment.shipmentItems" entry="shipmentItem">
+                <set field="lineItem" from="[:]"/>
+                <set field="lineItem.shopifyLineItemId" from="shipmentItem.shopifyOrderLineId"/>
+                <set field="lineItem.quantity" from="shipmentItem.quantity"/>
+                <script>lineItems.add(lineItem)</script>
+            </iterate>
+
+            <set field="fulfillmentContext" from="[:]"/>
+            <set field="fulfillmentContext.lineItems" from="lineItems"/>
+            <set field="fulfillmentContext.shopifyOrderId" from="shipment.shopifyOrderId"/>
+            <set field="fulfillmentContext.trackingNumber" from="shipment.trackingNumber"/>
+            <set field="fulfillmentContext.trackingUrl" from="shipment.trackingUrl"/>
+            <set field="fulfillmentContext.carrier" from="shipment.carrierPartyId"/>
+            <set field="fulfillmentContext.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
+
+            <set field="remoteMessageId" from="outMap.shopifyFulfillmentId"/>
+        </actions>
+    </service>
+</services>

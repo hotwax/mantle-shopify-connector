@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- No copyright or license for configuration file, details here are not considered a creative work. -->
+
+<entity-facade-xml type="ext-demo">
+    <!-- Sftp server connection details for data import -->
+    <moqui.service.message.SystemMessageRemote systemMessageRemoteId="FeedImportSftp"
+                                               description="SFTP server connection details for data import"
+                                               sendUrl="" username="" password=""/>
+    <!-- Shopify Connection Configuration -->
+    <moqui.service.message.SystemMessageRemote systemMessageRemoteId="ShopifyConfig"
+                                               description="Shopify Connection Configuration"
+                                               sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
+                                               accessScopeEnumId=""/>
+
+    <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
+                                             description="Create OMS Fulfillment Feed System Message"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+                                             receivePath="" receiveFilePattern=".*Fulfillment.*\.json"
+                                             receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+
+</entity-facade-xml>
