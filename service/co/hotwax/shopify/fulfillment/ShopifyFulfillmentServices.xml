@@ -17,7 +17,7 @@ under the License.
 -->
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
-    <service verb="get" noun="FulfillmentOrders">
+    <service verb="get" noun="FulfillmentOrders" authenticate="anonymous-all">
         <description>
             Get Fulfillment Orders for a given shopifyOrderId.
         </description>
@@ -42,35 +42,53 @@ under the License.
         </actions>
     </service>
 
-    <service verb="create" noun="Fulfillment">
+    <service verb="create" noun="Fulfillment" authenticate="anonymous-all">
         <description>
             Create a shopify fulfillment for given shopify line items and tracking number.
         </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
-            <parameter name="trackingNumber" required="false"/>
+            <parameter name="trackingNumber"/>
+            <parameter name="trackingUrl"/>
+            <parameter name="carrier"/>
             <parameter name="lineItems" required="true" type="List">
                 <parameter name="shopifyLineItemId" required="true"/>
                 <parameter name="quantity" required="true"/>
             </parameter>
         </in-parameters>
+        <out-parameters>
+            <parameter name="shopifyFulfillmentId"/>
+        </out-parameters>
         <actions>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrders" in-map="[shopifyOrderId:shopifyOrderId, systemMessageRemoteId:systemMessageRemoteId]" out-map="context"/>
 
+            <set field="aggregatedLineItemMap" from="[:]"/>
+            <iterate list="lineItems" entry="lineItem">
+                <if condition="aggregatedLineItemMap.get(lineItem.shopifyLineItemId) == null">
+                    <then>
+                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, lineItem.quantity)</script>
+                    </then>
+                    <else>
+                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, aggregatedLineItemMap.get(lineItem.shopifyLineItemId) + lineItem.quantity)</script>
+                    </else>
+                </if>
+            </iterate>
+
             <set field="lineItemsMapById" from="[:]"/>
             <iterate list="fulfillmentOrders" entry="fulfillmentOrder">
-                <set field="lineItems" from="fulfillmentOrder.line_items"/>
-                <iterate list="lineItems" entry="lineItem">
-                    <script>lineItemsMapById.put(lineItem.line_item_id, lineItem)</script>
+                <set field="fulfillmentOrderLineItems" from="fulfillmentOrder.line_items"/>
+                <iterate list="fulfillmentOrderLineItems" entry="fulfillmentOrderLineItem">
+                    <set field="lineItemId" from="fulfillmentOrderLineItem.line_item_id" type="String"/>
+                    <script>lineItemsMapById.put(lineItemId, fulfillmentOrderLineItem)</script>
                 </iterate>
             </iterate>
 
             <set field="fulfillmentItemsByFulfillmentOrderId" from="[:]"/>
-            <iterate list="lineItems" entry="lineItem">
-                <set field="lineItemMap" from="lineItemsMapById.get(lineItem.shopifyLineItemId)"/>
+            <iterate list="aggregatedLineItemMap" entry="quantity" key="shopifyLineItemId">
+                <set field="lineItemMap" from="lineItemsMapById.get(shopifyLineItemId)"/>
                 <script>
-                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": lineItem.quantity], fulfillmentItemsByFulfillmentOrderId)
+                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": quantity], fulfillmentItemsByFulfillmentOrderId)
                 </script>
             </iterate>
 
@@ -79,7 +97,7 @@ under the License.
                 <script>lineItemsByFulfillmentOrder.add(["fulfillment_order_id": fulfillmentOrderId, "fulfillment_order_line_items": lineItems])</script>
             </iterate>
 
-            <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'tracking_info':['number': trackingNumber]]]"/>
+            <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'tracking_info':['number': trackingNumber, 'company': carrier, 'url': trackingUrl]]]"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'fulfillments.json',
                         requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="createFulfillmentResponse"/>
 
@@ -88,7 +106,7 @@ under the License.
                     ${systemMessageRemoteId} sent error response ${createFulfillmentResponse.statusCode}: ${createFulfillmentResponse.response}"/>
             </if>
 
-            <log level="info" message="Fulfillments => ${createFulfillmentResponse.response}"/>
+            <set field="shopifyFulfillmentId" from="createFulfillmentResponse.response.fulfillment.id"/>
         </actions>
     </service>
 </services>

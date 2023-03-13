@@ -24,4 +24,8 @@ under the License.
     <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
     <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
 
+    <!-- SystemMessageType data for Shopify Fulfillment -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message and Produce Ack System Message"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
+
 </entity-facade-xml>
