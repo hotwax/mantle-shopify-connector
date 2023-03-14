@@ -50,7 +50,7 @@ under the License.
                     </then>
                     <else>
                         <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
-                                      in-map="[systemMessageId:systemMessageId]" transaction="force-new"/>
+                                      in-map="[systemMessageId:systemMessageId]" ignore-error="true" transaction="force-new"/>
                     </else>
                 </if>
             </if>
