@@ -24,5 +24,8 @@ under the License.
             <key-map field-name="accessScopeEnumId"/>
         </relationship>
     </extend-entity>
+    <extend-entity entity-name="SystemMessage" package="moqui.service.message">
+        <field name="orderId" type="id"/> <!-- Extending only to store order reference to make search easier -->
+    </extend-entity>
 
 </entities>

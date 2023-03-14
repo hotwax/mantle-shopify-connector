@@ -17,6 +17,45 @@ under the License.
 -->
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="queue" noun="SystemMessage">
+        <description>Queue an outgoing message. Creates a SystemMessage record for the outgoing message in the
+            Produced status. If sendNow=true (default) will attempt to send it immediately, synchronously or asynchronously),
+            otherwise the message will be picked up the next time the send#ProducedSystemMessages service runs.</description>
+        <in-parameters>
+            <parameter name="systemMessageId"><description>Sequenced if null, may be passed in (sequenced value
+                determined in advance) because sometimes this is needed as a reference ID inside a message.</description></parameter>
+
+            <auto-parameters entity-name="moqui.service.message.SystemMessage" include="nonpk"/>
+
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="messageText" required="true"/>
+            <parameter name="systemMessageRemoteId"><description>Required if the send service
+                (SystemMessageType.sendServiceName) requires it. The send#SystemMessageJsonRpc service does require it.</description></parameter>
+            <parameter name="statusId" default-value="SmsgProduced"/>
+            <parameter name="isOutgoing" default-value="Y"/>
+            <parameter name="initDate" type="Timestamp" default="ec.user.nowTimestamp"/>
+
+            <parameter name="sendNow" type="Boolean" default="true"/>
+            <parameter name="mode" default-value="async"/>
+        </in-parameters>
+        <out-parameters><parameter name="systemMessageId"/></out-parameters>
+        <actions>
+            <service-call name="create#moqui.service.message.SystemMessage" in-map="context" out-map="context" transaction="force-new"/>
+
+            <if condition="sendNow">
+                <if condition="mode == async">
+                    <then>
+                        <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId]" async="true"/>
+                    </then>
+                    <else>
+                        <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId]" transaction="force-new"/>
+                    </else>
+                </if>
+            </if>
+        </actions>
+    </service>
     <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
@@ -30,8 +69,8 @@ under the License.
             <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
-                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:'ShopifyConfig', messageText:messageText, sendNow:true]"
-                              out-map="context" transaction="force-new"/>
+                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:'ShopifyConfig', messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
+                              out-map="context" ignore-error="true" transaction="force-new"/>
             </iterate>
         </actions>
     </service>
