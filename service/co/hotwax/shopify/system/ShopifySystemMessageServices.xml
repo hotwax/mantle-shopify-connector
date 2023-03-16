@@ -69,7 +69,7 @@ under the License.
             <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
-                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:'ShopifyConfig', messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
+                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:systemMessage.consumeSmrId, messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
                               out-map="context" ignore-error="true" transaction="force-new"/>
             </iterate>
         </actions>
