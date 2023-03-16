@@ -71,9 +71,7 @@ under the License.
             <script><![CDATA[
                 import org.moqui.util.RestClient
 
-                ec.logger.info("shopifyUrl Before =>" + shopifyUrl)
                 shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
-                ec.logger.info("shopifyUrl After =>" + shopifyUrl)
                 // Prepare RestClient and call Shopify API
                 RestClient restClient = ec.service.rest()
                 restClient.timeoutRetry(true);
@@ -112,6 +110,12 @@ under the License.
                     response = restResponse.jsonObject()
                     statusCode = restResponse.getStatusCode()
                     headers = restResponse.headers()
+
+                    ec.logger.info("Shopify X-Shopify-Shop-Api-Call-Limit " + restResponse.headerFirst("X-Shopify-Shop-Api-Call-Limit"));
+                    //TODO:Handle retry after https://shopify.dev/api/usage/rate-limits#rate-limiting-methods
+                    if (headers.get("Retry-After") != null) {
+                        ec.logger.warn("Shopify Retry-After " + restResponse.headerFirst("Retry-After"));
+                    }
 
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
                         ec.logger.warn("Unsuccessful with status code: ${statusCode} and response: ${response}")
