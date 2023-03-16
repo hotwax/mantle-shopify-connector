@@ -28,4 +28,8 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message and Produce Ack System Message"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 
+    <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
+                                             description="Create OMS Fulfillment Feed System Message"/>
+
 </entity-facade-xml>
