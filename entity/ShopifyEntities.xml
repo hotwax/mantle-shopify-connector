@@ -29,7 +29,7 @@ under the License.
         <field name="consumeSmrId" type="id"/><!-- Extending for general purpose when we need to keep reference of original id and consume id is different -->
 
         <relationship type="one" title="Consume" related="moqui.service.SystemMessageRemote" short-alias="consumeRemote">
-            <key-map field-name="consumeSmrId"/></relationship>
+            <key-map field-name="consumeSmrId" related="systemMessageRemoteId"/></relationship>
     </extend-entity>
 
 </entities>
