@@ -16,20 +16,84 @@ specific language governing permissions and limitations
 under the License.
 -->
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
-
-    <!-- =========== Interfaces =========== -->
-
-    <service verb="receive" noun="SystemMessage" type="interface">
-        <description>Override the interface to add consumerSmrId in-parameter</description>
+    <service verb="queue" noun="SystemMessage">
+        <description>Queue an outgoing message. Creates a SystemMessage record for the outgoing message in the
+            Produced status. If sendNow=true (default) will attempt to send it immediately, synchronously or asynchronously),
+            otherwise the message will be picked up the next time the send#ProducedSystemMessages service runs.</description>
         <in-parameters>
+            <parameter name="systemMessageId"><description>Sequenced if null, may be passed in (sequenced value
+                determined in advance) because sometimes this is needed as a reference ID inside a message.</description></parameter>
+
+            <auto-parameters entity-name="moqui.service.message.SystemMessage" include="nonpk"/>
+
             <parameter name="systemMessageTypeId" required="true"/>
             <parameter name="messageText" required="true"/>
-            <parameter name="systemMessageRemoteId"/>
-            <parameter name="remoteMessageId"/>
-            <parameter name="consumeSmrId"/>
+            <parameter name="systemMessageRemoteId"><description>Required if the send service
+                (SystemMessageType.sendServiceName) requires it. The send#SystemMessageJsonRpc service does require it.</description></parameter>
+            <parameter name="statusId" default-value="SmsgProduced"/>
+            <parameter name="isOutgoing" default-value="Y"/>
+            <parameter name="initDate" type="Timestamp" default="ec.user.nowTimestamp"/>
+
+            <parameter name="sendNow" type="Boolean" default="true"/>
+            <parameter name="mode" default-value="async"/>
         </in-parameters>
-        <out-parameters>
-            <parameter name="systemMessageIdList" type="List"><parameter name="systemMessageId"/></parameter>
-        </out-parameters>
+        <out-parameters><parameter name="systemMessageId"/></out-parameters>
+        <actions>
+            <service-call name="create#moqui.service.message.SystemMessage" in-map="context" out-map="context" transaction="force-new"/>
+
+            <if condition="sendNow">
+                <if condition="mode == async">
+                    <then>
+                        <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId]" async="true"/>
+                    </then>
+                    <else>
+                        <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId]" ignore-error="true" transaction="force-new"/>
+                    </else>
+                </if>
+            </if>
+        </actions>
+    </service>
+    <service verb="receive" noun="IncomingSystemMessage" allow-remote="true">
+        <description>Call to receive a message (often through a remote interface). If there is a
+            SystemMessageType.receiveServiceName calls that service to save the message, otherwise creates a
+            SystemMessage record for the incoming message (in the Received status). Either way after saving
+            synchronously or asynchronously(default) calls the consume service based on the message type.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.receive#SystemMessage"/>
+        <in-parameters>
+            <parameter name="mode" default-value="async"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType"/>
+            <if condition="systemMessageType == null">
+                <return error="true" message="Message type ${systemMessageTypeId} not valid"/></if>
+
+            <if condition="systemMessageType.receiveServiceName &amp;&amp;
+                    systemMessageType.receiveServiceName != 'org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage'"><then>
+                <service-call name="${systemMessageType.receiveServiceName}" out-map="context" transaction="force-new"
+                              in-map="context"/>
+            </then><else>
+                <!-- while it shouldn't happen that the consume service is called before the tx for this service is
+                    committed, run it in a separate tx to make sure -->
+                <service-call name="create#moqui.service.message.SystemMessage" out-map="context" transaction="force-new"
+                              in-map="context + [statusId:'SmsgReceived', isOutgoing:'N', initDate:ec.user.nowTimestamp]"/>
+                <set field="systemMessageIdList" from="[systemMessageId]"/>
+            </else></if>
+
+            <!-- run consume async for each message -->
+            <iterate list="systemMessageIdList" entry="systemMessageId">
+                <if condition="mode == async">
+                    <then>
+                        <service-call name="org.moqui.impl.SystemMessageServices.consume#ReceivedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId, allowError:false]" async="true"/>
+                    </then>
+                    <else>
+                        <service-call name="org.moqui.impl.SystemMessageServices.consume#ReceivedSystemMessage"
+                                      in-map="[systemMessageId:systemMessageId, allowError:false]" ignore-error="true" transaction="force-new"/>
+                    </else>
+                </if>
+            </iterate>
+        </actions>
     </service>
 </services>
