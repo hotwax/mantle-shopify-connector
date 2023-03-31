@@ -28,7 +28,7 @@ under the License.
             </entity-find-one>
 
             <if condition="!systemMessage.messageText">
-                <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage.systemMessageTypeId} has no message text, not consuming."/>
+                <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage?.systemMessageTypeId} has no message text, not consuming."/>
             </if>
 
             <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
