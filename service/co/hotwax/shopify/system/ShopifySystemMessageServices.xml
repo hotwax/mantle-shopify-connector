@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
@@ -26,6 +26,10 @@ under the License.
             <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
+
+            <if condition="!systemMessage.messageText">
+                <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage?.systemMessageTypeId} has no message text, not consuming."/>
+            </if>
 
             <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
             <iterate list="shipments" entry="shipment">
