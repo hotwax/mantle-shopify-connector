@@ -24,12 +24,17 @@ under the License.
     <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
     <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
 
-    <!-- SystemMessageType data for Shopify Fulfillment -->
+    <!-- SystemMessageType record for creating Shopify Fulfillment -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                              description="Create OMS Fulfillment Feed System Message"/>
+
+    <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath=""/>
 
 </entity-facade-xml>
