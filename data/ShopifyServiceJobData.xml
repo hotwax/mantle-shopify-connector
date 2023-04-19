@@ -25,4 +25,13 @@ under the License.
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data to send Shopify Fulfillment Ack Feed -->
+    <moqui.service.job.ServiceJob jobName="sendShopifyFulfillmentAckFeed" description="Send Shopify Fulfillment Ack Feed"
+                                  serviceName="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.generate#ShopifyFulfillmentAckFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="sinceDate" parameterValue=""/>
+        <parameters parameterName="jobName" parameterValue=""/>
+        <parameters parameterName="skipLastRunTimeUpdate" parameterValue=""/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
