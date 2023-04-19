@@ -119,7 +119,7 @@ under the License.
                 <description>Parameter to fetch system messages updated after the specified date.</description>
             </parameter>
             <parameter name="jobName">
-                <description>The name of the scheduled job to fetch the last run time for preparing the Inventory Delta Feed.</description>
+                <description>The name of the scheduled job to fetch the last run time for preparing the Feed.</description>
             </parameter>
             <parameter name="skipLastRunTimeUpdate" type="Boolean" default="false">
                 <description>skip the LastRunTime update,mainly used while debugging</description>
