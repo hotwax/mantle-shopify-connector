@@ -203,7 +203,7 @@ under the License.
                               in-map="[jobName:lastRunParam.jobName, parameterName:lastRunParam.parameterName,
                         parameterValue:nowDate]"/>
             </if>
-            <return message="Created the Shopify Fulfillment Ack Feed file of Shopify at time ${nowDate} with type SendShopifyFulfillmentAck and
+            <return message="Created the Shopify Fulfillment Ack Feed file at time ${nowDate} with type SendShopifyFulfillmentAck and
                 remote ${systemMessageRemoteId}, saved response in messages ${shopifyFulfillmentAckOut.systemMessageId}"/>
         </actions>
     </service>
