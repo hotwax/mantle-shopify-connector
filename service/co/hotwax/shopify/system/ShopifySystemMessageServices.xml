@@ -27,11 +27,11 @@ under the License.
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
 
-            <if condition="!systemMessage.messageText">
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <if condition="!fileText">
                 <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage?.systemMessageTypeId} has no message text, not consuming."/>
             </if>
-
-            <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, List.class)"/>
+            <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
                 <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:systemMessage.consumeSmrId, messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
