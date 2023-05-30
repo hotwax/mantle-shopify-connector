@@ -33,5 +33,6 @@ under the License.
         <parameters parameterName="jobName" parameterValue=""/>
         <parameters parameterName="skipLastRunTimeUpdate" parameterValue=""/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="lastRunTime" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 </entity-facade-xml>
