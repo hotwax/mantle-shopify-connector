@@ -109,7 +109,7 @@ under the License.
             <set field="shopifyFulfillmentId" from="createFulfillmentResponse.response.fulfillment.id"/>
         </actions>
     </service>
-    <service verb="generate" noun="ShopifyFulfillmentAckFeed">
+    <service verb="generate" noun="ShopifyFulfillmentAckFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>
             Service to generate shopify fulfillment acknowledgement from successfully sent System Messages
             of type "CreateShopifyFulfillment".
