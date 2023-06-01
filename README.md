@@ -39,7 +39,7 @@ Make sure to setup following configuration data with respect to your environment
 
 <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
-                              serviceName="org.moqui.sftp.SftpMessageServices.poll#SystemMessageSftp" cronExpression="0 0 * * * ?" paused="Y">
+                              serviceName="org.moqui.sftp.SftpMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="OMSFulfillmentFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="consumeSmrId" parameterValue=""/>
