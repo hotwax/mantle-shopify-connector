@@ -28,10 +28,17 @@ under the License.
             </entity-find-one>
 
             <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
-            <if condition="!fileText">
-                <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage?.systemMessageTypeId} has no message text, not consuming."/>
-            </if>
             <set field="shipments" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <!-- NOTE: With change in poll#SystemMessageFileSftp service, the messageText will hold the file path
+                instead of the file content, so removed null check on fileText, instead we need to check the
+                expected shipments data being read from the filePath.
+                If no shipments, one scenario is transformation in NiFi generating file with null value as no
+                valid shipments data, or it may be due to some other unexpected JSON generated to be consumed,
+                then the file can be checked further for any possible issue. -->
+            <if condition="!shipments">
+                <message type="warning" error="true">System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file.</message>
+            </if>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
                 <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:systemMessage.consumeSmrId, messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
