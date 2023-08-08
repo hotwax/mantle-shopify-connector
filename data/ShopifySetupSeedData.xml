@@ -24,17 +24,42 @@ under the License.
     <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
     <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
 
+    <!-- EnumerationType for Shopify system message type enum and relationship -->
+    <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
+    <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
+    <moqui.basic.Enumeration description="Bulk Update Product Tags" enumId="BulkUpdateProductTags" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Product Tags Feed" enumId="ProductTagsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductTags" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
     <!-- SystemMessageType record for creating Shopify Fulfillment -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-                                             description="Create OMS Fulfillment Feed System Message"/>
+                                             description="Create OMS Fulfillment Feed System Message"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
+
+    <!-- SystemMessageType record for importing Product Tags Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
+                                             description="Create Product Tags Feed System Message"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+
+    <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
+
+    <!-- SystemMessageType record for updating product tags in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
+                                             parentTypeId="ShopifyBulkImport"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+                                             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
 </entity-facade-xml>

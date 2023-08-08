@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-2.1.xsd">
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/entity-definition-2.1.xsd">
 
     <extend-entity entity-name="SystemMessageRemote" package="moqui.service.message">
         <field name="accessScopeEnumId" type="id"/>
@@ -31,5 +31,19 @@ under the License.
         <relationship type="one" title="Consume" related="moqui.service.message.SystemMessageRemote" short-alias="consumeRemote">
             <key-map field-name="consumeSmrId"/></relationship>
     </extend-entity>
+    <extend-entity entity-name="SystemMessageType" package="moqui.service.message" cache="true">
+        <field name="parentTypeId" type="id"/>
+        <relationship type="one" title="Parent" related="moqui.service.message.SystemMessageType" short-alias="parentType">
+            <key-map field-name="parentTypeId"/>
+        </relationship>
+    </extend-entity>
 
+    <view-entity entity-name="SystemMessageAndType" package="moqui.service.message">
+        <member-entity entity-alias="SM" entity-name="moqui.service.message.SystemMessage"/>
+        <member-entity entity-alias="SMT" entity-name="moqui.service.message.SystemMessageType" join-from-alias="SM" join-optional="true">
+            <key-map field-name="systemMessageTypeId"/>
+        </member-entity>
+        <alias-all entity-alias="SM"/>
+        <alias-all entity-alias="SMT"/>
+    </view-entity>
 </entities>

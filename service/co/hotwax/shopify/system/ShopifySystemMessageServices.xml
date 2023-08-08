@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
     <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
@@ -75,6 +75,158 @@ under the License.
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
 
             <set field="remoteMessageId" from="outMap.shopifyFulfillmentId"/>
+        </actions>
+    </service>
+    <service verb="consume" noun="GraphQLBulkImportFeed" authenticate="anonymous-all">
+        <description>
+            Consume Bulk Import Feed System Message, upload bulk import feed to Shopify's staged upload url
+            and produce corresponding shopify bulk mutation system message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <if condition="!systemMessage.messageText">
+                <return type="warning" message="System message [${systemMessageId}] for Type ${systemMessage?.systemMessageTypeId} has no message text, not consuming."/>
+            </if>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="!enumValue || !enumValue.relatedEnumId">
+                <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:systemMessage.consumeSmrId, fileName:systemMessage.remoteMessageId]"
+                          out-map="context"/>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.upload#JsonlFileToShopify" in-map="[stagedUploadUrlMap:stagedUploadUrlMap, fileLocation:systemMessage.messageText, fileName:systemMessage.remoteMessageId]"
+                          out-map="context"/>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:systemMessage.consumeSmrId, messageText:stagedUploadPath, sendNow:false]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="BulkMutationSystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Run Shopify Bulk Operation Mutation API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationMutation"
+                          in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, mutationTemplateLocation:systemMessage.sendPath,
+                                  stagedUploadPath: systemMessage.messageText]" out-map="context"/>
+
+            <set field="remoteMessageId" from="shopifyBulkOperationId"/>
+        </actions>
+    </service>
+    <service verb="send" noun="ProducedBulkMutationSystemMessage" authenticate="anonymous-all">
+        <description>
+            Scheduled service to send next bulk mutation operation in the queue.
+        </description>
+        <in-parameters>
+            <parameter name="retryLimit" type="Integer" default="3"/>
+        </in-parameters>
+        <actions>
+            <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="sentSystemMessages">
+                <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
+                <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkImport"/>
+            </entity-find>
+            <if condition="sentSystemMessages">
+                <return message="Aborting, Shopify Bulk Mutation Operation already in progress."/>
+            </if>
+            <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="producedSystemMessages" limit="1">
+                <econdition field-name="statusId" operator="equals" value="SmsgProduced"/>
+                <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkImport"/>
+                <order-by field-name="-initDate"/>
+            </entity-find>
+            <if condition="!producedSystemMessages">
+                <return message="Aborting, no Bulk Mutation System Messages found to process."/>
+            </if>
+
+            <if condition="producedSystemMessages[0].failCount &lt; retryLimit">
+                <service-call name="org.moqui.impl.SystemMessageServices.send#ProducedSystemMessage"
+                              in-map="[systemMessageId:producedSystemMessages[0].systemMessageId]"/>
+                <else>
+                    <service-call name="update#moqui.service.message.SystemMessage"
+                                  in-map="[systemMessageId:producedSystemMessages[0].systemMessageId, statusId:'SmsgError',
+                                    lastAttemptDate:ec.user.nowTimestamp]"/>
+                </else>
+            </if>
+        </actions>
+    </service>
+    <service verb="process" noun="BulkOperationResult" authenticate="anonymous-all">
+        <description>
+            Fetch and process the bulk operations result for a sent system message and create respective incoming
+            system message for further processing the result file link.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageId" required="true"/>
+        </in-parameters>
+        <actions>
+            <set field="statusMap" from="[completed:'SmsgConfirmed', canceled:'SmsgCancelled', failed:'SmsgError', expired:'SmsgError']"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage"/>
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#BulkOperationResult" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyBulkOperationId:systemMessage.remoteMessageId]"
+                          out-map="bulkOperationResult"/>
+
+            <set field="status" from="bulkOperationResult.response.status"/>
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <if condition="'failed'.equalsIgnoreCase(status)">
+                <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessageId, errorDate:nowDate, errorText:bulkOperationResult.response.errorCode]"/>
+            </if>
+            <if condition="'expired'.equalsIgnoreCase(status)">
+                <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessageId, errorDate:nowDate, errorText:'The bulk operation URL has expired.']"/>
+            </if>
+            <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessageId, statusId:statusMap.get(status.toLowerCase())]"/>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage"
+                          in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:bulkOperationResult.response.url,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:systemMessageId]"/>
+        </actions>
+    </service>
+    <service verb="consume" noun="BulkOperationResult" authenticate="anonymous-all">
+        <description>
+            Consume service to download and store result file for received bulk operation result system message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage"/>
+            <entity-find-related-one value-field="systemMessage" relationship-name="type" to-value-field="systemMessageType"/>
+
+            <set field="nowDate" from="ec.l10n.format(ec.user.nowTimestamp, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())"/>
+            <set field="contentRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
+            <set field="urlMap" from="[nowDate:nowDate, contentRoot:contentRoot, systemMessageId:systemMessage.systemMessageId, remoteMessageId:systemMessage.remoteMessageId]"/>
+            <set field="fileLocation" from="ec.resourceFacade.expand(systemMessageType.receivePath, null, urlMap)"/>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.store#BulkOperationResultFile"
+                          in-map="[downloadUrl:systemMessage.messageText, fileLocation:fileLocation]" out-map="context"/>
+        </actions>
+    </service>
+    <service verb="poll" noun="BulkOperationResult" authenticate="anonymous-all">
+        <description>
+            Polling service to fetch and process bulk operation result for a sent bulk mutation or query system message.
+        </description>
+        <in-parameters>
+            <parameter name="parentSystemMessageTypeId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages" limit="1">
+                <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
+                <econdition field-name="parentTypeId" operator="equals" from="parentSystemMessageTypeId"/>
+            </entity-find>
+            <if condition="!systemMessages">
+                <return message="No bulk operation in progress."/>
+            </if>
+            <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
+                          in-map="[systemMessageId:systemMessages[0].systemMessageId]" out-map="context"/>
         </actions>
     </service>
 </services>

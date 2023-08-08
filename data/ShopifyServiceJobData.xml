@@ -19,7 +19,7 @@ under the License.
 <entity-facade-xml type="ext">
 
     <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
-    <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
                                   serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="OMSFulfillmentFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
@@ -34,5 +34,25 @@ under the License.
         <parameters parameterName="skipLastRunTimeUpdate" parameterValue=""/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="lastRunTime" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling Product Tags Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductTagsFeed" description="Poll Product Tags Feed"
+                                  serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="ProductTagsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkMutationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling current bulk operation result -->
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation result"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
     </moqui.service.job.ServiceJob>
 </entity-facade-xml>
