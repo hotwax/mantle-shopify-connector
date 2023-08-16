@@ -161,15 +161,16 @@ under the License.
                 import java.nio.charset.StandardCharsets
 
                 try {
-                //json file
-                File feedFile = new File(jsonFilePath)
-                if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
 
-                PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile)
-
-                JsonFactory jfactory = new JsonFactory();
-                JsonGenerator jGenerator = jfactory.createGenerator(pw)
-                jGenerator.writeStartArray()
+                    /* Declaring the PrintWriter and JsonGenerator resources in the the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                         JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
             </script>
 
             <iterate list="systemMessageList" entry="systemMessage">
@@ -184,11 +185,10 @@ under the License.
                 </iterate>
             </iterate>
             <script>
-                jGenerator.writeEndArray()
-                jGenerator.close()
-                pw.close()
+                        jGenerator.writeEndArray()
+                    }
                 } catch (IOException e) {
-                logger.error("Error preparing Shopify Fulfillment Ack Feed file", e)
+                    logger.error("Error preparing Shopify Fulfillment Ack Feed file", e)
                 }
             </script>
 
