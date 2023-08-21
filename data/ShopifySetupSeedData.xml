@@ -29,6 +29,8 @@ under the License.
     <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
     <moqui.basic.Enumeration description="Bulk Update Product Tags" enumId="BulkUpdateProductTags" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Product Tags Feed" enumId="ProductTagsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductTags" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Product Variants Feed" enumId="ProductVariantsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductVariants" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- SystemMessageType record for creating Shopify Fulfillment -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message"
@@ -61,5 +63,19 @@ under the License.
                                              sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                              receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for importing Product Variants Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
+                                             description="Create Product Variants Feed System Message"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+
+    <!-- SystemMessageType record for updating product variants in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"
+                                             parentTypeId="ShopifyBulkImport"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+                                             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
 </entity-facade-xml>

@@ -106,6 +106,12 @@ Following is the common configuration data,
 <!-- EnumerationType for Shopify system message type enum and relationship -->
 <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
 
+<!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
+<moqui.service.job.ServiceJob jobName="send_ProducedBulkMutationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
+                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+</moqui.service.job.ServiceJob>
+
 <!-- ServiceJob data for polling current bulk operation result -->
 <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation result"
                               serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
@@ -143,10 +149,38 @@ Supported bulk mutations and configuration,
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
+```
 
-<!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
-<moqui.service.job.ServiceJob jobName="send_ProducedBulkMutationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
-    <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+#### Product Variants Update
+
+```aidl
+<!-- SystemMessageType record for importing Product Varaints Feed -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
+                                         description="Create Product Variants Feed System Message"
+                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+
+<!-- SystemMessageType record for updating product variants in Shopify -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"
+                                         parentTypeId="ShopifyBulkImport"
+                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+                                         sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                         receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+<!-- Additional paramter configuration, a comma seprated values of namespaces -->
+<<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkUpdateProductVariants"
+                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/
+
+<!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
+<moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Product Variants Feed" enumId="ProductVariantsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductVariants" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+<!-- ServiceJob data for polling Product Variants Feed -->
+<moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductVariantsFeed" description="Poll Product Variants Feed"
+                              serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="ProductVariantsFeed"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```
