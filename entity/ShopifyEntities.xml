@@ -18,6 +18,23 @@ under the License.
 
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/entity-definition-2.1.xsd">
 
+    <entity entity-name="SystemMessageTypeParam" package="moqui.service.message" use="configuration">
+        <description>
+            Entity to define any additional parameters w.r.t. SystemMessageType required to process a SystemMessage.
+            Optionally configure systemMessageRemoteId.
+        </description>
+        <field name="systemMessageTypeId" type="id" is-pk="true"/>
+        <field name="parameterName" type="id" is-pk="true"/>
+        <field name="parameterValue" type="text-long"/>
+        <field name="systemMessageRemoteId" type="id"/>
+        <relationship type="one" title="Type" related="moqui.service.message.SystemMessageType" short-alias="type">
+            <key-map field-name="systemMessageTypeId"/>
+        </relationship>
+        <relationship type="one" title="Remote" related="moqui.service.message.SystemMessageRemote" short-alias="remote">
+            <key-map field-name="systemMessageRemoteId"/>
+        </relationship>
+    </entity>
+
     <extend-entity entity-name="SystemMessageRemote" package="moqui.service.message">
         <field name="accessScopeEnumId" type="id"/>
         <relationship type="one" title="ShopifyShopAccessScope" related="moqui.basic.Enumeration" short-alias="access">
