@@ -117,6 +117,7 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="mutationTemplateLocation" required="true"/>
             <parameter name="stagedUploadPath" required="true"/>
+            <parameter name="namespaces"/>
         </in-parameters>
         <out-parameters>
             <parameter name="shopifyBulkOperationId"/>

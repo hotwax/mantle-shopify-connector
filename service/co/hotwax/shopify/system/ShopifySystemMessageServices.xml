@@ -121,9 +121,21 @@ under the License.
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
 
+            <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, mutationTemplateLocation:systemMessage.sendPath,
+                                  stagedUploadPath: systemMessage.messageText]"/>
+
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParam" list="additionalParameters">
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find>
+            <if condition="additionalParameters">
+                <iterate list="additionalParametrs" entry="paramMap">
+                    <script>requestBody.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
+                </iterate>
+            </if>
+
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationMutation"
-                          in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, mutationTemplateLocation:systemMessage.sendPath,
-                                  stagedUploadPath: systemMessage.messageText]" out-map="context"/>
+                          in-map="requestBody" out-map="context"/>
 
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>
