@@ -210,4 +210,42 @@ under the License.
             </script>
         </actions>
     </service>
+    <service verb="run" noun="BulkOperationQuery" authenticate="anonymous-all">
+        <description>
+            Run the bulk query defined in 'queryTemplateLocation' with optional filter query.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queryTemplateLocation" required="true"/>
+            <parameter name="namespaces"/>
+            <parameter name="filterQuery"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shopifyBulkOperationId"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(queryTemplateLocation, sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="bulkQueryResponse"/>
+
+            <log level="info" message="bulkQueryResponse: ${bulkQueryResponse}"/>
+            <if condition="bulkQueryResponse.response.errors">
+                <return error="true" message="${bulkQueryResponse.response.errors}"/>
+            </if>
+            <if condition="bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors">
+                <return error="true" message="${bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors}"/>
+            </if>
+
+            <set field="shopifyBulkOperationId" from="bulkQueryResponse.response.data.bulkOperationRunQuery.bulkOperation.id"/>
+        </actions>
+    </service>
 </services>

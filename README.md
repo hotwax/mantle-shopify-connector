@@ -68,29 +68,40 @@ Make sure to setup following configuration data with respect to your environment
 </moqui.service.job.ServiceJob>
 ```
 
-## Shopify Bulk Import Mutation
+## Shopify Bulk Import/Export
 
-Set of services, templates and configuration to integrate with Shopify Bulk Mutation API.  
-This integration enables you to configure and poll shopify jsonl feeds from SFTP, stage and upload on shopify and run the intended shopify bulk mutation operation.  
+Set of services, templates and configuration to integrate with Shopify Bulk Export/Import API.  
+This integration enables you,
+1. To configure and poll shopify jsonl feeds from SFTP, stage and upload on shopify and run the intended shopify bulk mutation operation.
+2. To configure and send shopify bulk queries.
 It also polls the running bulk operation status and download and stores the result file locally.
 Support for BULK_OPERATION_FINISH webhook will be implemented in next phase.
 
-### Core Services
+### Core Services - Common
+
+1. **send#ProducedBulkOperationSystemMessage**: Scheduled service to send next bulk mutation operation in the queue. This service ensures that only one bulk mutation operation runs at a time and bulk mutation system messages are processed sequentially in FIFO manner.
+2. **get#BulkOperationResult**: Run bulk operation result query to retrieve the result of a Shopify bulk operation.
+3. **process#BulkOperationResult**: Fetch and process the bulk operations result for a sent system message and create respective incoming
+   system message for further processing the result file link.
+4. **consume#BulkOperationResult**: Consume service to download and store result file for received bulk operation result system message.
+5. **poll#BulkOperationResult**: Polling service to fetch and process bulk operation result for a sent bulk mutation or query system message.
+
+### Core Services - Mutation
 
 1. **get#JsonlStagedUploadUrl**: Get staged upload url for jsonl file.
 2. **upload#JsonlFileToShopify**: Upload Jsonl file to shopify at staged upload url returned by _get#JsonlStagedUploadUrl_ service.
 3. **run#BulkOperationMutation**: Run the mutation defined in 'mutationTemplateLocation' on the jsonl file uploaded at Shopify's 'stageUploadPath'.
-4. **get#BulkOperationResult**: Run bulk operation result query to retrieve the result of a Shopify bulk operation.
 5. **consume#GraphQLBulkImportFeed**: Consume Bulk Import Feed System Message, upload bulk import feed to Shopify's staged upload url
    and produce corresponding shopify bulk mutation system message.
 6. **send#BulkMutationSystemMessage**: Send service to invoke Run Shopify Bulk Operation Mutation API for the System Message.
-7. **send#ProducedBulkMutationSystemMessage**: Scheduled service to send next bulk mutation operation in the queue. This service ensures that only one bulk mutation operation runs at a time and bulk mutation system messages are processed sequentially in FIFO manner.
-8. **process#BulkOperationResult**: Fetch and process the bulk operations result for a sent system message and create respective incoming
-   system message for further processing the result file link.
-9. **consume#BulkOperationResult**: Consume service to download and store result file for received bulk operation result system message.
-10. **poll#BulkOperationResult**: Polling service to fetch and process bulk operation result for a sent bulk mutation or query system message.
 
-### Configuration Data
+### Core Services - Query
+
+1. **run#BulkOperationQuery**: Run the bulk query defined in 'queryTemplateLocation' with optional filter query.
+2. **queue#BulkQuerySystemMessage**: Scheduled service to queue a bulk query system message of a specific SystemMessageType.
+3. **send#BulkQuerySystemMessage**: Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
+
+### Configuration Data - Mutation
 
 Configuration data is mostly specific to the type of jsonl feed and bulk mutation operation to run. It involves bulk mutation templates, SystemMessageType configuration, Enumeration relationship and Service Job data.  
 Following are the common templates used,
@@ -169,8 +180,8 @@ Supported bulk mutations and configuration,
                                          receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
-<<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkUpdateProductVariants"
-                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkUpdateProductVariants"
+                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
 <moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -182,5 +193,56 @@ Supported bulk mutations and configuration,
     <parameters parameterName="systemMessageTypeId" parameterValue="ProductVariantsFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="consumeSmrId" parameterValue=""/>
+</moqui.service.job.ServiceJob>
+```
+
+### Configuration Data - Query
+
+Following is the common configuration data,
+
+```aidl
+<!-- Parent SystemMessageType for all the shopify bulk query system message types -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery" description="Parent SystemMessageType for Shopify Bulk Query"/>
+
+<!-- ServiceJob data for sending next bulk query system message in queue-->
+<moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" description="Send next bulk query system message in queue"
+                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+    <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+</moqui.service.job.ServiceJob>
+
+<!-- ServiceJob data for polling current bulk operation query result -->
+<moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
+                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+</moqui.service.job.ServiceJob>
+```
+
+Supported bulk queries and configuration,
+
+#### Bulk Variants Metafield Query
+
+```aidl
+<!-- SystemMessageType record for bulk variant metafield query to Shopify -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery" description="Bulk Variants Metafield Query System Message"
+                                         parentTypeId="ShopifyBulkQuery"
+                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                         sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
+                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                         receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+<!-- Additional paramter configuration, a comma seprated values of namespaces -->
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkVariantsMetafieldQuery"
+                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
+<!-- Additional paramter configuration, default filter query -->
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkVariantsMetafieldQuery"
+                                               parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
+
+<!-- ServiceJob data for queuing bulk variants metafield query -->
+<moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQueryt" description="Queue bulk variants metafield query"
+                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="BulkVariantsMetafieldQuery"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="filterQuery" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```

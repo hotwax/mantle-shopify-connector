@@ -140,28 +140,29 @@ under the License.
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>
     </service>
-    <service verb="send" noun="ProducedBulkMutationSystemMessage" authenticate="anonymous-all">
+    <service verb="send" noun="ProducedBulkOperationSystemMessage" authenticate="anonymous-all">
         <description>
-            Scheduled service to send next bulk mutation operation in the queue.
+            Scheduled service to send next bulk operation in the queue.
         </description>
         <in-parameters>
+            <parameter name="parentSystemMessageTypeId" required="true"/>
             <parameter name="retryLimit" type="Integer" default="3"/>
         </in-parameters>
         <actions>
             <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="sentSystemMessages">
                 <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
-                <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkImport"/>
+                <econdition field-name="parentTypeId" operator="equals" from="parentSystemMessageTypeId"/>
             </entity-find>
             <if condition="sentSystemMessages">
-                <return message="Aborting, Shopify Bulk Mutation Operation already in progress."/>
+                <return message="Aborting, ${parentSystemMessageTypeId} Operation already in progress."/>
             </if>
             <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="producedSystemMessages" limit="1">
                 <econdition field-name="statusId" operator="equals" value="SmsgProduced"/>
-                <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkImport"/>
-                <order-by field-name="-initDate"/>
+                <econdition field-name="parentTypeId" operator="equals" from="parentSystemMessageTypeId"/>
+                <order-by field-name="initDate"/>
             </entity-find>
             <if condition="!producedSystemMessages">
-                <return message="Aborting, no Bulk Mutation System Messages found to process."/>
+                <return message="Aborting, no ${parentSystemMessageTypeId} Operation System Messages found to process."/>
             </if>
 
             <if condition="producedSystemMessages[0].failCount &lt; retryLimit">
@@ -239,6 +240,53 @@ under the License.
             </if>
             <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
                           in-map="[systemMessageId:systemMessages[0].systemMessageId]" out-map="context"/>
+        </actions>
+    </service>
+    <service verb="queue" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
+        <description>
+            Scheduled service to queue a bulk query system message of a specific SystemMessageType.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="filterQuery"/>
+        </in-parameters>
+        <actions>
+            <set field="messageText" from="filterQuery ?: 'null'"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:false]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
+
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParam" list="additionalParameters">
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find>
+            <if condition="additionalParameters">
+                <iterate list="additionalParametrs" entry="paramMap">
+                    <script>requestBody.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
+                </iterate>
+            </if>
+            <if condition="systemMessage.messageText">
+                <set field="requestBody.filterQuery" from="systemMessage.messageText"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationQuery"
+                          in-map="requestBody" out-map="context"/>
+
+            <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>
     </service>
 </services>

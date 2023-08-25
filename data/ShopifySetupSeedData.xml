@@ -56,6 +56,9 @@ under the License.
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
 
+    <!-- Parent SystemMessageType for all the shopify bulk query system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery" description="Parent SystemMessageType for Shopify Bulk Query"/>
+
     <!-- SystemMessageType record for updating product tags in Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
                                              parentTypeId="ShopifyBulkImport"
@@ -77,5 +80,13 @@ under the License.
                                              sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                              receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for bulk variant metafield query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery" description="Bulk Variants Metafield Query System Message"
+                                             parentTypeId="ShopifyBulkQuery"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                             sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
 </entity-facade-xml>
