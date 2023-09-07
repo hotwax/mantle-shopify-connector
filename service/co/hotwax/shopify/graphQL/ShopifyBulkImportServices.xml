@@ -217,8 +217,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="queryTemplateLocation" required="true"/>
-            <parameter name="namespaces"/>
-            <parameter name="filterQuery"/>
+            <parameter name="queryParams" type="Map"/>
         </in-parameters>
         <out-parameters>
             <parameter name="shopifyBulkOperationId"/>

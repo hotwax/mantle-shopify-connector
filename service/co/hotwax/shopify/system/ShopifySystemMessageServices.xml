@@ -270,18 +270,20 @@ under the License.
 
             <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
 
+            <set field="queryParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParam" list="additionalParameters">
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
             </entity-find>
             <if condition="additionalParameters">
                 <iterate list="additionalParametrs" entry="paramMap">
-                    <script>requestBody.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
+                    <script>queryParams.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
                 </iterate>
             </if>
             <if condition="systemMessage.messageText">
-                <set field="requestBody.filterQuery" from="systemMessage.messageText"/>
+                <set field="queryParams.filterQuery" from="systemMessage.messageText"/>
             </if>
+            <set field="requestBody.queryParams" from="queryParams"/>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationQuery"
                           in-map="requestBody" out-map="context"/>

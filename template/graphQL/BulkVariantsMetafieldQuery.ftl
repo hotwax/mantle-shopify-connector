@@ -19,13 +19,13 @@ under the License.
     mutation {
         bulkOperationRunQuery(
             query: """ {
-            productVariants <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+            productVariants <#if queryParams?has_content && queryParams.filterQuery?has_content>(query:"${queryParams.filterQuery}")</#if> {
                 edges {
                     node {
                         id
                         <#-- Added below check to request only specific metafields from Shopify based on given namespace list   -->
-                        <#if namespaces?has_content>
-                            <#assign namespaceList = StringUtil.split(namespaces, ",")!/>
+                        <#if queryParams?has_content && queryParams.namespaces?has_content>
+                            <#assign namespaceList = StringUtil.split(queryParams.namespaces, ",")!/>
                             <#list namespaceList as namespace>
                                 metafield${namespace_index + 1}: metafields (<#if namespace?has_content>namespace: "${namespace}"</#if>) {
                                     edges {
