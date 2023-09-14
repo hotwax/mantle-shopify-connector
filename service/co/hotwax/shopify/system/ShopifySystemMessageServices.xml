@@ -194,11 +194,20 @@ under the License.
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <if condition="'failed'.equalsIgnoreCase(status)">
                 <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessageId, errorDate:nowDate, errorText:bulkOperationResult.response.errorCode]"/>
+                <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] failed at Shopify with errorCode:[${bulkOperationResult.response.errorCode}]."/>
             </if>
             <if condition="'expired'.equalsIgnoreCase(status)">
                 <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessageId, errorDate:nowDate, errorText:'The bulk operation URL has expired.']"/>
+                <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] expired at Shopify with errorCode:[${bulkOperationResult.response.errorCode}]."/>
+            </if>
+            <if condition="'completed'.equalsIgnoreCase(status) &amp;&amp; !bulkOperationResult.response.url">
+                <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] completed successfully at Shopify but no result url received."/>
             </if>
             <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessageId, statusId:statusMap.get(status.toLowerCase())]"/>
+
+            <if condition="responseText">
+                <return message="${responseText}"/>
+            </if>
 
             <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage"
                           in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:bulkOperationResult.response.url,
@@ -250,9 +259,12 @@ under the License.
             <parameter name="systemMessageTypeId" required="true"/>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="filterQuery"/>
+            <parameter name="fromDate"/>
+            <parameter name="thruDate"/>
         </in-parameters>
         <actions>
-            <set field="messageText" from="filterQuery ?: 'null'"/>
+            <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate]"/>
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(paramMap)"/>
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                           in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:false]"
                           out-map="context"/>
@@ -276,12 +288,43 @@ under the License.
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
             </entity-find>
             <if condition="additionalParameters">
-                <iterate list="additionalParametrs" entry="paramMap">
-                    <script>queryParams.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
+                <iterate list="additionalParameters" entry="paramMap">
+                    <script>queryParams.put(paramMap.parameterName, paramMap.parameterValue)</script>
                 </iterate>
             </if>
-            <if condition="systemMessage.messageText">
-                <set field="queryParams.filterQuery" from="systemMessage.messageText"/>
+            <set field="systemMessageParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <if condition="systemMessageParams.filterQuery">
+                <set field="queryParams.filterQuery" from="systemMessageParams.filterQuery"/>
+            </if>
+            <if condition="queryParams.filterQuery">
+                <set field="queryParams.filterQuery" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryParams.filterQuery)"/>
+            </if>
+            <if condition="systemMessageParams.fromDate">
+                <set field="fromDate" from="systemMessageParams.fromDate"/>
+            </if>
+            <if condition="!fromDate">
+                <entity-find entity-name="SystemMessage" list="systemMessageList" limit="1">
+                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
+                    <econdition field-name="statusId" operator="equals" value="SmsgConfirmed"/>
+                    <order-by field-name="-processedDate"/>
+                </entity-find>
+                <if condition="systemMessageList">
+                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
+                </if>
+            </if>
+            <if condition="fromDate">
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Instant.ofEpochMilli(Timestamp.valueOf(fromDate).getTime()), java.time.ZoneId.of('UTC'))"/>
+                <if condition="queryParams.fromDateBuffer">
+                    <set field="fromZdtUTC" from="fromZdtUTC.minusMinutes(Integer.valueOf(queryParams.fromDateBuffer))"/>
+                </if>
+                <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
+            </if>
+            <if condition="systemMessageParams.thruDate">
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Instant.ofEpochMilli(Timestamp.valueOf(systemMessageParams.thruDate).getTime()), java.time.ZoneId.of('UTC'))"/>
+                <if condition="queryParams.thruDateBuffer">
+                    <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
+                </if>
+                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
             <set field="requestBody.queryParams" from="queryParams"/>
 

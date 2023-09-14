@@ -236,7 +236,6 @@ under the License.
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
                         requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="bulkQueryResponse"/>
 
-            <log level="info" message="bulkQueryResponse: ${bulkQueryResponse}"/>
             <if condition="bulkQueryResponse.response.errors">
                 <return error="true" message="${bulkQueryResponse.response.errors}"/>
             </if>

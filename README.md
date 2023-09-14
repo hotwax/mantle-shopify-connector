@@ -220,6 +220,24 @@ Following is the common configuration data,
 
 Supported bulk queries and configuration,
 
+You could configure following default parameters and any additional parameters as required w.r.t. each query SystemMessageType, these parameters would be available to render your query template.
+
+```aidl
+<!-- Additional paramter configuration, a comma seprated values of namespaces -->
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
+
+<!-- Additional paramter configuration, default filter query -->
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+                                               parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
+
+<!-- Additional parameter configuration, time buffers for fromDate and thruDate, must be an integer value for minutes -->
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+                                               parameterName="fromDateBuffer" parameterValue="" systemMessageRemoteId=""/>
+<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+                                               parameterName="thruDateBuffer" parameterValue="" systemMessageRemoteId=""/>
+```
+
 #### Bulk Variants Metafield Query
 
 ```aidl
@@ -231,18 +249,35 @@ Supported bulk queries and configuration,
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                          receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
-<!-- Additional paramter configuration, a comma seprated values of namespaces -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkVariantsMetafieldQuery"
-                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
-<!-- Additional paramter configuration, default filter query -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkVariantsMetafieldQuery"
-                                               parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
-
 <!-- ServiceJob data for queuing bulk variants metafield query -->
 <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQueryt" description="Queue bulk variants metafield query"
                               serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="BulkVariantsMetafieldQuery"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="filterQuery" parameterValue=""/>
+    <parameters parameterName="fromDate" parameterValue=""/>
+    <parameters parameterName="thruDate" parameterValue=""/>
+</moqui.service.job.ServiceJob>
+```
+
+#### Bulk Order Metafields Query
+
+```aidl
+<!-- SystemMessageType record for bulk order metafields query to Shopify -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery" description="Bulk Order Metafields Query System Message"
+                                         parentTypeId="ShopifyBulkQuery"
+                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                         sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
+                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+<!-- ServiceJob data for queuing bulk order metafields query -->
+<moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderMetafieldsQuery" description="Queue bulk order metafields query"
+                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderMetafieldsQuery"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="filterQuery" parameterValue=""/>
+    <parameters parameterName="fromDate" parameterValue=""/>
+    <parameters parameterName="thruDate" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```

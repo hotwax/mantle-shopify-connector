@@ -25,7 +25,7 @@ under the License.
                         id
                         <#-- Added below check to request only specific metafields from Shopify based on given namespace list   -->
                         <#if queryParams?has_content && queryParams.namespaces?has_content>
-                            <#assign namespaceList = StringUtil.split(queryParams.namespaces, ",")!/>
+                            <#assign namespaceList = queryParams.namespaces.split(",")!/>
                             <#list namespaceList as namespace>
                                 metafield${namespace_index + 1}: metafields (<#if namespace?has_content>namespace: "${namespace}"</#if>) {
                                     edges {
