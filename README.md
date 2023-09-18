@@ -127,6 +127,7 @@ Following is the common configuration data,
 <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation result"
                               serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+    <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
 </moqui.service.job.ServiceJob>
 ```
 
@@ -149,8 +150,15 @@ Supported bulk mutations and configuration,
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                          receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
+<!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
+                                         description="Send Bulk Update Product Tags Result"
+                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                         sendPath=""/>
+
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
-<moqui.basic.Enumeration description="Bulk Update Product Tags" enumId="BulkUpdateProductTags" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Send Bulk Update Product Tags Result" enumId="SendBulkUpdateProductTagsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Update Product Tags" enumId="BulkUpdateProductTags" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductTagsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 <moqui.basic.Enumeration description="Product Tags Feed" enumId="ProductTagsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductTags" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 <!-- ServiceJob data for polling Product Tags Feed -->
@@ -183,8 +191,15 @@ Supported bulk mutations and configuration,
 <moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkUpdateProductVariants"
                                                parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
+<!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
+                                         description="Send Bulk Update Product Variants Result"
+                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                         sendPath=""/>
+
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
-<moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkUpdateProductVariantsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductVariantsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 <moqui.basic.Enumeration description="Product Variants Feed" enumId="ProductVariantsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductVariants" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 <!-- ServiceJob data for polling Product Variants Feed -->
@@ -215,6 +230,7 @@ Following is the common configuration data,
 <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
                               serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+    <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
 </moqui.service.job.ServiceJob>
 ```
 
@@ -249,6 +265,16 @@ You could configure following default parameters and any additional parameters a
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                          receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
+<!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
+                                         description="Send Bulk Variants Metafield Query Result"
+                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                         sendPath=""/>
+
+<!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
+<moqui.basic.Enumeration description="Send Bulk Variants Metafield Query Result" enumId="SendBulkVariantsMetafieldQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Variants Metafield Query" enumId="BulkVariantsMetafieldQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkVariantsMetafieldQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
 <!-- ServiceJob data for queuing bulk variants metafield query -->
 <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQueryt" description="Queue bulk variants metafield query"
                               serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
@@ -270,6 +296,16 @@ You could configure following default parameters and any additional parameters a
                                          sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
                                          receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+<!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
+                                         description="Send Bulk Order Metafields Query Result"
+                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                         sendPath=""/>
+
+<!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
+<moqui.basic.Enumeration description="Send Bulk Order Metafields Query Result" enumId="SendBulkOrderMetafieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Order Metafields Query" enumId="BulkOrderMetafieldsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderMetafieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 <!-- ServiceJob data for queuing bulk order metafields query -->
 <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderMetafieldsQuery" description="Queue bulk order metafields query"

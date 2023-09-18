@@ -70,12 +70,14 @@ under the License.
     <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation mutation result"
                                   serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
         <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for polling current bulk operation query result -->
     <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
                                   serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
         <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing bulk variants metafield query -->

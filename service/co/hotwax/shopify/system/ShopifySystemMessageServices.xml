@@ -183,6 +183,7 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="systemMessageId" required="true"/>
+            <parameter name="consumeSmrId"/><!-- For sending the result file to SFTP server -->
         </in-parameters>
         <actions>
             <set field="statusMap" from="[completed:'SmsgConfirmed', canceled:'SmsgCancelled', failed:'SmsgError', expired:'SmsgError']"/>
@@ -209,9 +210,8 @@ under the License.
                 <return message="${responseText}"/>
             </if>
 
-            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage"
-                          in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:bulkOperationResult.response.url,
-                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:systemMessageId]"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:bulkOperationResult.response.url,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:systemMessageId, consumeSmrId:consumeSmrId]"/>
         </actions>
     </service>
     <service verb="consume" noun="BulkOperationResult" authenticate="anonymous-all">
@@ -230,6 +230,20 @@ under the License.
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.store#BulkOperationResultFile"
                           in-map="[downloadUrl:systemMessage.messageText, fileLocation:fileLocation]" out-map="context"/>
+
+            <if condition="systemMessage.consumeSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="!enumValue || !enumValue.relatedEnumId">
+                    <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not sending result file to sftp."/>
+                </if>
+
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:systemMessage.consumeSmrId, messageText:fileLocation,
+                          remoteMessageId:fileLocation.substring(fileLocation.lastIndexOf('/')+1), sendNow:true]" out-map="context"/>
+            </if>
         </actions>
     </service>
     <service verb="poll" noun="BulkOperationResult" authenticate="anonymous-all">
@@ -238,6 +252,7 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="parentSystemMessageTypeId" required="true"/>
+            <parameter name="consumeSmrId"/><!-- For sending the result file to SFTP server -->
         </in-parameters>
         <actions>
             <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages" limit="1">
@@ -248,7 +263,7 @@ under the License.
                 <return message="No bulk operation in progress."/>
             </if>
             <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
-                          in-map="[systemMessageId:systemMessages[0].systemMessageId]" out-map="context"/>
+                          in-map="[systemMessageId:systemMessages[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
         </actions>
     </service>
     <service verb="queue" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
@@ -266,7 +281,7 @@ under the License.
             <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate]"/>
             <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(paramMap)"/>
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:false]"
+                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, consumeSmrId:consumeSmrId, sendNow:false]"
                           out-map="context"/>
         </actions>
     </service>
