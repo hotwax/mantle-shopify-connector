@@ -26,11 +26,14 @@ Make sure to setup following configuration data with respect to your environment
                                            accessScopeEnumId="SHOP_READ_WRITE_ACCESS"/>
 
 <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+<!-- Note: By default the 'sendPath' local directory structure is created in 'runtime://datamanager' directory. If you want to use 
+     some other directory then please change the value of 'mantle.content.root' preferenceKey -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                          description="Create OMS Fulfillment Feed System Message"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
                                          receivePath="" receiveFilePattern=""
-                                         receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+                                         receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+                                         sendPath=""/>
 
 <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
