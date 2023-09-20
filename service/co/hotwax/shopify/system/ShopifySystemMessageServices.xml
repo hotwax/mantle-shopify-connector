@@ -318,7 +318,7 @@ under the License.
                 <set field="fromDate" from="systemMessageParams.fromDate"/>
             </if>
             <if condition="!fromDate">
-                <entity-find entity-name="SystemMessage" list="systemMessageList" limit="1">
+                <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
                     <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
                     <econdition field-name="statusId" operator="equals" value="SmsgConfirmed"/>
                     <order-by field-name="-processedDate"/>
@@ -328,14 +328,14 @@ under the License.
                 </if>
             </if>
             <if condition="fromDate">
-                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Instant.ofEpochMilli(Timestamp.valueOf(fromDate).getTime()), java.time.ZoneId.of('UTC'))"/>
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <if condition="queryParams.fromDateBuffer">
                     <set field="fromZdtUTC" from="fromZdtUTC.minusMinutes(Integer.valueOf(queryParams.fromDateBuffer))"/>
                 </if>
                 <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
             </if>
             <if condition="systemMessageParams.thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Instant.ofEpochMilli(Timestamp.valueOf(systemMessageParams.thruDate).getTime()), java.time.ZoneId.of('UTC'))"/>
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(systemMessageParams.thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <if condition="queryParams.thruDateBuffer">
                     <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
                 </if>

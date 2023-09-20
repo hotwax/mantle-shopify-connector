@@ -38,6 +38,9 @@ under the License.
     <moqui.basic.Enumeration description="Send Bulk Order Metafields Query Result" enumId="SendBulkOrderMetafieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Bulk Order Metafields Query" enumId="BulkOrderMetafieldsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderMetafieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
+    <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
+
     <!-- SystemMessageType record for creating Shopify Fulfillment -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
@@ -45,17 +48,20 @@ under the License.
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                              description="Create OMS Fulfillment Feed System Message"
+                                             parentTypeId="LocalFeedFile"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
                                              receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
+                                             parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
 
     <!-- SystemMessageType record for importing Product Tags Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
                                              description="Create Product Tags Feed System Message"
+                                             parentTypeId="LocalFeedFile"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
                                              receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
 
@@ -76,12 +82,14 @@ under the License.
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
                                              description="Send Bulk Update Product Tags Result"
+                                             parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
 
     <!-- SystemMessageType record for importing Product Variants Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
                                              description="Create Product Variants Feed System Message"
+                                             parentTypeId="LocalFeedFile"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
                                              receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
 
@@ -96,6 +104,7 @@ under the License.
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
                                              description="Send Bulk Update Product Variants Result"
+                                             parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
 
@@ -110,6 +119,7 @@ under the License.
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
                                              description="Send Bulk Variants Metafield Query Result"
+                                             parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
 
@@ -124,6 +134,7 @@ under the License.
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
                                              description="Send Bulk Order Metafields Query Result"
+                                             parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
 
