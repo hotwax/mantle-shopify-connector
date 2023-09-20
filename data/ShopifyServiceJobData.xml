@@ -18,6 +18,12 @@ under the License.
 
 <entity-facade-xml type="ext">
 
+    <!-- ServiceJob data to purge old SystemMessage records -->
+    <moqui.service.job.ServiceJob jobName="purge_OldSystemMessages" description="Purge Old System Messages"
+                                  serviceName="co.hotwax.impl.SystemMessageServices.purge#OldSystemMessages" cronExpression="0 0 * * *" paused="Y">
+        <parameters parameterName="purgeDays" parameterValue=""/><!-- defaults to 30 days -->
+    </moqui.service.job.ServiceJob>
+
     <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
     <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
                                   serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">

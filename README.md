@@ -11,6 +11,12 @@ This is the global configuration needed for most features in this integration.
 <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
 
+<!-- ServiceJob data to purge old SystemMessage records -->
+<moqui.service.job.ServiceJob jobName="purge_OldSystemMessages" description="Purge Old System Messages"
+                              serviceName="co.hotwax.impl.SystemMessageServices.purge#OldSystemMessages" cronExpression="0 0 * * *" paused="Y">
+    <parameters parameterName="purgeDays" parameterValue=""/><!-- defaults to 30 days -->
+</moqui.service.job.ServiceJob>
+
 <!-- Sftp server connection details for data import -->
 <moqui.service.message.SystemMessageRemote systemMessageRemoteId="[Your ID]"
                                            description="SFTP server connection details for data import"
