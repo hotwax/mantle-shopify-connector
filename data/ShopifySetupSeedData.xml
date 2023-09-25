@@ -77,7 +77,7 @@ under the License.
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
                                              sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                             receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
@@ -99,7 +99,7 @@ under the License.
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
                                              sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                             receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
@@ -114,7 +114,7 @@ under the License.
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
                                              sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                             receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
@@ -129,7 +129,7 @@ under the License.
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
                                              sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                             receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
