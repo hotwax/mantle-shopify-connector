@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="get" noun="JsonlStagedUploadUrl" authenticate="anonymous-all">
+        <description>
+            Get staged upload url for jsonl file.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="fileName" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="stagedUploadUrlMap" type="Map"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/StagedUploadsCreate.ftl", sw)
+                queryText = sw.toString()
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+
+            <set field="requestBody" from="[query:queryText, variables:[input:[filename:fileName, resource:'BULK_MUTATION_VARIABLES', mimeType:'text/jsonl', httpMethod:'POST']]]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="stagedUploadsCreateResponse"/>
+
+            <if condition="stagedUploadsCreateResponse.response.errors">
+                <return error="true" message="${stagedUploadsCreateResponse.response.errors}"/>
+            </if>
+            <if condition="stagedUploadsCreateResponse.response.data.stagedUploadsCreate.userErrors">
+                <return error="true" message="${stagedUploadsCreateResponse.response.data.stagedUploadsCreate.userErrors}"/>
+            </if>
+
+            <set field="stagedUploadUrlMap" from="stagedUploadsCreateResponse.response.data.stagedUploadsCreate.stagedTargets.get(0)"/>
+        </actions>
+    </service>
+    <service verb="upload" noun="JsonlFileToShopify" authenticate="anonymous-all">
+        <description>
+            Upload Jsonl file to shopify at staged upload url returned by get#JsonlStagedUploadUrl service.
+        </description>
+        <in-parameters>
+            <parameter name="stagedUploadUrlMap" required="true" type="Map"/>
+            <parameter name="fileLocation" required="true"/>
+            <parameter name="fileName" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="stagedUploadPath"/>
+        </out-parameters>
+        <actions>
+            <script><![CDATA[
+                import org.moqui.util.RestClient
+                import org.moqui.impl.context.ContextJavaUtil
+                import org.json.XML
+
+                RestClient restClient = ec.service.rest()
+                restClient.method("POST")
+                restClient.uri(stagedUploadUrlMap.get("url"))
+
+                parameters = stagedUploadUrlMap.parameters
+                if (parameters) {
+                    parameters.each{
+                        restClient.addFieldPart((String) it.name, (String) it.value)
+                    }
+                }
+
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(fileLocation, sw)
+                fileText = sw.toString()
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+                restClient.addFilePart("file", fileName, fileText)
+
+                try {
+                    RestClient.RestResponse restResponse = restClient.call()
+                    response = ContextJavaUtil.jacksonMapper.readValue(XML.toJSONObject(restResponse.text()).toString(), Map.class)
+                } catch (Exception e) {
+                    ec.logger.error("Error in API call, Error: ${e.getMessage()}")
+                }
+
+                if (response.Error) {
+                    ec.logger.error("File upload failed. Response from Shopify: " + response.Error)
+                    return
+                }
+
+                stagedUploadPath = response.PostResponse.Key
+            ]]></script>
+        </actions>
+    </service>
+    <service verb="run" noun="BulkOperationMutation" authenticate="anonymous-all">
+        <description>
+            Run the mutation defined in 'mutationTemplateLocation' on the jsonl file uploaded at Shopify's 'stageUploadPath'.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="mutationTemplateLocation" required="true"/>
+            <parameter name="stagedUploadPath" required="true"/>
+            <parameter name="namespaces"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shopifyBulkOperationId"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(mutationTemplateLocation, sw)
+                queryText = sw.toString()
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <set field="requestBody" from="[query:queryText]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="bulkMutationResponse"/>
+
+            <if condition="bulkMutationResponse.response.errors">
+                <return error="true" message="${bulkMutationResponse.response.errors}"/>
+            </if>
+            <if condition="bulkMutationResponse.response.data.bulkOperationRunMutation.userErrors">
+                <return error="true" message="${bulkMutationResponse.response.data.bulkOperationRunMutation.userErrors}"/>
+            </if>
+
+            <set field="shopifyBulkOperationId" from="bulkMutationResponse.response.data.bulkOperationRunMutation.bulkOperation.id"/>
+        </actions>
+    </service>
+    <service verb="get" noun="BulkOperationResult" authenticate="anonymous-all">
+        <description>
+            Run bulk operation result query to retrieve the result of a Shopify bulk operation.
+        </description>
+        <in-parameters>
+            <parameter name="shopifyBulkOperationId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="response" type="Map"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/BulkOperationResultQuery.ftl", sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <set field="requestBody" from="[query:queryText, variables:[id:shopifyBulkOperationId]]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="bulkOperationResult"/>
+
+            <if condition="bulkOperationResult.response.errors">
+                <return error="true" message="${stagedUploadsCreateResponse.response.errors}"/>
+            </if>
+
+            <set field="response" from="bulkOperationResult.response.data.node"/>
+        </actions>
+    </service>
+    <service verb="store" noun="BulkOperationResultFile" authenticate="anonymous-all">
+        <description>
+            Download and store bulk operation result file locally, 'downloadUrl' is returned by bulk operation result query.
+        </description>
+        <in-parameters>
+            <parameter name="downloadUrl" required="true"/>
+            <parameter name="fileLocation" required="true"/>
+        </in-parameters>
+        <actions>
+            <script>
+                import org.moqui.util.RestClient
+                import org.apache.commons.io.FileUtils
+
+                RestClient restClient = ec.service.rest()
+                restClient.method("GET")
+                restClient.uri(downloadUrl)
+                restClient.maxResponseSize(4* 1024 * 1024 *10)
+
+                filePath = ec.resource.getLocationReference(fileLocation).getUri().getPath()
+                try {
+                    RestClient.RestResponse restResponse = restClient.call()
+                    File file = new File(filePath)
+                    if (!file.parentFile.exists()) file.parentFile.mkdirs()
+                    FileUtils.writeByteArrayToFile(file, restResponse.bytes());
+                } catch (Exception e) {
+                    ec.logger.error("Error in API call Error: ${e.getMessage()}")
+                }
+            </script>
+        </actions>
+    </service>
+    <service verb="run" noun="BulkOperationQuery" authenticate="anonymous-all">
+        <description>
+            Run the bulk query defined in 'queryTemplateLocation' with optional filter query.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queryTemplateLocation" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shopifyBulkOperationId"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(queryTemplateLocation, sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="bulkQueryResponse"/>
+
+            <if condition="bulkQueryResponse.response.errors">
+                <return error="true" message="${bulkQueryResponse.response.errors}"/>
+            </if>
+            <if condition="bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors">
+                <return error="true" message="${bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors}"/>
+            </if>
+
+            <set field="shopifyBulkOperationId" from="bulkQueryResponse.response.data.bulkOperationRunQuery.bulkOperation.id"/>
+        </actions>
+    </service>
+</services>
