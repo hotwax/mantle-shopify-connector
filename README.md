@@ -58,7 +58,8 @@ Make sure to setup following configuration data with respect to your environment
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
                                          parentTypeId="LocalFeedFile"
                                          sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""/>
+                                         sendPath=""
+                                         receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
 <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"

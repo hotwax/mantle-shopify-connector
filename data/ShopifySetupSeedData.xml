@@ -56,7 +56,8 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
                                              parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+                                             sendPath=""
+                                             receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
     <!-- SystemMessageType record for importing Product Tags Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
