@@ -18,8 +18,8 @@
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                              description="Create OMS Fulfillment Feed System Message"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                             receivePath="" receiveFilePattern=".*Fulfillment.*\.json"
+                                             receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" receiveFilePattern=".*Fulfillment.*\.json"
                                              receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                             sendPath=""/>
+                                             sendPath="/Shopify/OMSFulfillmentFeed"/>
 
 </entity-facade-xml>
