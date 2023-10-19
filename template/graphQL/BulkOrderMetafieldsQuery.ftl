@@ -20,7 +20,15 @@ under the License.
       <#if queryParams.filterQuery?has_content>
         <#assign filterQuery = queryParams.filterQuery/>
       <#else>
-          <#assign filterQuery = "created_at:>${queryParams.fromDate!} AND created_at:<${queryParams.thruDate!}"/>
+          <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+              <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+          </#if>
+          <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+              <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+          </#if>
+          <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+              <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
+          </#if>
       </#if>
     </#if>
 
