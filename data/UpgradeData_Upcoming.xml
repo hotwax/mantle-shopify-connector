@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade-upcoming">
+
+    <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
+            receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
+
+</entity-facade-xml>
+

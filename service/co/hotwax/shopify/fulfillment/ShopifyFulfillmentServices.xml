@@ -156,16 +156,12 @@ under the License.
             <if condition="systemMessageType == null"><return error="true" message="System Message Type ${systemMessageTypeId} does not exist."/></if>
 
             <!-- Prepare Shopify Fulfillment Ack Feed File Path -->
-            <script><![CDATA[
-                String receivePath = ec.resource.expand(systemMessageType.first.receivePath, null,
-                        [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager',
-                        date:ec.l10n.format(nowDate, "yyyy-MM-dd"),
-                        dateTime:ec.l10n.format(nowDate, "yyyy-MM-dd-HH-mm-ss")], false)
-            ]]></script>
-
-            <set field="jsonFileName" value="ShopifyFulfillmentFeed-${ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())}.json"/>
-            <set field="jsonFilePathRef" value="${receivePath}"/>
+            <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'), dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss'),
+             productStoreId:productStoreId], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <set field="jsonFileName" value="ShopifyFulfillmentFeed-${ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())}.json"/>
 
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
