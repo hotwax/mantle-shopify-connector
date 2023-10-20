@@ -16,10 +16,10 @@
     <!-- Note: By default the 'sendPath' local directory structure is created in 'runtime://datamanager' directory. If you want to use
          some other directory then please change the value of 'mantle.content.root' preferenceKey -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-                                             description="Create OMS Fulfillment Feed System Message"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                             receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" receiveFilePattern=".*Fulfillment.*\.json"
-                                             receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                             sendPath="/Shopify/OMSFulfillmentFeed"/>
+            description="Create OMS Fulfillment Feed System Message"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+            receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" receiveFilePattern=".*Fulfillment.*\.json"
+            receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
 </entity-facade-xml>

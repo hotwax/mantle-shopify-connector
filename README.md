@@ -53,9 +53,9 @@ Make sure to setup following configuration data with respect to your environment
                                          description="Create OMS Fulfillment Feed System Message"
                                          parentTypeId="LocalFeedFile"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                         receivePath="" receiveFilePattern=""
+                                         receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" receiveFilePattern=".*Fulfillment.*\.json"
                                          receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                         sendPath=""/>
+                                         sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
 <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
