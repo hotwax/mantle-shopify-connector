@@ -153,7 +153,7 @@ under the License.
             <entity-find entity-name="moqui.service.message.SystemMessageType" list="systemMessageType">
                 <econdition field-name="systemMessageTypeId" value="SendShopifyFulfillmentAck"/>
             </entity-find>
-            <if condition="systemMessageType == null"><return error="true" message="System Message Type ${systemMessageTypeId} does not exist."/></if>
+            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
 
             <!-- Prepare Shopify Fulfillment Ack Feed File Path -->
             <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
