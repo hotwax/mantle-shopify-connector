@@ -150,18 +150,17 @@ under the License.
             </if>
 
             <!-- Fetch the receivePath from SystemMessageType to prepare the path for creating the file in the receiving system. Ex: Moqui's datamanager directory in runtime for creating feeds.-->
-            <entity-find entity-name="moqui.service.message.SystemMessageType" list="systemMessageType">
-                <econdition field-name="systemMessageTypeId" value="SendShopifyFulfillmentAck"/>
-            </entity-find>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" value="SendShopifyFulfillmentAck"/>
+            </entity-find-one>
             <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
 
             <!-- Prepare Shopify Fulfillment Ack Feed File Path -->
             <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
             <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
-            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'), dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss'),
-             productStoreId:productStoreId], false)"/>
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-            <set field="jsonFileName" value="ShopifyFulfillmentFeed-${ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())}.json"/>
 
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
@@ -203,7 +202,7 @@ under the License.
 
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                           in-map="[systemMessageTypeId:'SendShopifyFulfillmentAck',
-                    systemMessageRemoteId:systemMessageRemoteId, messageText:jsonFilePathRef, remoteMessageId: jsonFileName, sendNow:true]"
+                    systemMessageRemoteId:systemMessageRemoteId, messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
                           out-map="shopifyFulfillmentAckOut"/>
 
             <if condition="jobName &amp;&amp; !skipLastRunTimeUpdate">
