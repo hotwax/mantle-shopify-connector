@@ -47,8 +47,8 @@ Make sure to setup following configuration data with respect to your environment
 
 ```aidl
 <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
-<!-- Note: By default the 'sendPath' local directory structure is created in 'runtime://datamanager' directory. If you want to use 
-     some other directory then please change the value of 'mantle.content.root' preferenceKey -->
+<!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory. 
+     For using any other directory update the value of mantle.content.root preferenceKey -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                          description="Create OMS Fulfillment Feed System Message"
                                          parentTypeId="LocalFeedFile"
