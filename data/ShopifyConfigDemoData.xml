@@ -4,13 +4,13 @@
 <entity-facade-xml type="ext-demo">
     <!-- Sftp server connection details for data import -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="FeedImportSftp"
-                                               description="SFTP server connection details for data import"
-                                               sendUrl="" username="" password=""/>
+            description="SFTP server connection details for data import"
+            sendUrl="" username="" password=""/>
     <!-- Shopify Connection Configuration -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="ShopifyConfig"
-                                               description="Shopify Connection Configuration"
-                                               sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
-                                               accessScopeEnumId=""/>
+            description="Shopify Connection Configuration"
+            sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
+            accessScopeEnumId=""/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
