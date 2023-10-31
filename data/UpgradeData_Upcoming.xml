@@ -5,5 +5,10 @@
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
             receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
-</entity-facade-xml>
+    <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
+         For using any other directory update the value of mantle.content.root preferenceKey -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
+            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
+</entity-facade-xml>

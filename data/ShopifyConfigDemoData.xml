@@ -4,19 +4,22 @@
 <entity-facade-xml type="ext-demo">
     <!-- Sftp server connection details for data import -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="FeedImportSftp"
-                                               description="SFTP server connection details for data import"
-                                               sendUrl="" username="" password=""/>
+            description="SFTP server connection details for data import"
+            sendUrl="" username="" password=""/>
     <!-- Shopify Connection Configuration -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="ShopifyConfig"
-                                               description="Shopify Connection Configuration"
-                                               sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
-                                               accessScopeEnumId=""/>
+            description="Shopify Connection Configuration"
+            sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
+            accessScopeEnumId=""/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
+         For using any other directory update the value of mantle.content.root preferenceKey -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-                                             description="Create OMS Fulfillment Feed System Message"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                             receivePath="" receiveFilePattern=".*Fulfillment.*\.json"
-                                             receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+            description="Create OMS Fulfillment Feed System Message"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+            receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" receiveFilePattern=".*Fulfillment.*\.json"
+            receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
 </entity-facade-xml>
