@@ -46,11 +46,14 @@ under the License.
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
+         For using any other directory update the value of mantle.content.root preferenceKey -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
                                              description="Create OMS Fulfillment Feed System Message"
                                              parentTypeId="LocalFeedFile"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+                                             sendPath=""/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
