@@ -39,106 +39,122 @@ under the License.
     <moqui.basic.Enumeration description="Bulk Order Metafields Query" enumId="BulkOrderMetafieldsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderMetafieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile"
+            description="Local Feed File"/>
 
     <!-- SystemMessageType record for creating Shopify Fulfillment -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment" description="Create Shopify Fulfillment System Message"
-                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment"
+            description="Create Shopify Fulfillment System Message"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
          For using any other directory update the value of mantle.content.root preferenceKey -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-                                             description="Create OMS Fulfillment Feed System Message"
-                                             parentTypeId="LocalFeedFile"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                             sendPath=""/>
+            description="Create OMS Fulfillment Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath=""/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
+            description="Send Shopify Fulfillment Ack Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""
+            receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
     <!-- SystemMessageType record for importing Product Tags Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
-                                             description="Create Product Tags Feed System Message"
-                                             parentTypeId="LocalFeedFile"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+            description="Create Product Tags Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""/>
 
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport"
+            description="Parent SystemMessageType for Shopify Bulk Imports"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk query system message types -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery" description="Parent SystemMessageType for Shopify Bulk Query"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery"
+            description="Parent SystemMessageType for Shopify Bulk Query"/>
 
     <!-- SystemMessageType record for updating product tags in Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
-                                             parentTypeId="ShopifyBulkImport"
-                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-                                             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags"
+            description="Create Update Product Tags System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
-                                             description="Send Bulk Update Product Tags Result"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+            description="Send Bulk Update Product Tags Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
     <!-- SystemMessageType record for importing Product Variants Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
-                                             description="Create Product Variants Feed System Message"
-                                             parentTypeId="LocalFeedFile"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                             receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+            description="Create Product Variants Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""/>
 
     <!-- SystemMessageType record for updating product variants in Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"
-                                             parentTypeId="ShopifyBulkImport"
-                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-                                             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants"
+            description="Create Update Product Variants System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
-                                             description="Send Bulk Update Product Variants Result"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+            description="Send Bulk Update Product Variants Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
     <!-- SystemMessageType record for bulk variant metafield query to Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery" description="Bulk Variants Metafield Query System Message"
-                                             parentTypeId="ShopifyBulkQuery"
-                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-                                             sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery"
+            description="Bulk Variants Metafield Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
-                                             description="Send Bulk Variants Metafield Query Result"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+            description="Send Bulk Variants Metafield Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
     <!-- SystemMessageType record for bulk order metafields query to Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery" description="Bulk Order Metafields Query System Message"
-                                             parentTypeId="ShopifyBulkQuery"
-                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-                                             sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                             receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery"
+            description="Bulk Order Metafields Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
 
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
-                                             description="Send Bulk Order Metafields Query Result"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+            description="Send Bulk Order Metafields Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
 </entity-facade-xml>
