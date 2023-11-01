@@ -158,7 +158,8 @@ Supported bulk mutations and configuration,
                                          description="Create Product Tags Feed System Message"
                                          parentTypeId="LocalFeedFile"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+                                         sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
 
 <!-- SystemMessageType record for updating product tags in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
@@ -197,7 +198,8 @@ Supported bulk mutations and configuration,
                                          description="Create Product Variants Feed System Message"
                                          parentTypeId="LocalFeedFile"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""/>
+                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+                                         sendPath="${contentRoot}/Shopify/ProductVariantsFeed"/>
 
 <!-- SystemMessageType record for updating product variants in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"

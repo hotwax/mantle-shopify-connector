@@ -11,4 +11,178 @@
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
             sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
+    <!-- EnumerationType for Shopify system message type enum and relationship -->
+    <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
+    <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
+    <moqui.basic.Enumeration description="Send Bulk Update Product Tags Result" enumId="SendBulkUpdateProductTagsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Update Product Tags" enumId="BulkUpdateProductTags" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductTagsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Product Tags Feed" enumId="ProductTagsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductTags" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkUpdateProductVariantsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Update Product Variants" enumId="BulkUpdateProductVariants" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductVariantsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Product Variants Feed" enumId="ProductVariantsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductVariants" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Variants Metafield Query Result" enumId="SendBulkVariantsMetafieldQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Variants Metafield Query" enumId="BulkVariantsMetafieldQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkVariantsMetafieldQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Order Metafields Query Result" enumId="SendBulkOrderMetafieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Metafields Query" enumId="BulkOrderMetafieldsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderMetafieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile"
+            description="Local Feed File"/>
+
+    <!-- SystemMessageType record for importing Product Tags Feed (receivePath = sftp directory) -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
+            description="Create Product Tags Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
+
+    <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport"
+            description="Parent SystemMessageType for Shopify Bulk Imports"/>
+
+    <!-- Parent SystemMessageType for all the shopify bulk query system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery"
+            description="Parent SystemMessageType for Shopify Bulk Query"/>
+
+    <!-- SystemMessageType record for updating product tags in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags"
+            description="Create Update Product Tags System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
+            description="Send Bulk Update Product Tags Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- SystemMessageType record for importing Product Variants Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
+            description="Create Product Variants Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath="${contentRoot}/shopify/ProductVariantsFeed"/>
+
+    <!-- SystemMessageType record for updating product variants in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants"
+            description="Create Update Product Variants System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
+            description="Send Bulk Update Product Variants Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- SystemMessageType record for bulk variant metafield query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery"
+            description="Bulk Variants Metafield Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
+            description="Send Bulk Variants Metafield Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- SystemMessageType record for bulk order metafields query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery"
+            description="Bulk Order Metafields Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+
+    <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
+            description="Send Bulk Order Metafields Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- ServiceJob data for polling Product Tags Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductTagsFeed" description="Poll Product Tags Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="ProductTagsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling Product Variants Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductVariantsFeed" description="Poll Product Variants Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="ProductVariantsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+        <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for sending next bulk query system message in queue-->
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" description="Send next bulk query system message in queue"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+        <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling current bulk operation mutation result -->
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation mutation result"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling current bulk operation query result -->
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk variants metafield query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQuery" description="Queue bulk variants metafield query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkVariantsMetafieldQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk order metafields query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderMetafieldsQuery" description="Queue bulk order metafields query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderMetafieldsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
 </entity-facade-xml>

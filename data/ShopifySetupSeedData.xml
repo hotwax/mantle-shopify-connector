@@ -57,7 +57,7 @@ under the License.
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath=""/>
+            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
@@ -67,14 +67,15 @@ under the License.
             sendPath=""
             receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
-    <!-- SystemMessageType record for importing Product Tags Feed -->
+    <!-- SystemMessageType record for importing Product Tags Feed (receivePath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
             description="Create Product Tags Feed System Message"
             parentTypeId="LocalFeedFile"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
-            receiveMovePath=""/>
+            receiveMovePath=""
+            sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport"
@@ -107,7 +108,8 @@ under the License.
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
-            receiveMovePath=""/>
+            receiveMovePath=""
+            sendPath="${contentRoot}/shopify/ProductVariantsFeed"/>
 
     <!-- SystemMessageType record for updating product variants in Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants"
