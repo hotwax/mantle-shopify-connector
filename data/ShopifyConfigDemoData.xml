@@ -27,7 +27,7 @@
             description="Send Shopify Fulfillment Ack Feed"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""
+            sendPath="/home/${sftpUsername}/hotwax/shopify/ShopifyFulfillmentAck/"
             receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
     <!-- SystemMessageType record for importing Product Tags Feed (receivePath = sftp directory) -->
