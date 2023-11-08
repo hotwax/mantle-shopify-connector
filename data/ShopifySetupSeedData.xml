@@ -57,7 +57,7 @@ under the License.
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
+            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"/>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
@@ -75,7 +75,7 @@ under the License.
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
+            sendPath="${contentRoot}/shopify/ProductTagsFeed"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport"
