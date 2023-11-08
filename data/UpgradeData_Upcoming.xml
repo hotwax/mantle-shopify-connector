@@ -3,13 +3,15 @@
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
+            parentTypeId="LocalFeedFile"
             receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
          For using any other directory update the value of mantle.content.root preferenceKey -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-            sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"/>
 
     <!-- EnumerationType for Shopify system message type enum and relationship -->
     <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -37,7 +39,7 @@
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
+            sendPath="${contentRoot}/shopify/ProductTagsFeed"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport"
