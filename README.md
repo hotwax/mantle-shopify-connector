@@ -167,7 +167,9 @@ Supported bulk mutations and configuration,
                                          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
                                          sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                         receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
@@ -207,10 +209,12 @@ Supported bulk mutations and configuration,
                                          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
                                          sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                         receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="BulkUpdateProductVariants"
+<moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkUpdateProductVariants"
                                                parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
@@ -263,17 +267,17 @@ You could configure following default parameters and any additional parameters a
 
 ```aidl
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+<moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
                                                parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- Additional paramter configuration, default filter query -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+<moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
                                                parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- Additional parameter configuration, time buffers for fromDate and thruDate, must be an integer value for minutes -->
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+<moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
                                                parameterName="fromDateBuffer" parameterValue="" systemMessageRemoteId=""/>
-<moqui.service.message.SystemMessageTypeParam systemMessageTypeId="[systemMessageTypeId]"
+<moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
                                                parameterName="thruDateBuffer" parameterValue="" systemMessageRemoteId=""/>
 ```
 
@@ -286,7 +290,9 @@ You could configure following default parameters and any additional parameters a
                                          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
                                          sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                         receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
@@ -319,7 +325,9 @@ You could configure following default parameters and any additional parameters a
                                          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
                                          sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
                                          consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+                                         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
@@ -341,4 +349,107 @@ You could configure following default parameters and any additional parameters a
     <parameters parameterName="fromDate" parameterValue=""/>
     <parameters parameterName="thruDate" parameterValue=""/>
 </moqui.service.job.ServiceJob>
+```
+
+## Shopify Webhook Integration
+
+Set of services and configuration to integrate with Shopify Webhook GraphQL API.  
+This integration enables you to configure a shopify webhook topic, subscribe/unsubscribe to it, receive payload from the subscribed webhook topic and consume the payload to further process it.
+
+### Webhook Filter
+
+**co.hotwax.shopify.ShopifyWebhookFilter**: A filter to verify HMAC for all incoming webhook payloads and set the required attributes on HTTP request upon successful verification.
+
+#### Configuration
+
+Folliowing configuration is added to MoquiConf.xml,  
+
+```aidl
+<default-property name="shopify_webhook_end_point" value="/rest/s1/shopify/webhook/payload"/>
+
+<webapp-list>
+    <webapp name="webroot">
+        <!-- Shopify Webhook Request Filter  -->
+        <filter name="ShopifyWebhookFilter" class="co.hotwax.shopify.ShopifyWebhookFilter" async-supported="true">
+            <url-pattern>/rest/s1/shopify/webhook/*</url-pattern>
+        </filter>
+    </webapp>
+</webapp-list>
+```
+### Core Services
+
+1. **create#WebhookSubscription**: Subscribe to shopify webhook topic with your apps callbackUrl (end point).
+2. **get#WebhookSubscriptions**: Get a list of all subscribed webhooks filtered by query parameters.
+3. **delete#WebhookSubscription**: Unsubscribe a specific webhook topic.
+4. **verify#Hmac**: Verify hmac for the received webhook payload.
+5. **receive#WebhookPayload**: Receive webhook payload in an incoming SystemMessage of the webhook topics SystemMessageType.
+6. **produce#WebhookSubscriptionSystemMessage**: Service to initiate webhook subscription of a specific type by creating a system message.
+7. **send#WebhookSubscriptionSystemMessage**: Send service to invoke Create Webhook Subscription API for the System Message.
+8. **produce#WebhookSubscriptionDeleteSystemMessage**: Service to initiate delete webhook subscription of a specific type by creating a system message.
+9. **send#WebhookSubscriptionDeleteSystemMessage**: Send service to invoke Delete Webhook Subscription API for the System Message. This service first get the webhookSubscriptionId for specified webhook topic and registered callbackUrl and the invokes Delete Webhook Subscription API for the webhookSubscriptionId.
+
+### Subscribing a Webhook Topic
+
+Following is some global configuration data for webhook subscriptions,
+
+```aidl
+<!-- Parent SystemMessageType for all the shopify webhook system message types -->
+ <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyWebhook"
+        description="Parent SystemMessageType for Shopify Webhooks"/>
+
+<!-- EnumerationType for Shopify webhook topic mapping to webhook system message type -->
+<moqui.basic.EnumerationType description="Shopify Webhook Enum" enumTypeId="ShopifyWebhookEnum"/>
+```
+
+To subscribe a webhook you need to define following configuration data,
+
+```aidl
+<!-- SystemMessageType record for shopify webhook -->
+<moqui.service.message.SystemMessageType systemMessageTypeId=""
+        description=""
+        parentTypeId="ShopifyWebhook"
+        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+        consumeServiceName="[consume service to process webhook payload]">
+    <parameters parameterName="topic" parameterValue="[GraphQL Webhook Topic]" systemMessageRemoteId=""/>
+    <!-- Optional, defaluts to "/rest/s1/shopify/webhook/payload"  -->
+    <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+
+<moqui.basic.Enumeration description="" enumId="[systemMessageTypeId of webhook]"
+        enumTypeId="ShopifyMessageTypeEnum" enumCode="[Shopify Webhook Topic]"/> (https://shopify.dev/docs/api/admin-rest/2023-10/resources/webhook#event-topics)
+```
+
+### Unsubscribing a Webhook Topic
+
+Following is the configuration data for deleting any webhook subscription,
+
+```aidl
+<!-- SystemMessageTypeRecord for deleting a specific webhook subscription -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
+        description="Delete Shopify Webhook Subscription"
+        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl">
+    <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+```
+
+### Supported Shopify Webhooks
+
+#### Bulk Operations Finish (bulk_operations/finish)
+
+```aidl
+<!-- SystemMessageType record for shopify BULK_OPERATION_FINISH webhook -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="BulkOperationsFinish"
+        description="Shopify Bulk Operations Finish Webhook"
+        parentTypeId="ShopifyWebhook"
+        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationsFinishWebhookPayload">
+    <parameters parameterName="topic" parameterValue="BULK_OPERATIONS_FINISH" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+
+<!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
+<moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
+        enumTypeId="ShopifyMessageTypeEnum" enumCode="bulk_operations/finish"/>
 ```

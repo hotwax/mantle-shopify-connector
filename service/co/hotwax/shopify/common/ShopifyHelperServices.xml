@@ -84,8 +84,6 @@ under the License.
                     restClient.basicAuth(systemMessageRemote.username, systemMessageRemote.password);
                 } else if (systemMessageRemote.sharedSecret) {
                     restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sharedSecret);
-                } else if (systemMessageRemote.sendSharedSecret) {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sendSharedSecret);
                 } else {
                     restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.password);
                 }
@@ -111,10 +109,16 @@ under the License.
                     statusCode = restResponse.getStatusCode()
                     headers = restResponse.headers()
 
-                    ec.logger.info("Shopify X-Shopify-Shop-Api-Call-Limit " + restResponse.headerFirst("X-Shopify-Shop-Api-Call-Limit"));
+                    if (headers.get("X-Shopify-Shop-Api-Call-Limit") != null) {
+                        ec.logger.info("Shopify X-Shopify-Shop-Api-Call-Limit " + restResponse.headerFirst("X-Shopify-Shop-Api-Call-Limit"));
+                    } else {
+                        ec.logger.info("Shopify X-Shopify-Shop-Api-Call-Limit " + restResponse.headerFirst("x-shopify-shop-api-call-limit"));
+                    }
                     //TODO:Handle retry after https://shopify.dev/api/usage/rate-limits#rate-limiting-methods
                     if (headers.get("Retry-After") != null) {
                         ec.logger.warn("Shopify Retry-After " + restResponse.headerFirst("Retry-After"));
+                    } else {
+                        ec.logger.warn("Shopify Retry-After " + restResponse.headerFirst("retry-after"));
                     }
 
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
@@ -127,19 +131,24 @@ under the License.
             ]]></script>
 
             <!-- Preparing the nextLink -->
-            <set field="nextLink" value=""/>
             <set field="links" type="List" from="headers?.get('Link')"/>
-            <iterate list="links" entry="link">
-                <set field="parsedLink" type="List" from="link.split(';')"/>
-                <if condition="link.contains('next')">
-                    <set field="nextLink" from="parsedLink.get(0)"/>
-                    <if condition="nextLink">
-                        <if condition="nextLink.indexOf('&lt;') >= 0 &amp;&amp; nextLink.lastIndexOf('&gt;') >= 0">
-                            <set field="nextLink" from="nextLink.substring(nextLink.indexOf('&lt;') + 1, nextLink.lastIndexOf('&gt;'))"/>
+            <if condition="!links">
+                <set field="links" type="List" from="headers?.get('link')"/>
+            </if>
+            <if condition="links">
+                <set field="nextLink" value=""/>
+                <iterate list="links" entry="link">
+                    <set field="parsedLink" type="List" from="link.split(';')"/>
+                    <if condition="link.contains('next')">
+                        <set field="nextLink" from="parsedLink.get(0)"/>
+                        <if condition="nextLink">
+                            <if condition="nextLink.indexOf('&lt;') >= 0 &amp;&amp; nextLink.lastIndexOf('&gt;') >= 0">
+                                <set field="nextLink" from="nextLink.substring(nextLink.indexOf('&lt;') + 1, nextLink.lastIndexOf('&gt;'))"/>
+                            </if>
                         </if>
                     </if>
-                </if>
-            </iterate>
+                </iterate>
+            </if>
         </actions>
     </service>
 </services>
