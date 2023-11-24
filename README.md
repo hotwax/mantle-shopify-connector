@@ -91,6 +91,7 @@ Set of services, templates and configuration to integrate with Shopify Bulk Expo
 This integration enables you,
 1. To configure and poll shopify jsonl feeds from SFTP, stage and upload on shopify and run the intended shopify bulk mutation operation.
 2. To configure and send shopify bulk queries.
+
 It also polls the running bulk operation status and download and stores the result file locally.
 Support for BULK_OPERATION_FINISH webhook will be implemented in next phase.
 
@@ -390,49 +391,48 @@ Folliowing configuration is added to MoquiConf.xml,
 
 ### Subscribing a Webhook Topic
 
-Following is some global configuration data for webhook subscriptions,
+1. Following is some global configuration data for webhook subscriptions,
+    ```aidl
+    <!-- Parent SystemMessageType for all the shopify webhook system message types --> 
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyWebhook"
+            description="Parent SystemMessageType for Shopify Webhooks"/>
 
-```aidl
-<!-- Parent SystemMessageType for all the shopify webhook system message types -->
- <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyWebhook"
-        description="Parent SystemMessageType for Shopify Webhooks"/>
+    <!-- EnumerationType for Shopify webhook topic mapping to webhook system message type -->
+    <moqui.basic.EnumerationType description="Shopify Webhook Enum" enumTypeId="ShopifyWebhookEnum"/>
+    ```
+2. Implement a consume service as needed to process webhook payload. In absence of a conusme service, the payload would just be saved as is in an incoming SystemMessage.
+3. To subscribe a webhook you need to define following configuration data,
+    ```aidl
+    <!-- SystemMessageType record for shopify webhook -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId=""
+            description=""
+            parentTypeId="ShopifyWebhook"
+            sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+            consumeServiceName="[consume service to process webhook payload]">
+        <parameters parameterName="topic" parameterValue="[GraphQL Webhook Topic]" systemMessageRemoteId=""/>
+        <!-- Optional, defaluts to "/rest/s1/shopify/webhook/payload"  -->
+        <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
-<!-- EnumerationType for Shopify webhook topic mapping to webhook system message type -->
-<moqui.basic.EnumerationType description="Shopify Webhook Enum" enumTypeId="ShopifyWebhookEnum"/>
-```
-
-To subscribe a webhook you need to define following configuration data,
-
-```aidl
-<!-- SystemMessageType record for shopify webhook -->
-<moqui.service.message.SystemMessageType systemMessageTypeId=""
-        description=""
-        parentTypeId="ShopifyWebhook"
-        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
-        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
-        consumeServiceName="[consume service to process webhook payload]">
-    <parameters parameterName="topic" parameterValue="[GraphQL Webhook Topic]" systemMessageRemoteId=""/>
-    <!-- Optional, defaluts to "/rest/s1/shopify/webhook/payload"  -->
-    <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
-</moqui.service.message.SystemMessageType>
-
-<moqui.basic.Enumeration description="" enumId="[systemMessageTypeId of webhook]"
-        enumTypeId="ShopifyMessageTypeEnum" enumCode="[Shopify Webhook Topic]"/> (https://shopify.dev/docs/api/admin-rest/2023-10/resources/webhook#event-topics)
-```
+    <moqui.basic.Enumeration description="" enumId="[systemMessageTypeId of webhook]"
+            enumTypeId="ShopifyMessageTypeEnum" enumCode="[Shopify Webhook Topic]"/> (https://shopify.dev/docs/api/admin-rest/2023-10/resources/webhook#event-topics)
+    ```
+4. To subscribe to the webhook invoke _produce#WebhookSubscriptionSystemMessage_ service.
 
 ### Unsubscribing a Webhook Topic
 
-Following is the configuration data for deleting any webhook subscription,
-
-```aidl
-<!-- SystemMessageTypeRecord for deleting a specific webhook subscription -->
-<moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
-        description="Delete Shopify Webhook Subscription"
-        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
-        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl">
-    <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
-</moqui.service.message.SystemMessageType>
-```
+1. Following is the configuration data for deleting any webhook subscription,
+    ```aidl
+    <!-- SystemMessageTypeRecord for deleting a specific webhook subscription -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
+            description="Delete Shopify Webhook Subscription"
+            sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl">
+        <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+    ```
+2. To unsubscribe webhook invoke _produce#WebhookSubscriptionDeleteSystemMessage_ service.
 
 ### Supported Shopify Webhooks
 
