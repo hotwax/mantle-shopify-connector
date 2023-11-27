@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+
+    <service verb="create" noun="WebhookSubscription" authenticate="anonymous-all">
+        <description>Subscribe to shopify webhook topic with a callbackUrl (end point).</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="topic" required="true"/>
+            <parameter name="endPoint"/>
+            <parameter name="templateLocation" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="webhookSubscriptionId"/>
+        </out-parameters>
+        <actions>
+            <script>
+                if (!endPoint) endPoint = System.getProperty('shopify_webhook_end_point')
+                endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <set field="requestBody" from="[query:queryText]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="webhookSubscriptionCreateResponse"/>
+
+            <if condition="webhookSubscriptionCreateResponse.response.errors">
+                <return error="true" message="${webhookSubscriptionCreateResponse.response.errors}.toString()"/>
+            </if>
+
+            <set field="webhookSubscriptionId" from="webhookSubscriptionCreateResponse.response.data.webhookSubscriptionCreate.webhookSubscription.id"/>
+        </actions>
+    </service>
+    <service verb="get" noun="WebhookSubscriptions" authenticate="anonymous-all">
+        <description>Get a list of all subscribed webhooks filtered by query parameters.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+            <parameter name="templateLocation" default-value="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="webhookList"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="getWebhookSubscriptionsResponse"/>
+
+            <if condition="getWebhookSubscriptionsResponse.response.errors">
+                <return error="true" message="${getWebhookSubscriptionsResponse.response.errors}"/>
+            </if>
+
+            <set field="webhookList" from="getWebhookSubscriptionsResponse.response.data.webhookSubscriptions.edges"/>
+        </actions>
+    </service>
+    <service verb="delete" noun="WebhookSubscription" authenticate="anonymous-all">
+        <description>Unsubscribe a specific webhook topic.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="webhookSubscriptionId" required="true"/>
+            <parameter name="templateLocation" default-value="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="deletedWebhookSubscriptionId"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
+                queryText = sw.toString()
+                try {
+                sw.close()
+                } catch (IOException e) {
+                ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+
+            <set field="requestBody" from="[query:queryText, variables:[id:webhookSubscriptionId]]"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
+                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="deleteWebhookSubscriptionResponse"/>
+
+            <if condition="deleteWebhookSubscriptionResponse.response.errors">
+                <return error="true" message="${deleteWebhookSubscriptionResponse.response.errors}"/>
+            </if>
+            <if condition="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors">
+                <return error="true" message="${deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors}"/>
+            </if>
+
+            <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
+        </actions>
+    </service>
+    <service verb="verify" noun="Hmac" authenticate="anonymous-all">
+        <description>Verify hmac for the received webhook payload.</description>
+        <in-parameters>
+            <parameter name="message" required="true"/>
+            <parameter name="hmac" required="true"/>
+            <parameter name="sharedSecret" required="true"/>
+            <parameter name="digest" default-value="Base64"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isValidWebhook" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <!-- Verifying hmac -->
+            <!-- Calculate hmac using request body message and shared secret, and compare with the incoming hmac header -->
+            <script><![CDATA[
+                import javax.crypto.Mac
+                import javax.crypto.spec.SecretKeySpec
+
+                Mac hmacSha256 = Mac.getInstance("HmacSHA256")
+                hmacSha256.init(new SecretKeySpec(sharedSecret.getBytes("UTF-8"), "HmacSHA256"))
+                byte[] bytes = hmacSha256.doFinal(message.getBytes("UTF-8"));
+                String calculatedHmac = "";
+                if ("Base64".equals(digest)) {
+                    calculatedHmac = Base64.encoder.encodeToString(bytes)
+                } else if ("Hex".equals(digest)) {
+                    calculatedHmac = org.apache.commons.codec.binary.Hex.encodeHexString(bytes)
+                }
+            ]]></script>
+            <set field="isValidWebhook" from="calculatedHmac.equals(hmac)"/>
+        </actions>
+    </service>
+    <service verb="receive" noun="WebhookPayload" authenticate="anonymous-all">
+        <description>Receive webhook payload in an incoming SystemMessage of the webhook topics SystemMessageType.</description>
+        <in-parameters>
+            <parameter name="payload" type="Map" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="webhookTopic" required="true"/>
+            <parameter name="webhookId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find entity-name="moqui.basic.Enumeration" list="enums">
+                <econdition field-name="enumCode" operator="equals" from="webhookTopic"/>
+            </entity-find>
+
+            <if condition="!enums">
+                <return message="Invalid webhook payload for topic [${webhookTopic}], webhook configuration missing or incomplete."/>
+            </if>
+
+            <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages">
+                <econdition field-name="systemMessageTypeId" operator="equals" from="enums[0].enumId"/>
+                <econdition field-name="remoteMessageId" operator="equals" from="webhookId"/>
+                <econdition field-name="statusId" operator="in" value="['SmsgReceived', 'SmsgConsumed']"/>
+            </entity-find>
+
+            <if condition="systemMessages">
+                <return message="Duplicate webhook payload found for topic:${webhookTopic} and webhookId:${webhookId}"/>
+            </if>
+
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(payload)"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:enums[0].enumId, messageText:messageText,
+                              systemMessageRemoteId:systemMessageRemoteId, remoteMessageId:webhookId]" async="true"/>
+        </actions>
+    </service>
+
+    <service verb="produce" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
+        <description>
+            Service to initiate webhook subscription of a specific type by creating a system message.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="SystemMessageType" value-field="systemMessageType"/>
+            <set field="messageParams" from="[:]"/>
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="systemMessageParams">
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
+            </entity-find>
+            <if condition="systemMessageParams">
+                <iterate list="systemMessageParams" entry="paramMap">
+                    <script>messageParams.put(paramMap.parameterName, paramMap.parameterValue)</script>
+                </iterate>
+            </if>
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(messageParams)"/>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:true]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Create Webhook Subscription API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="serviceCtx" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="serviceCtx.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            <set field="serviceCtx.templateLocation" from="systemMessage.sendPath"/>
+            <service-call name="co.hotwax.shopify.webhook.ShopifyWebhookServices.create#WebhookSubscription" in-map="serviceCtx" out-map="context"/>
+
+            <set field="remoteMessageId" from="webhookSubscriptionId"/>
+        </actions>
+    </service>
+    <service verb="produce" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
+        <description>
+            Service to initiate delete webhook subscription of a specific type by creating a system message.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="webhookSystemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="topicParameter">
+                <field-map field-name="systemMessageTypeId" from="webhookSystemMessageTypeId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+                <field-map field-name="parameterName" value="topic"/>
+            </entity-find-one>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="endPointParameter">
+                <field-map field-name="systemMessageTypeId" from="webhookSystemMessageTypeId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+                <field-map field-name="parameterName" value="endPoint"/>
+            </entity-find-one>
+            <if condition="endPointParameter">
+                <set field="endPoint" from="endPointParameter.parameterValue"/>
+            </if>
+            <if condition="!endPoint">
+                <set field="endPoint" from="System.getProperty('shopify_webhook_end_point')"/>
+            </if>
+            <set field="endPoint" from="ec.web.getWebappRootUrl(true, false) + endPoint"/>
+
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString([topics:topicParameter.parameterValue, callbackUrl:endPoint])"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:true]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Delete Webhook Subscription API for the System Message.
+            This service first get the webhookSubscriptionId for specified webhook topic and registered callbackUrl and the invokes Delete Webhook Subscription API for the webhookSubscriptionId.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="queryCtx" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryParams:queryParams]"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="queryTemplateLocationParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+                <field-map field-name="parameterName" value="queryTemplateLocation"/>
+            </entity-find-one>
+            <if condition="queryTemplateLocationParam">
+                <set field="queryCtx.templateLocation" from="queryTemplateLocationParam.parameterValue"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.webhook.ShopifyWebhookServices.get#WebhookSubscriptions" in-map="queryCtx" out-map="context"/>
+
+            <if condition="webhookList">
+                <service-call name="co.hotwax.shopify.webhook.ShopifyWebhookServices.delete#WebhookSubscription" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, webhookSubscriptionId:webhookList[0].node.id, templateLocation:systemMessage.sendPath]" out-map="context"/>
+
+                <set field="remoteMessageId" from="deletedWebhookSubscriptionId"/>
+            </if>
+        </actions>
+    </service>
+</services>
