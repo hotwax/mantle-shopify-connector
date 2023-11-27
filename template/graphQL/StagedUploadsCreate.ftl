@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+<#--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
 distributed with this work for additional information
@@ -16,7 +15,21 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd"
-           name="shopify-connector" version="2.0.0">
-    <!-- no dependencies -->
-</component>
+<@compress single_line=true>
+    mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+        stagedUploadsCreate(input: $input) {
+            stagedTargets  {
+                url,
+                resourceUrl,
+                parameters {
+                    name,
+                    value
+                }
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>

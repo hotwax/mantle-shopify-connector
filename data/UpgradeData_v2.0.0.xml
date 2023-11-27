@@ -1,28 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
-http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
--->
+<entity-facade-xml type="ext-upgrade">
 
-<entity-facade-xml type="seed">
+    <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
+            parentTypeId="LocalFeedFile"
+            receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
-    <!-- Enumeration data for Shopify Shop Access Scope -->
-    <moqui.basic.EnumerationType description="Shopify Shop Access Scope" enumTypeId="ShopifyShopAccessScope"/>
-    <moqui.basic.Enumeration description="Shopify Shop No Access" enumId="SHOP_NO_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
-    <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
-    <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+    <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
+    <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
+         For using any other directory update the value of mantle.content.root preferenceKey -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"/>
 
     <!-- EnumerationType for Shopify system message type enum and relationship -->
     <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -41,31 +30,6 @@ under the License.
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile"
             description="Local Feed File"/>
-
-    <!-- SystemMessageType record for creating Shopify Fulfillment -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment"
-            description="Create Shopify Fulfillment System Message"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
-
-    <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
-    <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
-         For using any other directory update the value of mantle.content.root preferenceKey -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-            description="Create OMS Fulfillment Feed System Message"
-            parentTypeId="LocalFeedFile"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-            receivePath=""
-            receiveResponseEnumId="MsgRrMove"
-            receiveMovePath=""
-            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"/>
-
-    <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
-            description="Send Shopify Fulfillment Ack Feed"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""
-            receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
     <!-- SystemMessageType record for importing Product Tags Feed (receivePath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
@@ -158,5 +122,69 @@ under the License.
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath=""/>
+
+    <!-- ServiceJob data for polling Product Tags Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductTagsFeed" description="Poll Product Tags Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="ProductTagsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling Product Variants Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductVariantsFeed" description="Poll Product Variants Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="ProductVariantsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+        <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for sending next bulk query system message in queue-->
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" description="Send next bulk query system message in queue"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+        <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling current bulk operation mutation result -->
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation mutation result"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling current bulk operation query result -->
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
+        <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk variants metafield query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQuery" description="Queue bulk variants metafield query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkVariantsMetafieldQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk order metafields query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderMetafieldsQuery" description="Queue bulk order metafields query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderMetafieldsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 
 </entity-facade-xml>
