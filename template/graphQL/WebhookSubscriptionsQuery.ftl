@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+<#--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
 distributed with this work for additional information
@@ -16,7 +15,23 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd"
-           name="shopify-connector" version="1.2.0">
-    <!-- no dependencies -->
-</component>
+<@compress single_line=true>
+    query {
+        webhookSubscriptions(first: 1
+            <#if queryParams?has_content && queryParams.topics?has_content>, topics: ${queryParams.topics}</#if>
+            <#if queryParams?has_content && queryParams.callbackUrl?has_content>, callbackUrl: "${queryParams.callbackUrl}"</#if>) {
+            edges {
+                node {
+                    id
+                    topic
+                    endpoint {
+                        __typename
+                        ... on WebhookHttpEndpoint {
+                            callbackUrl
+                        }
+                    }
+               }
+            }
+        }
+    }
+</@compress>

@@ -56,7 +56,9 @@
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+            receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
@@ -82,7 +84,9 @@
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+            receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
@@ -98,7 +102,9 @@
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
             sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+            receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
@@ -114,7 +120,9 @@
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
             sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl"/>
+            receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
@@ -186,5 +194,34 @@
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageTypeRecord for deleting a specific webhook subscription -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
+            description="Delete Shopify Webhook Subscription"
+            sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl">
+        <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Parent SystemMessageType for all the shopify webhook system message types -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyWebhook"
+            description="Parent SystemMessageType for Shopify Webhooks"/>
+
+    <!-- EnumerationType for Shopify webhook topic mapping to webhook system message type -->
+    <moqui.basic.EnumerationType description="Shopify Webhook Enum" enumTypeId="ShopifyWebhookEnum"/>
+
+    <!-- SystemMessageType record for shopify BULK_OPERATION_FINISH webhook -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOperationsFinish"
+            description="Shopify Bulk Operations Finish Webhook"
+            parentTypeId="ShopifyWebhook"
+            sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationsFinishWebhookPayload">
+        <parameters parameterName="topic" parameterValue="BULK_OPERATIONS_FINISH" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
+    <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
+            enumTypeId="ShopifyMessageTypeEnum" enumCode="bulk_operations/finish"/>
 
 </entity-facade-xml>

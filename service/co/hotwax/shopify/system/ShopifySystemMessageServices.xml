@@ -124,7 +124,7 @@ under the License.
             <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, mutationTemplateLocation:systemMessage.sendPath,
                                   stagedUploadPath: systemMessage.messageText]"/>
 
-            <entity-find entity-name="moqui.service.message.SystemMessageTypeParam" list="additionalParameters">
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
             </entity-find>
@@ -183,7 +183,6 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="systemMessageId" required="true"/>
-            <parameter name="consumeSmrId"/><!-- For sending the result file to SFTP server -->
         </in-parameters>
         <actions>
             <set field="statusMap" from="[completed:'SmsgConfirmed', canceled:'SmsgCancelled', failed:'SmsgError', expired:'SmsgError']"/>
@@ -208,6 +207,15 @@ under the License.
 
             <if condition="responseText">
                 <return message="${responseText}"/>
+            </if>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="consumeSmrParam">
+                <set field="consumeSmrId" from="consumeSmrParam.parameterValue"/>
             </if>
 
             <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:bulkOperationResult.response.url,
@@ -252,7 +260,6 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="parentSystemMessageTypeId" required="true"/>
-            <parameter name="consumeSmrId"/><!-- For sending the result file to SFTP server -->
         </in-parameters>
         <actions>
             <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages" limit="1">
@@ -263,7 +270,7 @@ under the License.
                 <return message="No bulk operation in progress."/>
             </if>
             <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
-                          in-map="[systemMessageId:systemMessages[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
+                          in-map="[systemMessageId:systemMessages[0].systemMessageId]" out-map="context"/>
         </actions>
     </service>
     <service verb="queue" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
@@ -298,7 +305,7 @@ under the License.
             <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
 
             <set field="queryParams" from="[:]"/>
-            <entity-find entity-name="moqui.service.message.SystemMessageTypeParam" list="additionalParameters">
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
             </entity-find>
@@ -347,6 +354,28 @@ under the License.
                           in-map="requestBody" out-map="context"/>
 
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
+        </actions>
+    </service>
+    <service verb="consume" noun="BulkOperationsFinishWebhookPayload" authenticate="anonymous-all">
+        <description>Consume service to process bulk_operations/finish wehbook payload</description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage"/>
+            <set field="payload" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <entity-find entity-name="moqui.service.message.SystemMessage" list="bulkOperationList">
+                <econdition field-name="remoteMessageId" from="payload.admin_graphql_api_id"/>
+                <econdition field-name="isOutgoing" operator="equals" value="Y"/>
+            </entity-find>
+            <if condition="!bulkOperationList">
+                <return error="true" message="No outgoing SystemMessage record found for bulk operation [${payload.admin_graphql_api_id}]"/>
+            </if>
+            <if condition="!'SmsgSent'.equals(bulkOperationList[0].statusId)">
+                <return error="true" message="Payload already consumed for bulk operation [${payload.admin_graphql_api_id}]"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
+                          in-map="[systemMessageId:bulkOperationList[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
         </actions>
     </service>
 </services>

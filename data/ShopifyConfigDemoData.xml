@@ -9,8 +9,8 @@
     <!-- Shopify Connection Configuration -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="ShopifyConfig"
             description="Shopify Connection Configuration"
-            sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" username="" password=""
-            accessScopeEnumId=""/>
+            sendUrl="https://${shopifyHost}/admin/api/${shopifyApiVersion}" sharedSecret=""
+            accessScopeEnumId="" sendSharedSecret=""/>
 
     <!-- SystemMessageType record for importing OMS Fulfillment Feed -->
     <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory.
@@ -40,6 +40,12 @@
             receiveMovePath="/home/${sftpUsername}/hotwax/shopify/ProductTagsFeed/archive"
             sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
 
+    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkUpdateProductTags"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
             description="Send Bulk Update Product Tags Result"
@@ -57,12 +63,24 @@
             receiveMovePath="/home/${sftpUsername}/hotwax/shopify/ProductVariantsFeed/archive"
             sendPath="${contentRoot}/shopify/ProductVariantsFeed"/>
 
+    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkUpdateProductVariants"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
             description="Send Bulk Update Product Variants Result"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath="/home/${sftpUsername}/hotwax/shopify/BulkUpdateProductVariantsResult/"/>
+
+    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkVariantsMetafieldQuery"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
 
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
@@ -71,6 +89,12 @@
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath="/home/${sftpUsername}/hotwax/shopify/BulkVariantsMetafieldQueryResult/"/>
 
+    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkOrderMetafieldsQuery"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
             description="Send Bulk Order Metafields Query Result"
@@ -78,4 +102,9 @@
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath="/home/${sftpUsername}/hotwax/shopify/BulkOrderMetafieldsQueryResult/"/>
 
+    <!-- Configure shopify config systemMessageRemoteId -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkOperationsFinish"
+            parameterName="topic"
+            parameterValue="BULK_OPERATIONS_FINISH"
+            systemMessageRemoteId=""/>
 </entity-facade-xml>

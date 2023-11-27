@@ -16,7 +16,12 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd"
-           name="shopify-connector" version="1.2.0">
-    <!-- no dependencies -->
-</component>
+<resource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/rest-api-3.xsd"
+          name="shopify" displayName="Shopify API" version="1.0.0" description="Shopify integration REST api">
+
+    <resource name="webhook" require-authentication="anonymous-all">
+        <resource name="payload" require-authentication="anonymous-all">
+            <method type="post"><service name="co.hotwax.shopify.webhook.ShopifyWebhookServices.receive#WebhookPayload"/></method>
+        </resource>
+    </resource>
+</resource>
