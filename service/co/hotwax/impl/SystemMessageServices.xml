@@ -25,11 +25,15 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="purgeDays" type="Integer" default-value="30"/>
+            <parameter name="systemMessageTypeId"/>
+            <parameter name="parentSystemMessageTypeId"/>
         </in-parameters>
         <actions>
             <set field="purgeDate" from="java.sql.Timestamp.from(java.time.ZonedDateTime.now().minusDays(purgeDays.intValue()).toInstant())"/>
             <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages">
-                <econdition field-name="processedDate" operator="less" from="purgeDate"/>
+                <econdition field-name="initDate" operator="less" from="purgeDate"/>
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId" ignore-if-empty="true"/>
+                <econdition field-name="parentTypeId" operator="equals" from="parentSystemMessageTypeId" ignore-if-empty="true"/>
                 <use-iterator/>
             </entity-find>
             <iterate list="systemMessages" entry="systemMessage">
