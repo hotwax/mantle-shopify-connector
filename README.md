@@ -352,6 +352,82 @@ You could configure following default parameters and any additional parameters a
 </moqui.service.job.ServiceJob>
 ```
 
+#### Bulk Order Headers Query
+
+```aidl
+    <!-- SystemMessageType record for bulk order headers query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderHeadersQuery"
+            description="Bulk Order Headers Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderHeadersQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderHeadersQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk order headers query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderHeadersQueryResult"
+            description="Send Bulk Order Headers Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkOrderHeadersQuery and SendBulkOrderHeadersQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Headers Query Result" enumId="SendBulkOrderHeadersQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Headers Query" enumId="BulkOrderHeadersQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderHeadersQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk order headers query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderHeadersQuery" description="Queue bulk order headers query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderHeadersQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+```
+
+### Bulk Order Items Query
+
+```aidl
+    <!-- SystemMessageType record for bulk order items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderItemsQuery"
+            description="Bulk Order Items Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderItemsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk order items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderItemsQueryResult"
+            description="Send Bulk Order Items Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkOrderItemsQuery and SendBulkOrderItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Items Query Result" enumId="SendBulkOrderItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Items Query" enumId="BulkOrderItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk updated order items query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderItemsQuery" description="Queue bulk order items query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderItemsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+```
+
 ## Shopify Webhook Integration
 
 Set of services and configuration to integrate with Shopify Webhook GraphQL API.  

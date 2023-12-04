@@ -93,7 +93,7 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
@@ -121,7 +121,7 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductVariants.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
@@ -139,7 +139,7 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
@@ -157,7 +157,7 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
@@ -166,6 +166,50 @@ under the License.
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath=""/>
+
+    <!-- SystemMessageType record for bulk order headers query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderHeadersQuery"
+            description="Bulk Order Headers Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderHeadersQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderHeadersQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk order headers query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderHeadersQueryResult"
+            description="Send Bulk Order Headers Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkOrderHeadersQuery and SendBulkOrderHeadersQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Headers Query Result" enumId="SendBulkOrderHeadersQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Headers Query" enumId="BulkOrderHeadersQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderHeadersQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk order items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderItemsQuery"
+            description="Bulk Order Items Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderItemsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk order items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderItemsQueryResult"
+            description="Send Bulk Order Items Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkOrderItemsQuery and SendBulkOrderItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Items Query Result" enumId="SendBulkOrderItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Items Query" enumId="BulkOrderItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- SystemMessageTypeRecord for deleting a specific webhook subscription -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"

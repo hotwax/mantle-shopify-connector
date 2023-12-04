@@ -20,14 +20,24 @@ under the License.
       <#if queryParams.filterQuery?has_content>
         <#assign filterQuery = queryParams.filterQuery/>
       <#else>
+          <#if queryParams.fromDateLabel?has_content>
+              <#assign fromDateLabel = queryParams.fromDateLabel/>
+          <#else>
+              <#assign fromDateLabel = "created_at"/>
+          </#if>
+          <#if queryParams.thruDateLabel?has_content>
+              <#assign thruDateLabel = queryParams.thruDateLabel/>
+          <#else>
+              <#assign thruDateLabel = "created_at"/>
+          </#if>
           <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
-              <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+              <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
           </#if>
           <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
-              <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+              <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
           </#if>
           <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
-              <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
+              <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
           </#if>
       </#if>
     </#if>

@@ -191,6 +191,9 @@ under the License.
                           out-map="bulkOperationResult"/>
 
             <set field="status" from="bulkOperationResult.response.status"/>
+            <if condition="'created'.equalsIgnoreCase(status) || 'running'.equalsIgnoreCase(status)">
+                <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] not yet completed at Shopify."/>
+            </if>
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <if condition="'failed'.equalsIgnoreCase(status)">
                 <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessageId, errorDate:nowDate, errorText:bulkOperationResult.response.errorCode]"/>
@@ -283,9 +286,11 @@ under the License.
             <parameter name="filterQuery"/>
             <parameter name="fromDate"/>
             <parameter name="thruDate"/>
+            <parameter name="fromDateLabel"/>
+            <parameter name="thruDateLabel"/>
         </in-parameters>
         <actions>
-            <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate]"/>
+            <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate, fromDateLabel:fromDateLabel, thruDateLabel:thruDateLabel]"/>
             <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(paramMap)"/>
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                           in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, consumeSmrId:consumeSmrId, sendNow:false]"
@@ -347,6 +352,12 @@ under the License.
                     <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
                 </if>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
+            </if>
+            <if condition="systemMessageParams.fromDateLabel">
+                <set field="queryParams.fromDateLabel" from="systemMessageParams.fromDateLabel"/>
+            </if>
+            <if condition="systemMessageParams.thruDateLabel">
+                <set field="queryParams.thruDateLabel" from="systemMessageParams.thruDateLabel"/>
             </if>
             <set field="requestBody.queryParams" from="queryParams"/>
 
