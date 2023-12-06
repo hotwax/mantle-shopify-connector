@@ -36,10 +36,10 @@ under the License.
             <script>
                 queryString = new StringBuffer()
                 queryString.append("status=").append(status)
-                if (createdFromDate) queryString.append("&amp;&amp;created_at_min=").append(createdFromDate)
-                if (createdThruDate) queryString.append("&amp;&amp;created_at_max=").append(createdThruDate)
-                if (updatedFromDate) queryString.append("&amp;&amp;updated_at_min=").append(updatedFromDate)
-                if (updatedThruDate) queryString.append("&amp;&amp;updated_at_max=").append(updatedThruDate)
+                if (createdFromDate) queryString.append("&amp;&amp;created_at_min=").append(ZonedDateTime.ofInstant(Timestamp.valueOf(createdFromDate).toInstant(), ZoneId.of("UTC")).toString())
+                if (createdThruDate) queryString.append("&amp;&amp;created_at_max=").append(ZonedDateTime.ofInstant(Timestamp.valueOf(createdThruDate).toInstant(), ZoneId.of("UTC")).toString())
+                if (updatedFromDate) queryString.append("&amp;&amp;updated_at_min=").append(ZonedDateTime.ofInstant(Timestamp.valueOf(updatedFromDate).toInstant(), ZoneId.of("UTC")).toString())
+                if (updatedThruDate) queryString.append("&amp;&amp;updated_at_max=").append(ZonedDateTime.ofInstant(Timestamp.valueOf(updatedThruDate).toInstant(), ZoneId.of("UTC")).toString())
                 if (financialStatus) queryString.append("&amp;&amp;financial_status=").append(financialStatus)
                 if (fulfilmentStatus) queryString.append("&amp;&amp;fulfillment_status=").append(fulfilmentStatus)
             </script>
