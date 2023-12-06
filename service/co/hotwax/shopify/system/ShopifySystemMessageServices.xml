@@ -191,6 +191,9 @@ under the License.
                           out-map="bulkOperationResult"/>
 
             <set field="status" from="bulkOperationResult.response.status"/>
+            <if condition="!status">
+                <set field="status" value="failed"/>
+            </if>
             <if condition="'created'.equalsIgnoreCase(status) || 'running'.equalsIgnoreCase(status)">
                 <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] not yet completed at Shopify."/>
             </if>
