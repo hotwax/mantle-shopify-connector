@@ -161,7 +161,7 @@ under the License.
             <parameter name="webhookId" required="true"/>
         </in-parameters>
         <actions>
-            <entity-find entity-name="moqui.basic.Enumeration" list="enums">
+            <entity-find entity-name="moqui.basic.Enumeration" list="enums" cache="true">
                 <econdition field-name="enumCode" operator="equals" from="webhookTopic"/>
             </entity-find>
 
