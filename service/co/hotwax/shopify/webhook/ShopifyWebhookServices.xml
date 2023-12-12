@@ -185,7 +185,7 @@ under the License.
         </actions>
     </service>
 
-    <service verb="produce" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
+    <service verb="queue" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
         <description>
             Service to initiate webhook subscription of a specific type by creating a system message.
         </description>
@@ -229,7 +229,7 @@ under the License.
             <set field="remoteMessageId" from="webhookSubscriptionId"/>
         </actions>
     </service>
-    <service verb="produce" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
+    <service verb="queue" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
         <description>
             Service to initiate delete webhook subscription of a specific type by creating a system message.
         </description>

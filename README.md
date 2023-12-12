@@ -460,9 +460,9 @@ Folliowing configuration is added to MoquiConf.xml,
 3. **delete#WebhookSubscription**: Unsubscribe a specific webhook topic.
 4. **verify#Hmac**: Verify hmac for the received webhook payload.
 5. **receive#WebhookPayload**: Receive webhook payload in an incoming SystemMessage of the webhook topics SystemMessageType.
-6. **produce#WebhookSubscriptionSystemMessage**: Service to initiate webhook subscription of a specific type by creating a system message.
+6. **queue#WebhookSubscriptionSystemMessage**: Service to initiate webhook subscription of a specific type by creating a system message.
 7. **send#WebhookSubscriptionSystemMessage**: Send service to invoke Create Webhook Subscription API for the System Message.
-8. **produce#WebhookSubscriptionDeleteSystemMessage**: Service to initiate delete webhook subscription of a specific type by creating a system message.
+8. **queue#WebhookSubscriptionDeleteSystemMessage**: Service to initiate delete webhook subscription of a specific type by creating a system message.
 9. **send#WebhookSubscriptionDeleteSystemMessage**: Send service to invoke Delete Webhook Subscription API for the System Message. This service first get the webhookSubscriptionId for specified webhook topic and registered callbackUrl and the invokes Delete Webhook Subscription API for the webhookSubscriptionId.
 
 ### Subscribing a Webhook Topic
@@ -494,7 +494,7 @@ Folliowing configuration is added to MoquiConf.xml,
     <moqui.basic.Enumeration description="" enumId="[systemMessageTypeId of webhook]"
             enumTypeId="ShopifyMessageTypeEnum" enumCode="[Shopify Webhook Topic]"/> (https://shopify.dev/docs/api/admin-rest/2023-10/resources/webhook#event-topics)
     ```
-4. To subscribe to the webhook invoke _produce#WebhookSubscriptionSystemMessage_ service.
+4. To subscribe to the webhook invoke _queue#WebhookSubscriptionSystemMessage_ service.
 
 ### Unsubscribing a Webhook Topic
 
@@ -508,7 +508,7 @@ Folliowing configuration is added to MoquiConf.xml,
         <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
     ```
-2. To unsubscribe webhook invoke _produce#WebhookSubscriptionDeleteSystemMessage_ service.
+2. To unsubscribe webhook invoke _queue#WebhookSubscriptionDeleteSystemMessage_ service.
 
 ### Supported Shopify Webhooks
 
