@@ -50,19 +50,9 @@ under the License.
                         node {
                             id
                             name
-                            confirmed
-                            createdAt
-                            updatedAt
-                            cancelledAt
-                            closed
-                            closedAt
-                            processedAt
-                            subtotalLineItemsQuantity
-                            totalPriceSet {
-                                presentmentMoney {
-                                    amount
-                                    currencyCode
-                                }
+                            customAttributes {
+                                key
+                                value
                             }
                         }
                     }
