@@ -432,38 +432,38 @@ You could configure following default parameters and any additional parameters a
 
 ```aidl
 <!-- SystemMessageType record for bulk order custom attributes query to Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderCustomAttributesQuery"
-            description="Bulk Order Custom Attributes Query System Message"
-            parentTypeId="ShopifyBulkQuery"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="component://shopify-connector/template/graphQL/BulkOrderCustomAttributesQuery.ftl"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/BulkOrderCustomAttributesQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
-    </moqui.service.message.SystemMessageType>
+<moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderCustomAttributesQuery"
+        description="Bulk Order Custom Attributes Query System Message"
+        parentTypeId="ShopifyBulkQuery"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/BulkOrderCustomAttributesQuery.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+        receivePath="${contentRoot}/shopify/BulkOrderCustomAttributesQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
-    <!-- SystemMessageType record for sending bulk order custom attributes query result to SFTP -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderCustomAttributesQueryResult"
-            description="Send Bulk Order Custom Attributes Query Result"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""/>
+<!-- SystemMessageType record for sending bulk order custom attributes query result to SFTP -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderCustomAttributesQueryResult"
+        description="Send Bulk Order Custom Attributes Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
-    <!-- Enumeration to create relation between BulkOrderCustomAttributesQuery and SendBulkOrderCustomAttributesQueryResult SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendBulkOrderCustomAttributesQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Bulk Order Custom Attributes Query" enumId="BulkOrderCustomAttributesQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderCustomAttributesQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+<!-- Enumeration to create relation between BulkOrderCustomAttributesQuery and SendBulkOrderCustomAttributesQueryResult SystemMessageType(s) -->
+<moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendBulkOrderCustomAttributesQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Order Custom Attributes Query" enumId="BulkOrderCustomAttributesQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderCustomAttributesQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     
-    <!-- ServiceJob data for queuing bulk order custom attributes query -->
-    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderCustomAttributesQuery" description="Queue bulk order custom attributes query"
-            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderCustomAttributesQuery"/>
-        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-        <parameters parameterName="filterQuery" parameterValue=""/>
-        <parameters parameterName="fromDate" parameterValue=""/>
-        <parameters parameterName="thruDate" parameterValue=""/>
-        <parameters parameterName="fromDateLabel" parameterValue=""/>
-        <parameters parameterName="thruDateLabel" parameterValue=""/>
-    </moqui.service.job.ServiceJob>
+<!-- ServiceJob data for queuing bulk order custom attributes query -->
+<moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderCustomAttributesQuery" description="Queue bulk order custom attributes query"
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderCustomAttributesQuery"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="filterQuery" parameterValue=""/>
+    <parameters parameterName="fromDate" parameterValue=""/>
+    <parameters parameterName="thruDate" parameterValue=""/>
+    <parameters parameterName="fromDateLabel" parameterValue=""/>
+    <parameters parameterName="thruDateLabel" parameterValue=""/>
+</moqui.service.job.ServiceJob>
 ```
 
 ## Shopify Webhook Integration
@@ -566,4 +566,52 @@ Folliowing configuration is added to MoquiConf.xml,
 <!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
 <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
         enumTypeId="ShopifyMessageTypeEnum" enumCode="bulk_operations/finish"/>
+```
+
+## Shopify Refund/Return API Integration
+
+Set of services and configurations to integrate with Shopify GraphQL Refund/Return API.
+
+### Core Services
+1. **get#ReturnLineItemsByRefund**: Integrates with Shopify GraphQL Refund API to return a list of return line items.
+2. **get#RefundLineItems**: Integrates with Shopify GraphQL Refund API to get associated refund line items.
+
+### Supported flows
+
+#### Get return reason for synced refunds
+
+This flow aims to fetch the return reasons associated to return line items for a refund.  
+It polls an SFTP server to read a json file containing list of Shopify refundIds. For this list it fetches return reasons for each refund and pushes the return reason json feed to SFTP.  
+Related configurations,
+
+```aidl
+<!-- SystemMessageType record for importing OMS Synced Refunds Feed -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed"
+        description="Create OMS Synced Refunds Feed System Message"
+        parentTypeId="LocalFeedFile"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#SyncedRefundsFeed"
+        receivePath=""
+        receiveResponseEnumId="MsgRrMove"
+        receiveMovePath=""
+        sendPath="${contentRoot}/shopify/SyncedRefundsFeed"/>
+
+<!-- SystemMessageType record for sending Shopify Return Reason Feed (sendPath = sftp directory) -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed"
+        description="Send Shopify Return Reason Feed"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""
+        receivePath="${contentRoot}/shopify/ShopifyReturnReasonFeed/ShopifyReturnReasonFeed-${dateTime}.json"/>
+
+<!-- Enumeration to create relation between OMSSyncedRefundsFeed and SendShopifyReturnReasonFeed SystemMessageType(s) -->
+<moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendShopifyReturnReasonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Bulk Order Custom Attributes Query" enumId="OMSSyncedRefundsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+<!-- ServiceJob data for polling OMS Synced Refunds Feed -->
+<moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSSyncedRefundsFeed" description="Poll OMS Synced Refunds Feed"
+        serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="OMSSyncedRefundsFeed"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="consumeSmrId" parameterValue=""/>
+</moqui.service.job.ServiceJob>
 ```
