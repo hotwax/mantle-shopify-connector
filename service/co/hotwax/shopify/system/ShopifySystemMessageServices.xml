@@ -405,12 +405,6 @@ under the License.
             <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
             <set field="refunds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
 
-            <!-- NOTE: With change in poll#SystemMessageFileSftp service, the messageText will hold the file path
-                instead of the file content, so removed null check on fileText, instead we need to check the
-                expected shipments data being read from the filePath.
-                If no shipments, one scenario is transformation in NiFi generating file with null value as no
-                valid shipments data, or it may be due to some other unexpected JSON generated to be consumed,
-                then the file can be checked further for any possible issue. -->
             <if condition="!refunds">
                 <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file."/>
             </if>
@@ -430,7 +424,7 @@ under the License.
             </entity-find-one>
             <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
 
-            <!-- Prepare Shopify Fulfillment Ack Feed File Path -->
+            <!-- Prepare Shopify Return Reason Feed File Path -->
             <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
