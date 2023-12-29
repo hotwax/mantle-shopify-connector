@@ -19,7 +19,7 @@ under the License.
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
     <service verb="send" noun="ShopifyRequest" authenticate="anonymous-all">
         <description>
-            This is a generic service which will be used to make all types of Shopify API calls.
+            This is a generic service which will be used to make all types of Shopify REST API calls.
         </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
@@ -153,7 +153,7 @@ under the License.
     </service>
     <service verb="send" noun="ShopifyGraphqlRequest" authenticate="anonymous-all">
         <description>
-            This is a generic service which will be used to make all types of Shopify API calls.
+            This is a generic service which will be used to make all types of Shopify GraphQL API calls.
         </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
