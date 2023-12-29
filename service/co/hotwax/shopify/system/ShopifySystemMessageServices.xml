@@ -392,4 +392,90 @@ under the License.
                           in-map="[systemMessageId:bulkOperationList[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
         </actions>
     </service>
+    <service verb="consume" noun="SyncedRefundsFeed" authenticate="anonymous-all">
+        <description>
+            Consume Synced Refunds Feed JSON System Message, get return reasons from shopify for each refund and send return reason feed to SFTP.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="refunds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!refunds">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file."/>
+            </if>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="!enumValue || !enumValue.relatedEnumId">
+                <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
+            </if>
+
+            <!-- Fetch the receivePath from SystemMessageType to prepare the path for creating the file in the receiving system. Ex: Moqui's datamanager directory in runtime for creating feeds.-->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+            </entity-find-one>
+            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
+
+            <!-- Prepare Shopify Return Reason Feed File Path -->
+            <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                //json file
+                File feedFile = new File(jsonFilePath)
+                if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                JsonFactory jfactory = new JsonFactory()
+
+                /* Declaring the PrintWriter and JsonGenerator resources in the the try statement,
+                so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="refunds" entry="refund">
+                <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnLineItemsByRefund" in-map="[systemMessageRemoteId:systemMessage.consumeSmrId, refundId:refund.refundId]"
+                              out-map="context" ignore-error="true" transaction="force-new"/>
+
+                <if condition="refundDetail">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, refundDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Shopify Return Reason Feed file", e)
+                }
+            </script>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId,
+                                   messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                          out-map="sendReturnReasonFeedOut" ignore-error="true" transaction="force-new"/>
+        </actions>
+    </service>
 </services>

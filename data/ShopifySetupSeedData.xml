@@ -224,10 +224,10 @@ under the License.
 
     <!-- SystemMessageType record for sending bulk order custom attributes query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderCustomAttributesQueryResult"
-                                             description="Send Bulk Order Custom Attributes Query Result"
-                                             parentTypeId="LocalFeedFile"
-                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+            description="Send Bulk Order Custom Attributes Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
     <!-- Enumeration to create relation between BulkOrderCustomAttributesQuery and SendBulkOrderCustomAttributesQueryResult SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendBulkOrderCustomAttributesQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -264,5 +264,27 @@ under the License.
     <!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
     <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
             enumTypeId="ShopifyMessageTypeEnum" enumCode="bulk_operations/finish"/>
+
+    <!-- SystemMessageType record for importing OMS Synced Refunds Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed"
+            description="Create OMS Synced Refunds Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#SyncedRefundsFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath="${contentRoot}/shopify/SyncedRefundsFeed"/>
+
+    <!-- SystemMessageType record for sending Shopify Return Reason Feed (sendPath = sftp directory) -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed"
+            description="Send Shopify Return Reason Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""
+            receivePath="${contentRoot}/shopify/ShopifyReturnReasonFeed/ShopifyReturnReasonFeed-${dateTime}.json"/>
+
+    <!-- Enumeration to create relation between OMSSyncedRefundsFeed and SendShopifyReturnReasonFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendShopifyReturnReasonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Custom Attributes Query" enumId="OMSSyncedRefundsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 </entity-facade-xml>
