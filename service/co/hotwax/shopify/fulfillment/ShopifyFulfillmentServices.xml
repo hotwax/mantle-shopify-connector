@@ -49,13 +49,14 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
-            <parameter name="trackingNumber"/>
-            <parameter name="trackingUrl"/>
-            <parameter name="carrier"/>
             <parameter name="lineItems" required="true" type="List">
                 <parameter name="shopifyLineItemId" required="true"/>
                 <parameter name="quantity" required="true"/>
             </parameter>
+            <parameter name="trackingNumber"/>
+            <parameter name="trackingUrl"/>
+            <parameter name="carrier"/>
+            <parameter name="notifyCustomer" type="Boolean" default-value="false"/>
         </in-parameters>
         <out-parameters>
             <parameter name="shopifyFulfillmentId"/>
@@ -97,7 +98,7 @@ under the License.
                 <script>lineItemsByFulfillmentOrder.add(["fulfillment_order_id": fulfillmentOrderId, "fulfillment_order_line_items": lineItems])</script>
             </iterate>
 
-            <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'tracking_info':['number': trackingNumber, 'company': carrier, 'url': trackingUrl]]]"/>
+            <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'notify_customer':notifyCustomer, 'tracking_info':['number': trackingNumber, 'company': carrier, 'url': trackingUrl]]]"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'fulfillments.json',
                         requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="createFulfillmentResponse"/>
 
