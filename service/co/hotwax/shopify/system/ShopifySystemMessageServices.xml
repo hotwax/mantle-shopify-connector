@@ -71,6 +71,7 @@ under the License.
             <set field="fulfillmentContext.trackingNumber" from="shipment.trackingNumber"/>
             <set field="fulfillmentContext.trackingUrl" from="shipment.trackingUrl"/>
             <set field="fulfillmentContext.carrier" from="shipment.carrierPartyId"/>
+            <set field="fulfillmentContext.notifyCustomer" from="shipment.notifyCustomer"/>
             <set field="fulfillmentContext.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
 
