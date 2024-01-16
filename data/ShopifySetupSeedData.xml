@@ -57,7 +57,9 @@ under the License.
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"/>
+            sendPath="${contentRoot}/shopify/OMSFulfillmentFeed">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck"
@@ -273,7 +275,9 @@ under the License.
             receivePath=""
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
-            sendPath="${contentRoot}/shopify/SyncedRefundsFeed"/>
+            sendPath="${contentRoot}/shopify/SyncedRefundsFeed">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for sending Shopify Return Reason Feed (sendPath = sftp directory) -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed"
@@ -284,7 +288,7 @@ under the License.
             receivePath="${contentRoot}/shopify/ShopifyReturnReasonFeed/ShopifyReturnReasonFeed-${dateTime}.json"/>
 
     <!-- Enumeration to create relation between OMSSyncedRefundsFeed and SendShopifyReturnReasonFeed SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendShopifyReturnReasonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Bulk Order Custom Attributes Query" enumId="OMSSyncedRefundsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Shopify Return Reason Feed" enumId="SendShopifyReturnReasonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="OMS Synced Refunds Feed" enumId="OMSSyncedRefundsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 </entity-facade-xml>

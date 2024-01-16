@@ -50,28 +50,29 @@ Make sure to setup following configuration data with respect to your environment
 <!-- Note: By default the sendPath local directory structure is created in runtime://datamanager directory. 
      For using any other directory update the value of mantle.content.root preferenceKey -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed"
-                                         description="Create OMS Fulfillment Feed System Message"
-                                         parentTypeId="LocalFeedFile"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
-                                         receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" 
-                                         receiveFilePattern=".*Fulfillment.*\.json"
-                                         receiveResponseEnumId="MsgRrMove" 
-                                         receiveMovePath=""
-                                         sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed"/>
+        description="Create OMS Fulfillment Feed System Message"
+        parentTypeId="LocalFeedFile"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
+        receivePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems" 
+        receiveFilePattern=".*Fulfillment.*\.json"
+        receiveResponseEnumId="MsgRrMove" 
+        receiveMovePath=""
+        sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed">
+    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
-                                         parentTypeId="LocalFeedFile"
-                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""
-                                         receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""
+        receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
 
 <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
                               serviceName="org.moqui.sftp.SftpMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="OMSFulfillmentFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-    <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 
 <!-- ServiceJob data to send Shopify Fulfillment Ack Feed -->
@@ -593,7 +594,9 @@ Related configurations,
         receivePath=""
         receiveResponseEnumId="MsgRrMove"
         receiveMovePath=""
-        sendPath="${contentRoot}/shopify/SyncedRefundsFeed"/>
+        sendPath="${contentRoot}/shopify/SyncedRefundsFeed">
+    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending Shopify Return Reason Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed"
@@ -612,6 +615,5 @@ Related configurations,
         serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="OMSSyncedRefundsFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-    <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```
