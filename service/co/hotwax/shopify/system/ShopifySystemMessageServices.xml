@@ -302,48 +302,26 @@ under the License.
             <parameter name="thruDateLabel"/>
         </in-parameters>
         <actions>
-            <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate, fromDateLabel:fromDateLabel, thruDateLabel:thruDateLabel]"/>
-            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(paramMap)"/>
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, consumeSmrId:consumeSmrId, sendNow:false]"
-                          out-map="context"/>
-        </actions>
-    </service>
-    <service verb="send" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
-        <description>
-            Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
-        </description>
-        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
-        <actions>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
-                <field-map field-name="systemMessageId"/>
-            </entity-find-one>
-
-            <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
-
             <set field="queryParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
-                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
-                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
+                <econdition field-name="parameterName" operator="in" value="filterQuery,fromDateBuffer,thruDateBuffer"/>
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
             </entity-find>
             <if condition="additionalParameters">
                 <iterate list="additionalParameters" entry="paramMap">
                     <script>queryParams.put(paramMap.parameterName, paramMap.parameterValue)</script>
                 </iterate>
             </if>
-            <set field="systemMessageParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-            <if condition="systemMessageParams.filterQuery">
-                <set field="queryParams.filterQuery" from="systemMessageParams.filterQuery"/>
+            <if condition="filterQuery">
+                <set field="queryParams.filterQuery" from="filterQuery"/>
             </if>
             <if condition="queryParams.filterQuery">
                 <set field="queryParams.filterQuery" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryParams.filterQuery)"/>
             </if>
-            <if condition="systemMessageParams.fromDate">
-                <set field="fromDate" from="systemMessageParams.fromDate"/>
-            </if>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
-                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
+                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
                     <econdition field-name="statusId" operator="equals" value="SmsgConfirmed"/>
                     <order-by field-name="-processedDate"/>
                 </entity-find>
@@ -358,23 +336,40 @@ under the License.
                 </if>
                 <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
             </if>
-            <if condition="systemMessageParams.thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(systemMessageParams.thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+            <if condition="thruDate">
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <if condition="queryParams.thruDateBuffer">
                     <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
                 </if>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
-            <if condition="systemMessageParams.fromDateLabel">
-                <set field="queryParams.fromDateLabel" from="systemMessageParams.fromDateLabel"/>
+            <if condition="fromDateLabel">
+                <set field="queryParams.fromDateLabel" from="fromDateLabel"/>
             </if>
-            <if condition="systemMessageParams.thruDateLabel">
-                <set field="queryParams.thruDateLabel" from="systemMessageParams.thruDateLabel"/>
+            <if condition="thruDateLabel">
+                <set field="queryParams.thruDateLabel" from="thruDateLabel"/>
             </if>
-            <set field="requestBody.queryParams" from="queryParams"/>
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:false]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="bulkQueryContext" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
+            <set field="bulkQueryContext.queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationQuery"
-                          in-map="requestBody" out-map="context"/>
+                          in-map="bulkQueryContext" out-map="context"/>
 
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>
