@@ -19,7 +19,7 @@ under the License.
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
     <service verb="send" noun="ShopifyRequest" authenticate="anonymous-all">
         <description>
-            This is a generic service which will be used to make all types of Shopify API calls.
+            This is a generic service which will be used to make all types of Shopify REST API calls.
         </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
@@ -148,6 +148,91 @@ under the License.
                         </if>
                     </if>
                 </iterate>
+            </if>
+        </actions>
+    </service>
+    <service verb="send" noun="ShopifyGraphqlRequest" authenticate="anonymous-all">
+        <description>
+            This is a generic service which will be used to make all types of Shopify GraphQL API calls.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queryText" required="true"/>
+            <parameter name="variables" type="Map"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="statusCode" type="Integer" required="true"/>
+            <parameter name="response" type="Map"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
+            <if condition="systemMessageRemote == null"><return error="true" message="Could not find SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
+            <if condition="systemMessageRemote.sendUrl == null"><return error="true" message="Could not find SystemMessageRemote.sendUrl in SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
+            <if condition="!(systemMessageRemote.password || systemMessageRemote.sharedSecret || systemMessageRemote.sendSharedSecret)"><return error="true" message="Credentials are missing in SystemMessageRemote data with ID ${systemMessageRemoteId}"/></if>
+
+            <!-- Check for access scope, this is to avoid issues while initial setup -->
+            <!-- If no accessScopeEnumId is set, default will be Read Access for Shopify Shop -->
+            <set field="accessScopeEnumId" value="SHOP_READ_ACCESS"/>
+            <entity-find-related-one value-field="systemMessageRemote" relationship-name="access" to-value-field="accessScopeEnum" cache="true"/>
+
+            <if condition="accessScopeEnum &amp;&amp; 'ShopifyShopAccessScope'.equals(accessScopeEnum?.enumTypeId)">
+                <set field="accessScopeEnumId" from="accessScopeEnum.enumId"/>
+            </if>
+            <if condition="'SHOP_NO_ACCESS'.equals(accessScopeEnumId)">
+                <return error="true" message="No Access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
+            </if>
+            <if condition="queryText.startsWith('mutation') &amp;&amp; 'SHOP_READ_ACCESS'.equals(accessScopeEnumId)">
+                <return error="true" message="Cannot call ${endPoint?:url} with request type, ${requestType}. Only Read Access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
+            </if>
+
+            <set field="sendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
+            <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>
+            <log level="info" message="shopifyUrl: ${shopifyUrl}"/>
+
+            <script><![CDATA[
+                import org.moqui.util.RestClient
+
+                shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
+                ec.logger.info("shopifyUrl: " + shopifyUrl)
+                // Prepare RestClient and call Shopify API
+                RestClient restClient = ec.service.rest()
+                restClient.timeoutRetry(true);
+                restClient.retry(2, 4);
+                restClient.method("POST")
+                restClient.uri(shopifyUrl)
+
+                //Check for basic auth, in case of private app system should use basic auth
+                if (systemMessageRemote.username && systemMessageRemote.password && !systemMessageRemote.authHeaderName) {
+                    restClient.basicAuth(systemMessageRemote.username, systemMessageRemote.password);
+                } else if (systemMessageRemote.sharedSecret) {
+                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sharedSecret);
+                } else {
+                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.password);
+                }
+                restClient.contentType("application/json")
+
+                restClient.jsonObject([query:queryText, variables:variables])
+                try {
+                    RestClient.RestResponse restResponse = restClient.call()
+                    gqlResponse = restResponse.jsonObject()
+                    statusCode = restResponse.getStatusCode()
+
+                    if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
+                        ec.logger.warn("Unsuccessful with status code: ${statusCode} and response: ${response}")
+                    }
+                } catch (Exception e) {
+                    ec.logger.error("Error in API call Error: ${e.getMessage()}")
+                }
+            ]]></script>
+
+            <if condition="gqlResponse.errors">
+                <return error="true" message="${gqlResponse.errors}"/>
+            </if>
+            <set field="response" from="gqlResponse.data"/>
+            <if condition="gqlResponse.extensions &amp;&amp; gqlResponse.extensions.cost">
+                <log level="info" message="GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
+                <log level="info" message="GraphQL query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
+                <log level="info" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
             </if>
         </actions>
     </service>

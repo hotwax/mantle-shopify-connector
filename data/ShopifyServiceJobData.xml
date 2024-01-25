@@ -29,7 +29,6 @@ under the License.
             serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="OMSFulfillmentFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-        <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data to send Shopify Fulfillment Ack Feed -->
@@ -104,5 +103,48 @@ under the License.
         <parameters parameterName="filterQuery" parameterValue=""/>
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk order headers query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderHeadersQuery" description="Queue bulk order headers query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderHeadersQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk updated order items query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderItemsQuery" description="Queue bulk order items query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderItemsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk order custom attributes query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderCustomAttributesQuery" description="Queue bulk order custom attributes query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderCustomAttributesQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling OMS Synced Refunds Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSSyncedRefundsFeed" description="Poll OMS Synced Refunds Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="OMSSyncedRefundsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 </entity-facade-xml>

@@ -174,7 +174,7 @@ under the License.
                         requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="bulkOperationResult"/>
 
             <if condition="bulkOperationResult.response.errors">
-                <return error="true" message="${stagedUploadsCreateResponse.response.errors}"/>
+                <return error="true" message="${bulkOperationResult.response.errors}"/>
             </if>
 
             <set field="response" from="bulkOperationResult.response.data.node"/>
