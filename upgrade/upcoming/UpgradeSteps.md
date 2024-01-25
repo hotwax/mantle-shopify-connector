@@ -6,7 +6,7 @@
     4. Check the Nifi flows if configured.
 
 ### Poll OMS Fulfillment Feed
-1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{store_id & shop_id}.
+1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{BrandName}.
 2. Delete the parameter consumeSmrId from the poll oms fulfillment jobs scheduled for brands.
    - SQL query to delete the parameter from the poll oms fulfillment jobs, both the template job and the scheduled jobs.
    - Sample SQL Query
