@@ -25,7 +25,7 @@
    - Sample data
    - NOTE check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
    ```xml
-      <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed_{SHOPID_STOREID}"
+      <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed_{shopId_storeId}"
             description="Create OMS Fulfillment Feed System Message"
             parentTypeId="LocalFeedFile"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
@@ -51,7 +51,7 @@
         2. Check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
            - Sample data
            ```xml
-              <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed_{shopId}"
+              <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed_{shopId_storeId}"
                     description="Create OMS Synced Refunds Feed System Message"
                     parentTypeId="LocalFeedFile"
                     consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#SyncedRefundsFeed"
@@ -67,7 +67,7 @@
        2. Update value for field receivePath in the SystemMessageType to create filename particular for a store_id and/or shop_id.
            - Sample data
            ```xml
-              <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed_{shopId}"
+              <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed_{shopId_storeId}"
                     description="Send Shopify Return Reason Feed"
                     parentTypeId="LocalFeedFile"
                     sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
@@ -77,11 +77,11 @@
            ```
 
     3. Enumeration 
-        1. Add enumeration data for SystemMessageTypes OMSSyncedRefundsFeed_{shopId} and SendShopifyReturnReasonFeed_{shopId} and link both enumerations using relatedEnumId.
+        1. Add enumeration data for SystemMessageTypes OMSSyncedRefundsFeed_{shopId_storeId} and SendShopifyReturnReasonFeed_{shopId_storeId} and link both enumerations using relatedEnumId.
            - Sample data
            ```xml
-              <moqui.basic.Enumeration description="Send Shopify Return Reason Feed for {store_id and/or shop_id}" enumId="SendShopifyReturnReasonFeed_{shopId}" enumTypeId="ShopifyMessageTypeEnum"/>
-              <moqui.basic.Enumeration description="OMS Synced Refunds Feed for {store_id and/or shop_id}" enumId="OMSSyncedRefundsFeed_{shop_id}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed_{shopId}" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+              <moqui.basic.Enumeration description="Send Shopify Return Reason Feed for {store_id and/or shop_id}" enumId="SendShopifyReturnReasonFeed_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum"/>
+              <moqui.basic.Enumeration description="OMS Synced Refunds Feed for {store_id and/or shop_id}" enumId="OMSSyncedRefundsFeed_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed_{shopId_storeId}" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
            ```
 
     4. Service Job 
