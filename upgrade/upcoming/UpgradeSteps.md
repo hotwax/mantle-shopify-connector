@@ -50,6 +50,7 @@
         1. Add shop specific SystemMessageType data taking reference from the template OMSSyncedRefundsFeed SystemMessageType.
         2. Check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
            - Sample data
+           - NOTE add the value for parameterValue and systemMessageRemoteId as per new setup.
            ```xml
               <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed_{shopId_storeId}"
                     description="Create OMS Synced Refunds Feed System Message"
@@ -60,6 +61,7 @@
                     receiveMovePath="/home/${sftpUsername}/hotwax/shopify/SyncedRefundsFeed/archive"
                     sendPath="${contentRoot}/shopify/SyncedRefundsFeed"
                     receiveFilePattern=".*{shop_id/store_id}.*.json">
+                <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
               </moqui.service.message.SystemMessageType>
            ```
    2. SystemMessageType for SendShopifyReturnReasonFeed
