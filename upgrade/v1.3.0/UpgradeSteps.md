@@ -39,7 +39,7 @@
    ```
    
 ### Poll OMS Synced Refunds Feed
-1.Remove the parameter consumeSmrId from the the template poll_SystemMessageFileSftp_OMSSyncedRefundsFeed job.
+1. Remove the parameter consumeSmrId from the the template poll_SystemMessageFileSftp_OMSSyncedRefundsFeed job.
     1. Use the below SQL query to delete the parameter from the template job or remove it from the webtools UI.
     ```sql
       delete from service_job_paramter where job_name = 'poll_SystemMessageFileSftp_OMSSyncedRefundsFeed' and parameter_name = 'consumeSmrId';
