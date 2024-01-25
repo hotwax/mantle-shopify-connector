@@ -1,33 +1,31 @@
-## Upgrade Steps
-1. Generic Steps for Upgrade data
-    1. Pause the Service Jobs scheduled for the feeds if required for the upgrade.
-    2. Update the instance with the data load command to load the upgrade data only.
-    3. Follow the client specific manual if any.
-    4. Check the Nifi flows if configured.
+1. Update the instance with the data load command to load the upgrade data only.
+2. Follow the "Upgrade Steps" added below.
+3. Follow the client specific manual if any.
+4. Check the transformations and Nifi flows if configured and requires an update.
 
+## Upgrade Steps
 ### Poll OMS Fulfillment Feed
-1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{BrandName}.
-2. Delete the parameter consumeSmrId from the poll oms fulfillment jobs scheduled for brands.
-   - SQL query to delete the parameter from the poll oms fulfillment jobs, both the template job and the scheduled jobs.
-   - Sample SQL Query
+1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{brand/shop}.
+2. Remove the parameter consumeSmrId from the the template job.
+    1. Use the below SQL query to delete the parameter from the template job or remove it from the webtools UI.
     ```sql
        delete from service_job_paramter where job_name = 'poll_SystemMessageFileSftp_OMSFulfillmentFeed' 
-           and parameter_name = 'consumeSmrId'
+           and parameter_name = 'consumeSmrId';
     ```
-
-3. The System Message Parameter data for OMSFulfillmentFeed SystemMessageType will be loaded as part of upgrade data.
-4. System Message Parameter needs to be added manually.
+3. Remove this parameter from all client specific feed Service Jobs created from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed Service Job. Use the above SQL by updating the job_name of client specific jobs.
+4. The new SystemMessageTypeParameter for OMSFulfillmentFeed SystemMessageType will be loaded as part of upgrade data.
+5. Add this parameter to all the System Message Types set up for client specific Service Jobs created from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed Service Job.
    - Sample data
+   - NOTE Update for the required systemMessageTypeId by adding values for parameterValue and systemMessageRemoteId fields.
     ```xml
    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OMSFulfillmentFeed" 
-          parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
-   ```
-
-   NOTE: If feeds are set according to store and shop specific to client then we need to create new data for SystemMessageTypes.
-5. Add the SystemMessageType OMSFulfillmentFeed_{store_id & shop_id} from the template of OMSFulfillmentFeed SystemMessageType.
+          parameterName="consumeSmrId" parameterValue="SHOP_CONFIG" systemMessageRemoteId="RemoteSftp"/>
+   ```   
+7. If the new instance requires the Poll OMS FUlfillment Feed Jobs to be set up per shop, then add the data for the SystemMessageType of the pattern OMSFulfillmentFeed_{shopId_productStoreId} taking reference from the template of OMSFulfillmentFeed SystemMessageType.
    - Sample data
+   - NOTE check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
    ```xml
-      <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed_{store_id & shop_id}"
+      <moqui.service.message.SystemMessageType systemMessageTypeId="OMSFulfillmentFeed_{SHOPID_STOREID}"
             description="Create OMS Fulfillment Feed System Message"
             parentTypeId="LocalFeedFile"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#FulfillmentFeed"
@@ -35,55 +33,56 @@
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath="/home/${sftpUsername}/hotwax/shopify/FulfilledOrderItems/archive"
             sendPath="${contentRoot}/shopify/OMSFulfillmentFeed"
-            receiveFilePattern=".*{store_id & shop_id}.*.json">
+            receiveFilePattern=".*{shop_id/store_id}.*.json">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
    ```
    
 ### Poll OMS Synced Refunds Feed
-1. Delete the parameter consumeSmrId from the poll_SystemMessageFileSftp_OMSSyncedRefundsFeed template job.
-   - SQL query to delete the parameter from the poll_SystemMessageFileSftp_OMSSyncedRefundsFeed template job.
-   - Sample SQL Query
+1.Remove the parameter consumeSmrId from the the template poll_SystemMessageFileSftp_OMSSyncedRefundsFeed job.
+    1. Use the below SQL query to delete the parameter from the template job or remove it from the webtools UI.
     ```sql
-      delete from service_job_paramter where job_name = 'poll_SystemMessageFileSftp_OMSSyncedRefundsFeed' and parameter_name = 'consumeSmrId'
+      delete from service_job_paramter where job_name = 'poll_SystemMessageFileSftp_OMSSyncedRefundsFeed' and parameter_name = 'consumeSmrId';
     ```
+2. Remove this parameter from all client specific feed Service Jobs created from the template poll_SystemMessageFileSftp_OMSSyncedRefundsFeed Service Job. Use the above SQL by updating the job_name of client specific jobs.
+3. NOTE If the new instance requires the Poll OMS Synced Refund Jobs to be set up per shop, then create new data for SystemMessageType and Enumeration; also clone the template ServiceJob to create shop specific service jobs.
+    1. SystemMessageType for OMSSyncedRefundsFeed
+        1. Add shop specific SystemMessageType data taking reference from the template OMSSyncedRefundsFeed SystemMessageType.
+        2. Check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
+           - Sample data
+           ```xml
+              <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed_{shopId}"
+                    description="Create OMS Synced Refunds Feed System Message"
+                    parentTypeId="LocalFeedFile"
+                    consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#SyncedRefundsFeed"
+                    receivePath="/home/${sftpUsername}/hotwax/shopify/SyncedRefundsFeed"
+                    receiveResponseEnumId="MsgRrMove"
+                    receiveMovePath="/home/${sftpUsername}/hotwax/shopify/SyncedRefundsFeed/archive"
+                    sendPath="${contentRoot}/shopify/SyncedRefundsFeed"
+                    receiveFilePattern=".*{shop_id/store_id}.*.json">
+              </moqui.service.message.SystemMessageType>
+           ```
+   2. SystemMessageType for SendShopifyReturnReasonFeed
+       1. Add shop specific SystemMessageType data taking reference from the template SendShopifyReturnReasonFeed SystemMessageType.
+       2. Update value for field receivePath in the SystemMessageType to create filename particular for a store_id and/or shop_id.
+           - Sample data
+           ```xml
+              <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed_{shopId}"
+                    description="Send Shopify Return Reason Feed"
+                    parentTypeId="LocalFeedFile"
+                    sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                    sendPath="/home/${sftpUsername}/hotwax/shopify/ShopifyReturnReasonFeed/"
+                    receivePath="${contentRoot}/shopify/ShopifyReturnReasonFeed/{shopId_storeId}_ShopifyReturnReasonFeed-${dateTime}.json">
+              </moqui.service.message.SystemMessageType>
+           ```
 
-   NOTE: If feeds are set according to store and shop specific to client then we need to create new data for SystemMessageTypes, Enumeration data and service jobs. 
-2. Add the SystemMessageType OMSSyncedRefundsFeed_{store_id & shop_id} from the template of OMSSyncedRefundsFeed SystemMessageType.
-   - Add value for parameter receiveFilePattern in the SystemMessageType to receive only those particular to a store_id & shop_id.
-   - Sample data
-   ```xml
-      <moqui.service.message.SystemMessageType systemMessageTypeId="OMSSyncedRefundsFeed_{store_id & shop_id}"
-            description="Create OMS Synced Refunds Feed System Message for FAO CA_SHOP"
-            parentTypeId="LocalFeedFile"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#SyncedRefundsFeed"
-            receivePath="/home/${sftpUsername}/hotwax/shopify/SyncedRefundsFeed"
-            receiveResponseEnumId="MsgRrMove"
-            receiveMovePath="/home/${sftpUsername}/hotwax/shopify/SyncedRefundsFeed/archive"
-            sendPath="${contentRoot}/shopify/SyncedRefundsFeed"
-            receiveFilePattern=".*{store_id & shop_id}.*.json">
-      </moqui.service.message.SystemMessageType>
-   ```
+    3. Enumeration 
+        1. Add enumeration data for SystemMessageTypes OMSSyncedRefundsFeed_{shopId} and SendShopifyReturnReasonFeed_{shopId} and link both enumerations using relatedEnumId.
+           - Sample data
+           ```xml
+              <moqui.basic.Enumeration description="Send Shopify Return Reason Feed for {store_id and/or shop_id}" enumId="SendShopifyReturnReasonFeed_{shopId}" enumTypeId="ShopifyMessageTypeEnum"/>
+              <moqui.basic.Enumeration description="OMS Synced Refunds Feed for {store_id and/or shop_id}" enumId="OMSSyncedRefundsFeed_{shop_id}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed_{shopId}" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+           ```
 
-3. Add the SystemMessageType SendShopifyReturnReasonFeed_{store_id & shop_id} from the template of SendShopifyReturnReasonFeed SystemMessageType.
-   - Update value for parameter receivePath in the SystemMessageType to create filename particular of a store_id & shop_id.
-   - Sample data
-   ```xml
-      <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed{store_id & shop_id}"
-            description="Send Shopify Return Reason Feed for FAO CA_SHOP"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="/home/${sftpUsername}/hotwax/shopify/ShopifyReturnReasonFeed/"
-            receivePath="${contentRoot}/shopify/ShopifyReturnReasonFeed/{store_id & shop_id}_ShopifyReturnReasonFeed-${dateTime}.json">
-      </moqui.service.message.SystemMessageType>
-   ```
-
-4. Add enumeration data for SystemMessageTypes OMSSyncedRefundsFeed_{store_id & shop_id} and SendShopifyReturnReasonFeed_{store_id & shop_id}.
-   - Sample data
-   ```xml
-      <moqui.basic.Enumeration description="Send Shopify Return Reason Feed for {store_id & shop_id}" enumId="SendShopifyReturnReasonFeed_{store_id & shop_id}" enumTypeId="ShopifyMessageTypeEnum"/>
-      <moqui.basic.Enumeration description="OMS Synced Refunds Feed for {store_id & shop_id}" enumId="OMSSyncedRefundsFeed_{store_id & shop_id}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed_{store_id & shop_id}" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-   ```
-
-5. Add jobs poll_OMSSyncedRefundsFeed_{store_id & shop_id} as per the store_id & shop_id from the template job poll_SystemMessageFileSftp_OMSSyncedRefundsFeed. 
-   - Set its SystemMessageType as OMSSyncedRefundsFeed_{store_id & shop_id}.
+    4. Service Job 
+        1. Clone the poll_SystemMessageFileSftp_OMSSyncedRefundsFeed Job using the Client Specific Production manuals.
