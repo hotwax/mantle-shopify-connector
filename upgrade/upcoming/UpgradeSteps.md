@@ -6,7 +6,7 @@
     4. Check the Nifi flows if configured.
 
 ### Poll OMS Fulfillment Feed
-1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{store_id/shop_id}.
+1. Pause the jobs which are set up from the template poll_SystemMessageFileSftp_OMSFulfillmentFeed job eg. the jobs set up with job name pattern as  poll_OMSFulfillmentFeed_{store_id & shop_id}.
 2. Delete the parameter consumeSmrId from the poll oms fulfillment jobs scheduled for brands.
    - SQL query to delete the parameter from the poll oms fulfillment jobs, both the template job and the scheduled jobs.
    - Sample SQL Query
@@ -15,10 +15,10 @@
    ```
    
 3. The System Message Parameter data for OMSFulfillmentFeed SystemMessageType will be loaded as part of upgrade data.
-4. For brand specific system message types with the pattern name as OMSFulfillmentFeed_{{store_id/shop_id}}, data for System Message Parameter needs to be added manually.
+4. For brand specific system message types with the pattern name as OMSFulfillmentFeed_{store_id & shop_id}, data for System Message Parameter needs to be added manually.
    - Sample data
     ```xml
-   <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OMSFulfillmentFeed_STORE_A" parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+   <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OMSFulfillmentFeed_{store_id & shop_id}" parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
    ```
 
 ### Poll OMS Synced Refunds Feed
