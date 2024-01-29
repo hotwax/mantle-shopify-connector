@@ -110,13 +110,22 @@ under the License.
                 <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
             </if>
 
-            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:systemMessage.consumeSmrId, fileName:systemMessage.remoteMessageId]"
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}], not consuming"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:consumeSmrParam.parameterValue, fileName:systemMessage.remoteMessageId]"
                           out-map="context"/>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.upload#JsonlFileToShopify" in-map="[stagedUploadUrlMap:stagedUploadUrlMap, fileLocation:systemMessage.messageText, fileName:systemMessage.remoteMessageId]"
                           out-map="context"/>
 
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:systemMessage.consumeSmrId, messageText:stagedUploadPath, sendNow:false]"
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:consumeSmrParam.parameterValue, messageText:stagedUploadPath, sendNow:false]"
                           out-map="context"/>
         </actions>
     </service>
