@@ -157,28 +157,28 @@ Supported bulk mutations and configuration,
 ```aidl
 <!-- SystemMessageType record for importing Product Tags Feed -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="ProductTagsFeed"
-                                         description="Create Product Tags Feed System Message"
-                                         parentTypeId="LocalFeedFile"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                         sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
+        description="Create Product Tags Feed System Message"
+        parentTypeId="LocalFeedFile"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+        receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+        sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
 
 <!-- SystemMessageType record for updating product tags in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
-                                         parentTypeId="ShopifyBulkImport"
-                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-                                         sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        parentTypeId="ShopifyBulkImport"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+        receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
     <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
-                                         description="Send Bulk Update Product Tags Result"
-                                         parentTypeId="LocalFeedFile"
-                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""/>
+        description="Send Bulk Update Product Tags Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
 <moqui.basic.Enumeration description="Send Bulk Update Product Tags Result" enumId="SendBulkUpdateProductTagsResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -187,10 +187,9 @@ Supported bulk mutations and configuration,
 
 <!-- ServiceJob data for polling Product Tags Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductTagsFeed" description="Poll Product Tags Feed"
-                              serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+      serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="ProductTagsFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-    <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```
 
@@ -199,32 +198,32 @@ Supported bulk mutations and configuration,
 ```aidl
 <!-- SystemMessageType record for importing Product Varaints Feed -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="ProductVariantsFeed"
-                                         description="Create Product Variants Feed System Message"
-                                         parentTypeId="LocalFeedFile"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
-                                         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
-                                         sendPath="${contentRoot}/Shopify/ProductVariantsFeed"/>
+        description="Create Product Variants Feed System Message"
+        parentTypeId="LocalFeedFile"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+        receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
+        sendPath="${contentRoot}/Shopify/ProductVariantsFeed"/>
 
 <!-- SystemMessageType record for updating product variants in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"
-                                         parentTypeId="ShopifyBulkImport"
-                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-                                         sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        parentTypeId="ShopifyBulkImport"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+        receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
     <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
 
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkUpdateProductVariants"
-                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
+        parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- SystemMessageType record for sending bulk update product variants result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductVariantsResult"
-                                         description="Send Bulk Update Product Variants Result"
-                                         parentTypeId="LocalFeedFile"
-                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""/>
+        description="Send Bulk Update Product Variants Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
 <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkUpdateProductVariantsResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -233,11 +232,47 @@ Supported bulk mutations and configuration,
 
 <!-- ServiceJob data for polling Product Variants Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_ProductVariantsFeed" description="Poll Product Variants Feed"
-                              serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+      serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="ProductVariantsFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-    <parameters parameterName="consumeSmrId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
+```
+
+#### Gift Card Create
+
+```aidl
+<!-- SystemMessageType record for importing Gift Card Activation Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GiftCardActivationFeed"
+            description="Create Gift Card Activation Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath="${contentRoot}/shopify/GiftCardActivationFeed">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for creating/activating gift cards in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
+            description="Bulk Create Gift Cards System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkCreateGiftCards.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/GiftCardActivationFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GiftCardActivationFeed and BulkCreateGiftCards SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Gift Card Activation Feed" enumId="GiftCardActivationFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkCreateGiftCards" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for polling Product Variants Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_GiftCardActivationFeed" description="Poll Gift Card Activation Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GiftCardActivationFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 ```
 
 ### Configuration Data - Query
