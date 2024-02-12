@@ -39,9 +39,17 @@ under the License.
             <if condition="!shipments">
                 <message type="warning" error="true">System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file.</message>
             </if>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}]"/>
+            </if>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
-                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:systemMessage.consumeSmrId, messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:'CreateShopifyFulfillment', systemMessageRemoteId:consumeSmrParam.parameterValue, messageText:messageText, sendNow:true, orderId: shipment.orderId, mode: 'sync']"
                               out-map="context" ignore-error="true" transaction="force-new"/>
             </iterate>
         </actions>
@@ -71,6 +79,7 @@ under the License.
             <set field="fulfillmentContext.trackingNumber" from="shipment.trackingNumber"/>
             <set field="fulfillmentContext.trackingUrl" from="shipment.trackingUrl"/>
             <set field="fulfillmentContext.carrier" from="shipment.carrierPartyId"/>
+            <set field="fulfillmentContext.notifyCustomer" from="shipment.notifyCustomer"/>
             <set field="fulfillmentContext.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
 
@@ -101,13 +110,22 @@ under the License.
                 <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
             </if>
 
-            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:systemMessage.consumeSmrId, fileName:systemMessage.remoteMessageId]"
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}], not consuming"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:consumeSmrParam.parameterValue, fileName:systemMessage.remoteMessageId]"
                           out-map="context"/>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.upload#JsonlFileToShopify" in-map="[stagedUploadUrlMap:stagedUploadUrlMap, fileLocation:systemMessage.messageText, fileName:systemMessage.remoteMessageId]"
                           out-map="context"/>
 
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:systemMessage.consumeSmrId, messageText:stagedUploadPath, sendNow:false]"
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[systemMessageTypeId:enumValue.relatedEnumId, systemMessageRemoteId:consumeSmrParam.parameterValue, messageText:stagedUploadPath, sendNow:false]"
                           out-map="context"/>
         </actions>
     </service>
@@ -293,48 +311,26 @@ under the License.
             <parameter name="thruDateLabel"/>
         </in-parameters>
         <actions>
-            <set field="paramMap" from="[filterQuery:filterQuery, fromDate:fromDate, thruDate:thruDate, fromDateLabel:fromDateLabel, thruDateLabel:thruDateLabel]"/>
-            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(paramMap)"/>
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, consumeSmrId:consumeSmrId, sendNow:false]"
-                          out-map="context"/>
-        </actions>
-    </service>
-    <service verb="send" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
-        <description>
-            Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
-        </description>
-        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
-        <actions>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
-                <field-map field-name="systemMessageId"/>
-            </entity-find-one>
-
-            <set field="requestBody" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
-
             <set field="queryParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
-                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
-                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
+                <econdition field-name="parameterName" operator="in" value="filterQuery,fromDateBuffer,thruDateBuffer"/>
+                <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
             </entity-find>
             <if condition="additionalParameters">
                 <iterate list="additionalParameters" entry="paramMap">
                     <script>queryParams.put(paramMap.parameterName, paramMap.parameterValue)</script>
                 </iterate>
             </if>
-            <set field="systemMessageParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-            <if condition="systemMessageParams.filterQuery">
-                <set field="queryParams.filterQuery" from="systemMessageParams.filterQuery"/>
+            <if condition="filterQuery">
+                <set field="queryParams.filterQuery" from="filterQuery"/>
             </if>
             <if condition="queryParams.filterQuery">
                 <set field="queryParams.filterQuery" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryParams.filterQuery)"/>
             </if>
-            <if condition="systemMessageParams.fromDate">
-                <set field="fromDate" from="systemMessageParams.fromDate"/>
-            </if>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
-                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessage.systemMessageTypeId"/>
+                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
                     <econdition field-name="statusId" operator="equals" value="SmsgConfirmed"/>
                     <order-by field-name="-processedDate"/>
                 </entity-find>
@@ -349,23 +345,40 @@ under the License.
                 </if>
                 <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
             </if>
-            <if condition="systemMessageParams.thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(systemMessageParams.thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+            <if condition="thruDate">
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <if condition="queryParams.thruDateBuffer">
                     <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
                 </if>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
-            <if condition="systemMessageParams.fromDateLabel">
-                <set field="queryParams.fromDateLabel" from="systemMessageParams.fromDateLabel"/>
+            <if condition="fromDateLabel">
+                <set field="queryParams.fromDateLabel" from="fromDateLabel"/>
             </if>
-            <if condition="systemMessageParams.thruDateLabel">
-                <set field="queryParams.thruDateLabel" from="systemMessageParams.thruDateLabel"/>
+            <if condition="thruDateLabel">
+                <set field="queryParams.thruDateLabel" from="thruDateLabel"/>
             </if>
-            <set field="requestBody.queryParams" from="queryParams"/>
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:false]"
+                          out-map="context"/>
+        </actions>
+    </service>
+    <service verb="send" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Run Shopify Bulk Operation Query API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="bulkQueryContext" from="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryTemplateLocation:systemMessage.sendPath]"/>
+            <set field="bulkQueryContext.queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.run#BulkOperationQuery"
-                          in-map="requestBody" out-map="context"/>
+                          in-map="bulkQueryContext" out-map="context"/>
 
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>
@@ -390,6 +403,100 @@ under the License.
 
             <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
                           in-map="[systemMessageId:bulkOperationList[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
+        </actions>
+    </service>
+    <service verb="consume" noun="SyncedRefundsFeed" authenticate="anonymous-all">
+        <description>
+            Consume Synced Refunds Feed JSON System Message, get return reasons from shopify for each refund and send return reason feed to SFTP.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="refunds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!refunds">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file."/>
+            </if>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="!enumValue || !enumValue.relatedEnumId">
+                <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
+            </if>
+
+            <!-- Fetch the receivePath from SystemMessageType to prepare the path for creating the file in the receiving system. Ex: Moqui's datamanager directory in runtime for creating feeds.-->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+            </entity-find-one>
+            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}]"/>
+            </if>
+
+            <!-- Prepare Shopify Return Reason Feed File Path -->
+            <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                //json file
+                File feedFile = new File(jsonFilePath)
+                if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                JsonFactory jfactory = new JsonFactory()
+
+                /* Declaring the PrintWriter and JsonGenerator resources in the the try statement,
+                so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="refunds" entry="refund">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnLineItemsByRefund" in-map="[systemMessageRemoteId:consumeSmrParam.parameterValue, refundId:refund.refundId]"
+                              out-map="context" ignore-error="true" transaction="force-new"/>
+
+                <if condition="refundDetail">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, refundDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Shopify Return Reason Feed file", e)
+                }
+            </script>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId,
+                                   messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                          out-map="sendReturnReasonFeedOut" ignore-error="true" transaction="force-new"/>
         </actions>
     </service>
 </services>

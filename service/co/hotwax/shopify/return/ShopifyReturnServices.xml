@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="get" noun="RefundLineItems" authenticate="anonymous-all">
+        <description>Integrates with Shopify GraphQL Refund API to get associated refund line items.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="refundId" required="false"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="refundLineItems" type="List"/>
+        </out-parameters>
+        <actions>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="refundLineItems" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/RefundLineItemsQuery.ftl", sw)
+                    queryText = sw.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                    sw.close()
+                    } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundLineItemsResponse"/>
+                <if condition="refundLineItemsResponse.response.node.refundLineItems.edges">
+                    <script>refundLineItems.addAll(refundLineItemsResponse.response.node.refundLineItems.edges)</script>
+                </if>
+                <set field="hasNextPage" from="refundLineItemsResponse.response.node.refundLineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="refundLineItemsResponse.response.node.refundLineItems.pageInfo.endCursor"/>
+            </while>
+        </actions>
+    </service>
+
+    <service verb="get" noun="ReturnLineItemsByRefund" authenticate="anonymous-all">
+        <description>Integrates with Shopify GraphQL Refund API to return a list of return line items associated with.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="refundId" required="false"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="refundDetail" type="Map"/>
+        </out-parameters>
+        <actions>
+            <set field="refundDetail" from="[:]"/>
+            <set field="returnLineItems" from="[]"/>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/ReturnLineItemsByRefundQuery.ftl", sw)
+                    queryText = sw.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                    sw.close()
+                    } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemsResponse"/>
+                <if condition="!returnLineItemsResponse.response.node">
+                    <return message="No Shopify refund found for id: ${refundId}"/>
+                </if>
+                <if condition="!returnLineItemsResponse.response.node.return">
+                    <return message="No associated return found for Shopify refundId: ${refundId}"/>
+                </if>
+                <if condition="!refundDetail.shopifyRefundId">
+                    <set field="refundDetail.shopifyRefundId" from="returnLineItemsResponse.response.node.id"/>
+                </if>
+                <if condition="!refundDetail.shopifyOrderId">
+                    <set field="refundDetail.shopifyOrderId" from="returnLineItemsResponse.response.node.order.id"/>
+                </if>
+                <if condition="!refundDetail.shopifyReturnId">
+                    <set field="refundDetail.shopifyReturnId" from="returnLineItemsResponse.response.node.return.id"/>
+                </if>
+                <iterate list="returnLineItemsResponse.response.node.return.returnLineItems.edges" entry="returnLineItem">
+                    <set field="returnReasonMap" from="[:]"/>
+                    <set field="returnReasonMap.shopifyLineItemId" from="returnLineItem.node.fulfillmentLineItem.lineItem.id"/>
+                    <set field="returnReasonMap.returnReason" from="returnLineItem.node.returnReason"/>
+                    <set field="returnReasonMap.returnReasonNote" from="returnLineItem.node.returnReasonNote"/>
+                    <set field="returnReasonMap.customerNote" from="returnLineItem.node.customerNote"/>
+                    <script>returnLineItems.add(returnReasonMap)</script>
+                </iterate>
+                <set field="hasNextPage" from="returnLineItemsResponse.response.node.return.returnLineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="returnLineItemsResponse.response.node.return.returnLineItems.pageInfo.endCursor"/>
+            </while>
+            <if condition="returnLineItems">
+                <set field="refundDetail.returnLineItems" from="returnLineItems"/>
+            </if>
+        </actions>
+    </service>
+</services>
