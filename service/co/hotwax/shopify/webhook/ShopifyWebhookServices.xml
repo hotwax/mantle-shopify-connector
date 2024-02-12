@@ -293,6 +293,7 @@ under the License.
         </actions>
     </service>
     <service verb="consume" noun="WebhookPayloadSystemMessage" authenticate="anonymous-all">
+        <description>Generic service to consume shopify webhook payload and generate multiple incoming or outgoing system messages for further processing.</description>
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">

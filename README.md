@@ -538,6 +538,7 @@ Folliowing configuration is added to MoquiConf.xml,
 7. **send#WebhookSubscriptionSystemMessage**: Send service to invoke Create Webhook Subscription API for the System Message.
 8. **queue#WebhookSubscriptionDeleteSystemMessage**: Service to initiate delete webhook subscription of a specific type by creating a system message.
 9. **send#WebhookSubscriptionDeleteSystemMessage**: Send service to invoke Delete Webhook Subscription API for the System Message. This service first get the webhookSubscriptionId for specified webhook topic and registered callbackUrl and the invokes Delete Webhook Subscription API for the webhookSubscriptionId.
+10. **consume#WebhookPayloadSystemMessage**: Generic service to consume shopify webhook payload and generate multiple incoming or outgoing system messages for further processing.
 
 ### Subscribing a Webhook Topic
 
