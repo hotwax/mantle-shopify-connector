@@ -45,7 +45,7 @@ under the License.
                 <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             </entity-find-one>
             <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
-                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}]"/>
+                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}]"/>
             </if>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
@@ -116,7 +116,7 @@ under the License.
                 <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             </entity-find-one>
             <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
-                <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}], not consuming"/>
+                <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}], not consuming"/>
             </if>
 
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#JsonlStagedUploadUrl" in-map="[systemMessageRemoteId:consumeSmrParam.parameterValue, fileName:systemMessage.remoteMessageId]"
@@ -402,7 +402,7 @@ under the License.
             </if>
 
             <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkOperationResult"
-                          in-map="[systemMessageId:bulkOperationList[0].systemMessageId, consumeSmrId:consumeSmrId]" out-map="context"/>
+                          in-map="[systemMessageId:bulkOperationList[0].systemMessageId]" out-map="context"/>
         </actions>
     </service>
     <service verb="consume" noun="SyncedRefundsFeed" authenticate="anonymous-all">
@@ -443,7 +443,7 @@ under the License.
                 <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             </entity-find-one>
             <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
-                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessageTypeId}]"/>
+                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}]"/>
             </if>
 
             <!-- Prepare Shopify Return Reason Feed File Path -->
