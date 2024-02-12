@@ -292,4 +292,48 @@ under the License.
             </if>
         </actions>
     </service>
+    <service verb="consume" noun="WebhookPayloadSystemMessage" authenticate="anonymous-all">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+            <set field="isConsumable" type="Boolean" value="false"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="incomingSystemMessageListParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="incomingSystemMessageParamList"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="incomingSystemMessageListParam &amp;&amp; incomingSystemMessageListParam.parameterValue">
+                <set field="isConsumable" type="Boolean" value="true"/>
+                <set field="incomingSystemMessageList" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(incomingSystemMessageListParam.parameterValue, List.class)"/>
+            </if>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="outgoingSystemMessageListParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="outgoingSystemMessageParamList"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="outgoingSystemMessageListParam &amp;&amp; outgoingSystemMessageListParam.parameterValue">
+                <set field="isConsumable" type="Boolean" value="true"/>
+                <set field="outgoingSystemMessageList" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(outgoingSystemMessageListParam.parameterValue, List.class)"/>
+            </if>
+            <if condition="!isConsumable">
+                <return error="true" message="No incoming or outgoing system message parameters defined for webhook SystemMessageType [${systemMessage.systemMessageTypeId}]"/>
+            </if>
+            <if condition="incomingSystemMessageList">
+                <iterate list="incomingSystemMessageList" entry="paramMap">
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage"
+                                  in-map="[systemMessageTypeId:paramMap.systemMessageTypeId, systemMessageRemoteId:paramMap.systemMessageRemoteId, messageText:systemMessage.messageText]"
+                                  out-map="receiveMessageResult" ignore-error="true" transaction="force-new"/>
+                </iterate>
+            </if>
+            <if condition="outgoingSystemMessageList">
+                <iterate list="outgoingSystemMessageList" entry="paramMap">
+                    <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                                  in-map="[systemMessageTypeId:paramMap.systemMessageTypeId, systemMessageRemoteId:paramMap.systemMessageRemoteId, messageText:systemMessage.messageText, sendNow:paramMap.sendNow]"
+                                  out-map="queueMessageResult" ignore-error="true" transaction="force-new"/>
+                </iterate>
+            </if>
+        </actions>
+    </service>
 </services>
