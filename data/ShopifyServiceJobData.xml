@@ -57,7 +57,7 @@ under the License.
 
     <!-- ServiceJob data for polling Product Variants Feed -->
     <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_GiftCardActivationFeed" description="Poll Gift Card Activation Feed"
-                                  serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GiftCardActivationFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     </moqui.service.job.ServiceJob>

@@ -13,19 +13,19 @@ This is the global configuration needed for most features in this integration.
 
 <!-- ServiceJob data to purge old SystemMessage records -->
 <moqui.service.job.ServiceJob jobName="purge_OldSystemMessages" description="Purge Old System Messages"
-                              serviceName="co.hotwax.impl.SystemMessageServices.purge#OldSystemMessages" cronExpression="0 0 * * *" paused="Y">
+        serviceName="co.hotwax.impl.SystemMessageServices.purge#OldSystemMessages" cronExpression="0 0 * * *" paused="Y">
     <parameters parameterName="purgeDays" parameterValue=""/><!-- defaults to 30 days -->
 </moqui.service.job.ServiceJob>
 
 <!-- Sftp server connection details for data import -->
 <moqui.service.message.SystemMessageRemote systemMessageRemoteId="[Your ID]"
-                                           description="SFTP server connection details for data import"
-                                           sendUrl="" username="" password=""/>
+        description="SFTP server connection details for data import"
+        sendUrl="" username="" password=""/>
 <!-- Shopify Connection Configuration -->
 <moqui.service.message.SystemMessageRemote systemMessageRemoteId="[Your ID]"
-                                           description="Shopify Connection Configuration"
-                                           sendUrl="https://[shopifyHost]/admin/api/${shopifyApiVersion}" password="[apiToken]"
-                                           accessScopeEnumId="SHOP_READ_WRITE_ACCESS"/>
+        description="Shopify Connection Configuration"
+        sendUrl="https://[shopifyHost]/admin/api/${shopifyApiVersion}" password="[apiToken]"
+        accessScopeEnumId="SHOP_READ_WRITE_ACCESS"/>
 ```
 
 ## Shopify Fulfillment API Integration
@@ -70,14 +70,14 @@ Make sure to setup following configuration data with respect to your environment
 
 <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
-                              serviceName="org.moqui.sftp.SftpMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        serviceName="org.moqui.sftp.SftpMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="OMSFulfillmentFeed"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 
 <!-- ServiceJob data to send Shopify Fulfillment Ack Feed -->
 <moqui.service.job.ServiceJob jobName="sendShopifyFulfillmentAckFeed" description="Send Shopify Fulfillment Ack Feed"
-                              serviceName="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.generate#ShopifyFulfillmentAckFeed" cronExpression="0 0 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.generate#ShopifyFulfillmentAckFeed" cronExpression="0 0 * * * ?" paused="Y">
     <parameters parameterName="sinceDate" parameterValue=""/>
     <parameters parameterName="jobName" parameterValue=""/>
     <parameters parameterName="skipLastRunTimeUpdate" parameterValue=""/>
@@ -138,13 +138,13 @@ Following is the common configuration data,
 
 <!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
 <moqui.service.job.ServiceJob jobName="send_ProducedBulkMutationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
 </moqui.service.job.ServiceJob>
 
 <!-- ServiceJob data for polling current bulk operation result -->
 <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkImport" description="Poll current bulk operation result"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkImport"/>
     <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
 </moqui.service.job.ServiceJob>
@@ -285,14 +285,14 @@ Following is the common configuration data,
 
 <!-- ServiceJob data for sending next bulk query system message in queue-->
 <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" description="Send next bulk query system message in queue"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
     <parameters parameterName="retryLimit" parameterValue=""/><!-- Defaults to 3 -->
 </moqui.service.job.ServiceJob>
 
 <!-- ServiceJob data for polling current bulk operation query result -->
 <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" description="Poll current bulk operation query result"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="parentSystemMessageTypeId" parameterValue="ShopifyBulkQuery"/>
     <parameters parameterName="consumeSmrId" parameterValue=""/><!-- For sending the result file to SFTP server -->
 </moqui.service.job.ServiceJob>
@@ -305,17 +305,17 @@ You could configure following default parameters and any additional parameters a
 ```aidl
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
-                                               parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
+        parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- Additional paramter configuration, default filter query -->
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
-                                               parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
+        parameterName="fiterQuery" parameterValue="" systemMessageRemoteId=""/>
 
 <!-- Additional parameter configuration, time buffers for fromDate and thruDate, must be an integer value for minutes -->
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
-                                               parameterName="fromDateBuffer" parameterValue="" systemMessageRemoteId=""/>
+        parameterName="fromDateBuffer" parameterValue="" systemMessageRemoteId=""/>
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="[systemMessageTypeId]"
-                                               parameterName="thruDateBuffer" parameterValue="" systemMessageRemoteId=""/>
+        parameterName="thruDateBuffer" parameterValue="" systemMessageRemoteId=""/>
 ```
 
 #### Bulk Variants Metafield Query
@@ -323,20 +323,20 @@ You could configure following default parameters and any additional parameters a
 ```aidl
 <!-- SystemMessageType record for bulk variant metafield query to Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery" description="Bulk Variants Metafield Query System Message"
-                                         parentTypeId="ShopifyBulkQuery"
-                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-                                         sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        parentTypeId="ShopifyBulkQuery"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+        receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
     <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
-                                         description="Send Bulk Variants Metafield Query Result"
-                                         parentTypeId="LocalFeedFile"
-                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""/>
+        description="Send Bulk Variants Metafield Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
 <moqui.basic.Enumeration description="Send Bulk Variants Metafield Query Result" enumId="SendBulkVariantsMetafieldQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -344,7 +344,7 @@ You could configure following default parameters and any additional parameters a
 
 <!-- ServiceJob data for queuing bulk variants metafield query -->
 <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkVariantsMetafieldQueryt" description="Queue bulk variants metafield query"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="BulkVariantsMetafieldQuery"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="filterQuery" parameterValue=""/>
@@ -358,20 +358,20 @@ You could configure following default parameters and any additional parameters a
 ```aidl
 <!-- SystemMessageType record for bulk order metafields query to Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery" description="Bulk Order Metafields Query System Message"
-                                         parentTypeId="ShopifyBulkQuery"
-                                         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-                                         sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
-                                         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-                                         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        parentTypeId="ShopifyBulkQuery"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+        receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
     <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
 
 <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
-                                         description="Send Bulk Order Metafields Query Result"
-                                         parentTypeId="LocalFeedFile"
-                                         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                         sendPath=""/>
+        description="Send Bulk Order Metafields Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
 <!-- Enumerations for defining relation between two system message types for the purpose of creating consecutive system messages -->
 <moqui.basic.Enumeration description="Send Bulk Order Metafields Query Result" enumId="SendBulkOrderMetafieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -379,7 +379,7 @@ You could configure following default parameters and any additional parameters a
 
 <!-- ServiceJob data for queuing bulk order metafields query -->
 <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderMetafieldsQuery" description="Queue bulk order metafields query"
-                              serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
     <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderMetafieldsQuery"/>
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     <parameters parameterName="filterQuery" parameterValue=""/>
