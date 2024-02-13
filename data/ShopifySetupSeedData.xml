@@ -321,4 +321,29 @@ under the License.
     <moqui.basic.Enumeration description="Send Shopify Return Reason Feed" enumId="SendShopifyReturnReasonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="OMS Synced Refunds Feed" enumId="OMSSyncedRefundsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendShopifyReturnReasonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
+    <!-- SystemMessageType record for shopify ORDERS_UPDATED webhook -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrdersUpdated"
+            description="Shopify Orders Updated Webhook"
+            parentTypeId="ShopifyWebhook"
+            sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+            consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
+        <parameters parameterName="topic" parameterValue="ORDERS_UPDATED" systemMessageRemoteId=""/>
+        <!-- Following parameters if not configured sets to default values configured in service in attributes
+        <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
+        -->
+        <parameters parameterName="incomingSystemMessageParamList" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="outgoingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'QueueOrderUpdatedAt','sendNow':'true'}]" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration for mapping OrderUpdated SystemMessageType to orders/updated shopify webhook topic -->
+    <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="OrdersUpdated"
+            enumTypeId="ShopifyMessageTypeEnum" enumCode="orders/updated"/>
+
+    <!-- SystemMessageType record to send shopify order update_at date to AWS SQS queue, sendPath=[AWS SQS queueUrl] -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="QueueOrderUpdatedAt"
+            description="Send Order Update At Date to SQS Queue"
+            sendServiceName="co.hotwax.shopify.order.ShopifyOrderServices.send#OrderUpdatedAtToQueue"
+            sendPath=""/>
+
 </entity-facade-xml>

@@ -564,6 +564,9 @@ Folliowing configuration is added to MoquiConf.xml,
         <parameters parameterName="topic" parameterValue="[GraphQL Webhook Topic]" systemMessageRemoteId=""/>
         <!-- Optional, defaluts to "/rest/s1/shopify/webhook/payload"  -->
         <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
+        <!-- Additional configuration when using generic _consume#WebhookPayloadSystemMessage_ service to generate multiple incoming or outgoing system messages -->
+        <parameters parameterName="incomingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'', systemMessageRemoteId:''},.....]" systemMessageRemoteId=""/>
+        <parameters parameterName="outgoingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'', systemMessageRemoteId:'', 'sendNow':''},.....]" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.basic.Enumeration description="" enumId="[systemMessageTypeId of webhook]"
@@ -603,6 +606,30 @@ Folliowing configuration is added to MoquiConf.xml,
 <!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
 <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
         enumTypeId="ShopifyMessageTypeEnum" enumCode="bulk_operations/finish"/>
+```
+
+#### Orders Updated (orders/updated)
+
+```aidl
+<!-- SystemMessageType record for shopify ORDERS_UPDATED webhook -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="OrdersUpdated"
+        description="Shopify Orders Updated Webhook"
+        parentTypeId="ShopifyWebhook"
+        sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+        sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+        consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
+    <parameters parameterName="topic" parameterValue="ORDERS_UPDATED" systemMessageRemoteId=""/>
+    <parameters parameterName="outgoingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'QueueOrderUpdatedAt','sendNow':'true'}]" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+
+<!-- Enumeration for mapping OrderUpdated SystemMessageType to orders/updated shopify webhook topic -->
+<moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="OrdersUpdated"
+        enumTypeId="ShopifyMessageTypeEnum" enumCode="orders/updated"/>
+
+<moqui.service.message.SystemMessageType systemMessageTypeId="QueueOrderUpdatedAt"
+        description="Send Order Update At Date to SQS Queue"
+        sendServiceName="co.hotwax.shopify.order.ShopifyOrderServices.send#OrderUpdatedAtToQueue"
+        sendPath="[queueUrl]"/>
 ```
 
 ## Shopify Refund/Return API Integration

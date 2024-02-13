@@ -55,4 +55,16 @@ under the License.
             <set field="orderCount" from="orderCountResponse.response.count"/>
         </actions>
     </service>
+    <service verb="send" noun="OrderUpdatedAtToQueue" authenticate="anonymous-all">
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+            <set field="order" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="messageMap" from="[shopifyOrderId:order.id, shopifyOrderGraphqlId:order.admin_graphql_api_id, updatedAt:order.updated_at]"/>
+            <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(messageMap)"/>
+            <service-call name="moqui.aws.SqsServices.send#Message" in-map="[queueUrl:systemMessage.sendPath, messageText:messageText]" out-map="context"/>
+        </actions>
+    </service>
 </services>
