@@ -20,4 +20,17 @@
             description="Send Order Update At Date to SQS Queue"
             sendServiceName="co.hotwax.shopify.order.ShopifyOrderServices.send#OrderUpdatedAtToQueue"
             sendPath=""/>
+
+    <!-- SystemMessageType record for sending bulk create gift cards result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCreateGiftCardsResult"
+            description="Send Bulk Create Gift Card Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkCreateGiftCards and SendBulkCreateGiftCardsResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCreateGiftCardsResult"/>
+
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkCreateGiftCards" parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </entity-facade-xml>
