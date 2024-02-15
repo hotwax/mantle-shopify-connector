@@ -40,18 +40,14 @@ under the License.
                 }
             </script>
 
-            <set field="requestBody" from="[query:queryText, variables:[input:[filename:fileName, resource:'BULK_MUTATION_VARIABLES', mimeType:'text/jsonl', httpMethod:'POST']]]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="stagedUploadsCreateResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText,
+                        variables:[input:[filename:fileName, resource:'BULK_MUTATION_VARIABLES', mimeType:'text/jsonl', httpMethod:'POST']]]" out-map="stagedUploadsCreateResponse"/>
 
-            <if condition="stagedUploadsCreateResponse.response.errors">
-                <return error="true" message="${stagedUploadsCreateResponse.response.errors}"/>
-            </if>
-            <if condition="stagedUploadsCreateResponse.response.data.stagedUploadsCreate.userErrors">
-                <return error="true" message="${stagedUploadsCreateResponse.response.data.stagedUploadsCreate.userErrors}"/>
+            <if condition="stagedUploadsCreateResponse.response.stagedUploadsCreate.userErrors">
+                <return error="true" message="${stagedUploadsCreateResponse.response.stagedUploadsCreate.userErrors}"/>
             </if>
 
-            <set field="stagedUploadUrlMap" from="stagedUploadsCreateResponse.response.data.stagedUploadsCreate.stagedTargets.get(0)"/>
+            <set field="stagedUploadUrlMap" from="stagedUploadsCreateResponse.response.stagedUploadsCreate.stagedTargets.get(0)"/>
         </actions>
     </service>
     <service verb="upload" noun="JsonlFileToShopify" authenticate="anonymous-all">
@@ -134,17 +130,13 @@ under the License.
                 }
             </script>
             <set field="requestBody" from="[query:queryText]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="bulkMutationResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="bulkMutationResponse"/>
 
-            <if condition="bulkMutationResponse.response.errors">
-                <return error="true" message="${bulkMutationResponse.response.errors}"/>
-            </if>
-            <if condition="bulkMutationResponse.response.data.bulkOperationRunMutation.userErrors">
-                <return error="true" message="${bulkMutationResponse.response.data.bulkOperationRunMutation.userErrors}"/>
+            <if condition="bulkMutationResponse.response.bulkOperationRunMutation.userErrors">
+                <return error="true" message="${bulkMutationResponse.response.bulkOperationRunMutation.userErrors}"/>
             </if>
 
-            <set field="shopifyBulkOperationId" from="bulkMutationResponse.response.data.bulkOperationRunMutation.bulkOperation.id"/>
+            <set field="shopifyBulkOperationId" from="bulkMutationResponse.response.bulkOperationRunMutation.bulkOperation.id"/>
         </actions>
     </service>
     <service verb="get" noun="BulkOperationResult" authenticate="anonymous-all">
@@ -170,14 +162,10 @@ under the License.
                 }
             </script>
             <set field="requestBody" from="[query:queryText, variables:[id:shopifyBulkOperationId]]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="bulkOperationResult"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText,
+                        variables:[id:shopifyBulkOperationId]]" out-map="bulkOperationResult"/>
 
-            <if condition="bulkOperationResult.response.errors">
-                <return error="true" message="${bulkOperationResult.response.errors}"/>
-            </if>
-
-            <set field="response" from="bulkOperationResult.response.data.node"/>
+            <set field="response" from="bulkOperationResult.response.node"/>
         </actions>
     </service>
     <service verb="store" noun="BulkOperationResultFile" authenticate="anonymous-all">
@@ -233,17 +221,13 @@ under the License.
                 ec.logger.error("Error closing StringWriter")
                 }
             </script>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="bulkQueryResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="bulkQueryResponse"/>
 
-            <if condition="bulkQueryResponse.response.errors">
-                <return error="true" message="${bulkQueryResponse.response.errors}"/>
-            </if>
-            <if condition="bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors">
-                <return error="true" message="${bulkQueryResponse.response.data.bulkOperationRunQuery.userErrors}"/>
+            <if condition="bulkQueryResponse.response.bulkOperationRunQuery.userErrors">
+                <return error="true" message="${bulkQueryResponse.response.bulkOperationRunQuery.userErrors}"/>
             </if>
 
-            <set field="shopifyBulkOperationId" from="bulkQueryResponse.response.data.bulkOperationRunQuery.bulkOperation.id"/>
+            <set field="shopifyBulkOperationId" from="bulkQueryResponse.response.bulkOperationRunQuery.bulkOperation.id"/>
         </actions>
     </service>
 </services>
