@@ -42,15 +42,13 @@ under the License.
                 ec.logger.error("Error closing StringWriter")
                 }
             </script>
-            <set field="requestBody" from="[query:queryText]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="webhookSubscriptionCreateResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="webhookSubscriptionCreateResponse"/>
 
-            <if condition="webhookSubscriptionCreateResponse.response.errors">
-                <return error="true" message="${webhookSubscriptionCreateResponse.response.errors}.toString()"/>
+            <if condition="webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.userErrors">
+                <return error="true" message="${webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.userErrors}"/>
             </if>
 
-            <set field="webhookSubscriptionId" from="webhookSubscriptionCreateResponse.response.data.webhookSubscriptionCreate.webhookSubscription.id"/>
+            <set field="webhookSubscriptionId" from="webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.webhookSubscription.id"/>
         </actions>
     </service>
     <service verb="get" noun="WebhookSubscriptions" authenticate="anonymous-all">
@@ -75,14 +73,9 @@ under the License.
                 }
             </script>
 
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="getWebhookSubscriptionsResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="getWebhookSubscriptionsResponse"/>
 
-            <if condition="getWebhookSubscriptionsResponse.response.errors">
-                <return error="true" message="${getWebhookSubscriptionsResponse.response.errors}"/>
-            </if>
-
-            <set field="webhookList" from="getWebhookSubscriptionsResponse.response.data.webhookSubscriptions.edges"/>
+            <set field="webhookList" from="getWebhookSubscriptionsResponse.response.webhookSubscriptions.edges"/>
         </actions>
     </service>
     <service verb="delete" noun="WebhookSubscription" authenticate="anonymous-all">
@@ -107,18 +100,13 @@ under the License.
                 }
             </script>
 
-            <set field="requestBody" from="[query:queryText, variables:[id:webhookSubscriptionId]]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="deleteWebhookSubscriptionResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[id:webhookSubscriptionId]]" out-map="deleteWebhookSubscriptionResponse"/>
 
-            <if condition="deleteWebhookSubscriptionResponse.response.errors">
-                <return error="true" message="${deleteWebhookSubscriptionResponse.response.errors}"/>
-            </if>
-            <if condition="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors">
-                <return error="true" message="${deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors}"/>
+            <if condition="deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.userErrors">
+                <return error="true" message="${deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.userErrors}"/>
             </if>
 
-            <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
+            <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
         </actions>
     </service>
     <service verb="verify" noun="Hmac" authenticate="anonymous-all">
