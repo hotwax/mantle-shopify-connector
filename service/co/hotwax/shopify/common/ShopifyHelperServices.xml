@@ -165,6 +165,7 @@ under the License.
             <parameter name="response" type="Map"/>
         </out-parameters>
         <actions>
+            <set field="queryText" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryText)"/>
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
             <if condition="systemMessageRemote == null"><return error="true" message="Could not find SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
             <if condition="systemMessageRemote.sendUrl == null"><return error="true" message="Could not find SystemMessageRemote.sendUrl in SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
@@ -187,7 +188,6 @@ under the License.
 
             <set field="sendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
             <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>
-            <log level="info" message="shopifyUrl: ${shopifyUrl}"/>
 
             <script><![CDATA[
                 import org.moqui.util.RestClient
