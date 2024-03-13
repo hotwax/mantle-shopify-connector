@@ -419,7 +419,7 @@ under the License.
             <set field="refunds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
 
             <if condition="!refunds">
-                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file."/>
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Synced Refunds Feed file having incorrect data and may contain null, not consuming the feed file."/>
             </if>
 
             <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
@@ -497,6 +497,152 @@ under the License.
                           in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId,
                                    messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
                           out-map="sendReturnReasonFeedOut" ignore-error="true" transaction="force-new"/>
+        </actions>
+    </service>
+    <service verb="consume" noun="OrderIdsFeed" authenticate="anonymous-all">
+        <description>Consume orderIds JSON feed and queue GenerateOrderMetafields system message.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="!enumValue || !enumValue.relatedEnumId">
+                <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
+            </if>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+            </entity-find-one>
+            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                <return error="true" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}]"/>
+            </if>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:consumeSmrParam.parameterValue,
+                                   messageText:systemMessage.messageText, sendNow:true]"
+                          out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+        </actions>
+    </service>
+    <service verb="generate" noun="OrderMetafieldsFeed" authenticate="anonymous-all">
+        <description>Generate order metafields json feed for the give orderIds feed, send to SFTP if configured.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!orders">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with OrderIds Feed file having incorrect data and may contain null, not generating order metfields feed file."/>
+            </if>
+
+            <!-- Prepare Order Metafields Feed File Path -->
+            <!-- Using sendPath from SystemMessageType to prepare the jsonFilePathRef.-->
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="namespacesParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="namespaces"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="namespacesParam &amp;&amp; namespacesParam.parameterValue">
+                <set field="namespaces" from="namespacesParam.parameterValue.split(',')"/>
+            </if>
+
+            <iterate list="orders" entry="order">
+                <set field="orderMetafieldsMap" from="[:]"/>
+                <set field="orderMetafieldsMap.shopifyOrderId" from="order.shopifyOrderId"/>
+                <if condition="!namespaces">
+                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderMetafields" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.shopifyOrderId]"
+                                  out-map="orderMetafieldsResponse" ignore-error="true" transaction="force-new"/>
+                    <set field="orderMetafieldsMap.metafields" from="orderMetafieldsResponse.orderMetafields"/>
+                    <else>
+                        <set field="metafields" from="[]"/>
+                        <iterate list="namespaces" entry="namespace">
+                            <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderMetafields" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.shopifyOrderId, namespace:namespace]"
+                                          out-map="orderMetafieldsResponse" ignore-error="true" transaction="force-new"/>
+                            <script>metafields.addAll(orderMetafieldsResponse.orderMetafields)</script>
+                        </iterate>
+                        <set field="orderMetafieldsMap.metafields" from="metafields"/>
+                    </else>
+                </if>
+                <script>
+                    new ObjectMapper()
+                    .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                    .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderMetafieldsMap)
+                </script>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Order Metafields Feed file", e)
+                }
+            </script>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+                <if condition="systemMessageType == null"><return type="warning" message="Could not find SystemMessageType with ID ${systemMessageTypeId}, not creating corresponding system message."/></if>
+
+                <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                    <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                    <field-map field-name="parameterName" value="consumeSmrId"/>
+                    <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+                </entity-find-one>
+                <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
+                    <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}], not creating corresponding system message."/>
+                </if>
+
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:consumeSmrParam.parameterValue,
+                                   messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            </if>
         </actions>
     </service>
 </services>

@@ -67,4 +67,38 @@ under the License.
             <service-call name="moqui.aws.SqsServices.send#Message" in-map="[queueUrl:systemMessage.sendPath, messageText:messageText]" out-map="context"/>
         </actions>
     </service>
+    <service verb="get" noun="OrderMetafields" authenticate="anonymous-all">
+        <description>Get metafields for a given shopify orderId and namespace (optional).</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="namespace"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="orderMetafields"/>
+        </out-parameters>
+        <actions>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="orderMetafields" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", sw)
+                    queryText = sw.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderMetafieldsResponse"/>
+                <if condition="orderMetafieldsResponse.response.node.metafields.edges">
+                    <script>orderMetafields.addAll(orderMetafieldsResponse.response.node.metafields.edges)</script>
+                </if>
+                <set field="hasNextPage" from="orderMetafieldsResponse.response.node.metafields.pageInfo.hasNextPage"/>
+                <set field="cursor" from="orderMetafieldsResponse.response.node.metafields.pageInfo.endCursor"/>
+            </while>
+        </actions>
+    </service>
 </services>
