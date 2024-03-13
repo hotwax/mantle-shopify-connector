@@ -689,3 +689,59 @@ Related configurations,
     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
 </moqui.service.job.ServiceJob>
 ```
+
+## Shopify Order API Integration
+
+Set of services and configurations to integrate with Shopify GraphQL Order API.
+
+### Core Services
+1. **get#OrderMetafields**: Integrates with Shopify GraphQL Order API to return metafields for a given shopify orderId and namespace (optional).
+
+### Supported flows
+
+#### Get order metafields for an orderIds feed
+
+This flow aims to fetch the metafields for an order in given namespaces (optional).  
+It polls an SFTP server to read a json file containing list of Shopify orderIds. For this list it fetches metafields for each order in given namespaces and pushes the order metafields json feed to SFTP.  
+Related configurations,
+
+```aidl
+<!-- SystemMessageType record for importing Order Ids Feed -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="OrderIdsFeed"
+        description="Create Order Ids Feed System Message"
+        parentTypeId="LocalFeedFile"
+        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#OrderIdsFeed"
+        receivePath=""
+        receiveResponseEnumId="MsgRrMove"
+        receiveMovePath=""
+        sendPath="${contentRoot}/shopify/OrderIdsFeed">
+    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+
+<moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderMetafieldsFeed"
+        description="Generate Order Metafields Feed For Orders Feed"
+        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderMetafieldsFeed"
+        sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}.json">
+    <parameters parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
+    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+</moqui.service.message.SystemMessageType>
+
+<!-- SystemMessageType record for sending Order Metafields Feed (sendPath = sftp directory) -->
+<moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderMetafieldsFeed"
+        description="Send Order Metafields Feed"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
+
+<!-- Enumeration to create relation between OrderIdsFeed, GenerateOrderMetafieldsFeed and SendOrderMetafieldsFeed SystemMessageType(s) -->
+<moqui.basic.Enumeration description="Send Order Metafields Feed" enumId="SendOrderMetafieldsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Generate Order Metafields Feed" enumId="GenerateOrderMetafieldsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderMetafieldsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.Enumeration description="Order Ids Feed" enumId="OrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderMetafieldsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+<!-- ServiceJob data for polling OMS Order Ids Feed -->
+<moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSOrderIdsFeed" description="Poll OMS Order Ids Feed"
+        serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="OrderIdsFeed"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+</moqui.service.job.ServiceJob>
+```

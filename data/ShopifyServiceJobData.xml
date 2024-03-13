@@ -150,4 +150,11 @@ under the License.
         <parameters parameterName="systemMessageTypeId" parameterValue="OMSSyncedRefundsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for polling OMS Order Ids Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSOrderIdsFeed" description="Poll OMS Order Ids Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="OrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
