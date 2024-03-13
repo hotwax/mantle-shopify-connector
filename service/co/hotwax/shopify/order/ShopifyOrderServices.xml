@@ -75,7 +75,7 @@ under the License.
             <parameter name="namespace"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="orderMetafields"/>
+            <parameter name="orderMetafields" type="List"/>
         </out-parameters>
         <actions>
             <set field="hasNextPage" type="Boolean" value="true"/>
