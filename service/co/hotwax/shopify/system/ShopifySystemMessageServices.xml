@@ -588,22 +588,26 @@ under the License.
             </if>
 
             <iterate list="orders" entry="order">
-                <set field="orderMetafieldsMap" from="[:]"/>
-                <set field="orderMetafieldsMap.shopifyOrderId" from="order.shopifyOrderId"/>
+                <set field="metafields" from="[]"/>
                 <if condition="!namespaces">
                     <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderMetafields" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.shopifyOrderId]"
                                   out-map="orderMetafieldsResponse" ignore-error="true" transaction="force-new"/>
-                    <set field="orderMetafieldsMap.metafields" from="orderMetafieldsResponse.orderMetafields"/>
+                    <if condition="orderMetafieldsResponse.orderMetafields">
+                        <set field="metafields" from="orderMetafieldsResponse.orderMetafields"/>
+                    </if>
                     <else>
-                        <set field="metafields" from="[]"/>
                         <iterate list="namespaces" entry="namespace">
                             <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderMetafields" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.shopifyOrderId, namespace:namespace]"
                                           out-map="orderMetafieldsResponse" ignore-error="true" transaction="force-new"/>
-                            <script>metafields.addAll(orderMetafieldsResponse.orderMetafields)</script>
+                            <if condition="orderMetafieldsResponse.orderMetafields">
+                                <script>metafields.addAll(orderMetafieldsResponse.orderMetafields)</script>
+                            </if>
                         </iterate>
-                        <set field="orderMetafieldsMap.metafields" from="metafields"/>
                     </else>
                 </if>
+                <set field="orderMetafieldsMap" from="[:]"/>
+                <set field="orderMetafieldsMap.shopifyOrderId" from="order.shopifyOrderId"/>
+                <set field="orderMetafieldsMap.metafields" from="metafields"/>
                 <script>
                     new ObjectMapper()
                     .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
