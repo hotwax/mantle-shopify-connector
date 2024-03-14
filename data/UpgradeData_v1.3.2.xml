@@ -29,7 +29,7 @@
             sendPath=""/>
 
     <!-- Enumeration to create relation between BulkCreateGiftCards and SendBulkCreateGiftCardsResult SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Create Gift Card Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCreateGiftCardsResult"/>
 
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkCreateGiftCards" parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
