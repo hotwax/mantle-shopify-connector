@@ -51,7 +51,7 @@
                sendPath="/home/${sftpUsername}/hotwax/shopify/OrdersMetaFieldsFeed"/>
        ```
 
-4. Enumeration
+4. Required Enumerations to be imported
     1. Add enumeration data for relation between OrderIdsFeed, GenerateOrderMetafieldsFeed and SendOrderMetafieldsFeed SystemMessageType
      - Sample data
         ```xml
@@ -62,3 +62,19 @@
 
 5. Service Job
    1. Clone the poll_SystemMessageFileSftp_OMSOrderIdsFeed Job using the Client Specific Production manuals.
+
+### Sending bulk create gift cards result to SFTP
+  1. Need to load this data for saving the created gift card result to SFTP
+  ```xml
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCreateGiftCardsResult"
+    description="Send Bulk Create Gift Card Result"
+    parentTypeId="LocalFeedFile"
+    sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+    sendPath="/home/${sftpUsername}/hotwax/shopify/GiftCardActivationFeed/result/"/>
+   ```
+
+  2. Required Enumerations to be imported
+  ```xml
+    <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCreateGiftCardsResult"/>
+  ```
