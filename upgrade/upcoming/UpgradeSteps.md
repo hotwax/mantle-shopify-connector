@@ -42,13 +42,14 @@
 
  
 3. SystemMessageType for SendOrderMetafieldsFeed
-    ```xml
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderMetafieldsFeed"
-            description="Send Order Metafields Feed"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="/home/${sftpUsername}/hotwax/shopify/OrdersMetaFieldsFeed"/>
-    ```
+   1. Ensure loading this system message type data 
+       ```xml
+       <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderMetafieldsFeed"
+               description="Send Order Metafields Feed"
+               parentTypeId="LocalFeedFile"
+               sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+               sendPath="/home/${sftpUsername}/hotwax/shopify/OrdersMetaFieldsFeed"/>
+       ```
 
 4. Enumeration
     1. Add enumeration data for relation between OrderIdsFeed, GenerateOrderMetafieldsFeed and SendOrderMetafieldsFeed SystemMessageType
