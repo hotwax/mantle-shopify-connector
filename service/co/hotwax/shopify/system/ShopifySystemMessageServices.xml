@@ -37,7 +37,7 @@ under the License.
                 valid shipments data, or it may be due to some other unexpected JSON generated to be consumed,
                 then the file can be checked further for any possible issue. -->
             <if condition="!shipments">
-                <message type="warning" error="true">System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file.</message>
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Fulfillment Feed file having incorrect data and may contain null, not consuming the feed file."/>
             </if>
             <iterate list="shipments" entry="shipment">
                 <set field="messageText" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(shipment)"/>
