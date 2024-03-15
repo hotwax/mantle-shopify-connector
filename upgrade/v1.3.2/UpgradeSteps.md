@@ -27,7 +27,7 @@
 2. SystemMessageType for GenerateOrderMetafieldsFeed
     1. Add shop specific SystemMessageType data taking reference from the template OrderIdsFeed SystemMessageType.
     2. Check and update the receiveFilePattern as required based on the shopId alone or combination of shop Id and product Store Id.
-    3. Namespaces can have comma separated values as per requirement.  
+    3. Namespaces can have comma separated values as per different shopify shops.
        - Sample data
        - NOTE: add the value for parameterValue and systemMessageRemoteId as per new setup.
         ```xml
@@ -35,7 +35,7 @@
                     description="Generate Order Metafields Feed For Orders Feed"
                     sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderMetafieldsFeed"
                     sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}.json">
-                <parameters parameterName="namespaces" parameterValue="HotwaxOrderDetails" systemMessageRemoteId="{shopify_remote}"/>
+                <parameters parameterName="namespaces" parameterValue="{shopify_namespace1,shopify_namespace2,..}" systemMessageRemoteId="{shopify_remote}"/>
                 <parameters parameterName="consumeSmrId" parameterValue="{remote_sftp}" systemMessageRemoteId="{shopify_remote}"/>
         </moqui.service.message.SystemMessageType>
         ```
