@@ -20,14 +20,14 @@
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath="/home/${sftpUsername}/hotwax/shopify/GiftCardActivationFeed/archive"
             sendPath="${contentRoot}/shopify/GiftCardActivationFeed">
-        <parameters parameterName="consumeSmrId" parameterValue="{shopify_remote}" systemMessageRemoteId="RemoteSftp"/>
+        <parameters parameterName="consumeSmrId" parameterValue="{shopify_remote}" systemMessageRemoteId="{remote_sftp}"/>
     </moqui.service.message.SystemMessageType>
     ```
 
 2. SystemMessageType for BulkCreateGiftCards
    1. Ensure loading this system message type data
     ```xml
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards_{shopId_storeId}"
             description="Bulk Create Gift Cards System Message"
             parentTypeId="ShopifyBulkImport"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
@@ -40,8 +40,8 @@
     1. Add enumeration data for relation between BulkCreateGiftCards & GiftCardActivationFeed_{shopId_storeId} SystemMessageType
     - Sample data
     ```xml
-    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Gift Card Activation Feed" enumId="GiftCardActivationFeed_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkCreateGiftCards" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Gift Card Activation Feed" enumId="GiftCardActivationFeed_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkCreateGiftCards_{shopId_storeId}" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     ```
 
 5. Service Job

@@ -76,5 +76,10 @@
   2. Required Enumerations to be imported
   ```xml
     <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCreateGiftCardsResult"/>
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards_{shopId_storeId}" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCreateGiftCardsResult"/>
   ```
+
+  3. Load the SystemMessageTypeParameter BulkCreateGiftCards
+```xml
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkCreateGiftCards_{shopId_storeId}" parameterName="consumeSmrId" parameterValue="{remote_sftp}" systemMessageRemoteId="{shopify_remote}"/>
+```
