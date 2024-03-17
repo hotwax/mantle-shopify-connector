@@ -1,3 +1,4 @@
+<#ftl output_format="HTML">
 <#--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -16,6 +17,7 @@ under the License.
 -->
 
 <@compress single_line=true>
+
     <#if queryParams?has_content>
         <#if queryParams.filterQuery?has_content>
             <#assign filterQuery = queryParams.filterQuery/>
@@ -79,4 +81,5 @@ under the License.
             }
         }
     }
+
 </@compress>
