@@ -165,6 +165,7 @@ under the License.
             <parameter name="response" type="Map"/>
         </out-parameters>
         <actions>
+            <set field="queryText" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryText)"/>
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
             <if condition="systemMessageRemote == null"><return error="true" message="Could not find SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
             <if condition="systemMessageRemote.sendUrl == null"><return error="true" message="Could not find SystemMessageRemote.sendUrl in SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
@@ -182,12 +183,11 @@ under the License.
                 <return error="true" message="No Access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
             </if>
             <if condition="queryText.startsWith('mutation') &amp;&amp; 'SHOP_READ_ACCESS'.equals(accessScopeEnumId)">
-                <return error="true" message="Cannot call ${endPoint?:url} with request type, ${requestType}. Only Read Access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
+                <return error="true" message="Cannot post graphQL mutation, only read access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
             </if>
 
             <set field="sendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
             <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>
-            <log level="info" message="shopifyUrl: ${shopifyUrl}"/>
 
             <script><![CDATA[
                 import org.moqui.util.RestClient
@@ -218,7 +218,7 @@ under the License.
                     statusCode = restResponse.getStatusCode()
 
                     if (restResponse.statusCode < 200 || restResponse.statusCode >= 300) {
-                        ec.logger.warn("Unsuccessful with status code: ${statusCode} and response: ${response}")
+                        ec.logger.warn("Unsuccessful with status code: ${statusCode} and response: ${gqlResponse}")
                     }
                 } catch (Exception e) {
                     ec.logger.error("Error in API call Error: ${e.getMessage()}")
@@ -234,6 +234,22 @@ under the License.
                 <log level="info" message="GraphQL query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
                 <log level="info" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
             </if>
+        </actions>
+    </service>
+    <service verb="create" noun="ShopifySqsQueue">
+        <implements service="moqui.aws.SqsServices.create#Queue"/>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queueNamePrefix"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
+            <if condition="!systemMessageRemote"><return error="true" message="Shopify Config not found with ID [${systemMessageRemoteId}]"/></if>
+
+            <set field="queueNamePrefix" from="systemMessageRemoteId + '-'"/>
+            <if condition="systemMessageRemote.remoteId"><set field="queueNamePrefix" from="queueNamePrefix + systemMessageRemote.remoteId + '-'"/></if>
+            <set field="queueName" from="queueNamePrefix + queueName"/>
+            <service-call name="moqui.aws.SqsServices.create#StandardQueue" in-map="context" out-map="context"/>
         </actions>
     </service>
 </services>
