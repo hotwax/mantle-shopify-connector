@@ -24,9 +24,9 @@ under the License.
             Optionally configure systemMessageRemoteId.
         </description>
         <field name="systemMessageTypeId" type="id" is-pk="true"/>
-        <field name="systemMessageRemoteId" type="id" is-pk="true"/>
         <field name="parameterName" type="id" is-pk="true"/>
         <field name="parameterValue" type="text-long"/>
+        <field name="systemMessageRemoteId" type="id"/>
         <relationship type="one" related="moqui.service.message.SystemMessageType"/>
         <relationship type="one" related="moqui.service.message.SystemMessageRemote"/>
     </entity>
