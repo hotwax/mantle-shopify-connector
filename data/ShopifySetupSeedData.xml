@@ -36,6 +36,44 @@ under the License.
     <moqui.basic.Enumeration enumId="outgoingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
     <moqui.basic.Enumeration enumId="namespaces" enumTypeId="SystemMessageTypeParameter"/>
 
+    <!-- Enumeration data for system message type -->
+    <moqui.basic.EnumerationType description="System Message Type Enum" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Local Feed File" enumId="LocalFeedFile" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Imports" enumId="ShopifyBulkImport" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Query" enumId="ShopifyBulkQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Shopify Fulfillment System Message" enumId="CreateShopifyFulfillment" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create OMS Fulfillment Feed System Message" enumId="OMSFulfillmentFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Shopify Fulfillment Ack Feed" enumId="SendShopifyFulfillmentAck" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Product Tags Feed System Message" enumId="ProductTagsFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Update Product Tags System Message" enumId="BulkUpdateProductTags" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Update Product Tags Result" enumId="SendBulkUpdateProductTagsResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Product Variants Feed System Message" enumId="ProductVariantsFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Update Product Variants System Message" enumId="BulkUpdateProductVariants" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Update Product Variants Result" enumId="SendBulkUpdateProductVariantsResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Gift Card Activation Feed System Message" enumId="GiftCardActivationFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards System Message" enumId="BulkCreateGiftCards" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Create Gift Card Result" enumId="SendBulkCreateGiftCardsResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Variants Metafield Query System Message" enumId="BulkVariantsMetafieldQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Variants Metafield Query Result" enumId="SendBulkVariantsMetafieldQueryResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Metafields Query System Message" enumId="BulkOrderMetafieldsQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Order Metafields Query Result" enumId="SendBulkOrderMetafieldsQueryResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Headers Query System Message" enumId="BulkOrderHeadersQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Order Headers Query Result" enumId="SendBulkOrderHeadersQueryResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Items Query System Message" enumId="BulkOrderItemsQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Order Items Query Result" enumId="SendBulkOrderItemsQueryResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Custom Attributes Query System Message" enumId="BulkOrderCustomAttributesQuery" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Order Custom Attributes Query Result" enumId="SendBulkOrderCustomAttributesQueryResult" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Delete Shopify Webhook Subscription" enumId="DeleteWebhookSubscription" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Webhooks" enumId="ShopifyWebhook" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Shopify Bulk Operations Finish Webhook" enumId="BulkOperationsFinish" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create OMS Synced Refunds Feed System Message" enumId="OMSSyncedRefundsFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Shopify Return Reason Feed" enumId="SendShopifyReturnReasonFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Shopify Orders Updated Webhook" enumId="OrdersUpdated" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Order Update At Date to SQS Queue" enumId="QueueOrderUpdatedAt" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Order Ids Feed System Message" enumId="OrderIdsFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Metafields Feed For Orders Feed" enumId="GenerateOrderMetafieldsFeed" enumTypeId="SystemMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Order Metafields Feed" enumId="SendOrderMetafieldsFeed" enumTypeId="SystemMessageTypeEnum"/>
+
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
 
