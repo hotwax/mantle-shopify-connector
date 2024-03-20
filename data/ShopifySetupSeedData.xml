@@ -27,6 +27,15 @@ under the License.
     <!-- EnumerationType for Shopify system message type enum and relationship -->
     <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
 
+    <!-- Enumeration data for system message type parameter -->
+    <moqui.basic.EnumerationType description="System Message Type Parameter" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="consumeSmrId" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="queryTemplateLocation" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="topic" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="incomingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="outgoingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="namespaces" enumTypeId="SystemMessageTypeParameter"/>
+
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
 
