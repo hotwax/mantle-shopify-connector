@@ -74,6 +74,29 @@ under the License.
     <moqui.basic.Enumeration description="Generate Order Metafields Feed For Orders Feed" enumId="GenerateOrderMetafieldsFeed" enumTypeId="SystemMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Send Order Metafields Feed" enumId="SendOrderMetafieldsFeed" enumTypeId="SystemMessageTypeEnum"/>
 
+    <!-- EnumerationGroupMember data for system message type and system message parameter -->
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OMSFulfillmentFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="ProductTagsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductTags" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="ProductVariantsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductVariants" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GiftCardActivationFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkCreateGiftCards" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkVariantsMetafieldQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderMetafieldsQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderHeadersQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderItemsQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderCustomAttributesQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="DeleteWebhookSubscription" enumId="queryTemplateLocation" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOperationsFinish" enumId="topic" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OMSSyncedRefundsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="topic" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="incomingSystemMessageParamList" sequenceNum="2"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="3"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrderIdsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="namespaces" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="consumeSmrId" sequenceNum="2"/>
+
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
 
