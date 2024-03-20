@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+    <!-- EnumerationType for Shopify system message type enum and relationship -->
+    <moqui.basic.Enumeration description="Local Feed File" enumId="LocalFeedFile" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Imports" enumId="ShopifyBulkImport" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Query" enumId="ShopifyBulkQuery" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create Shopify Fulfillment System Message" enumId="CreateShopifyFulfillment" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Create OMS Fulfillment Feed System Message" enumId="OMSFulfillmentFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Shopify Fulfillment Ack Feed" enumId="SendShopifyFulfillmentAck" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Delete Shopify Webhook Subscription" enumId="DeleteWebhookSubscription" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Webhooks" enumId="ShopifyWebhook" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Order Update At Date to SQS Queue" enumId="QueueOrderUpdatedAt" enumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- Enumeration data for system message type parameter -->
+    <moqui.basic.EnumerationType description="System Message Type Parameter" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="consumeSmrId" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="queryTemplateLocation" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="topic" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="incomingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="outgoingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+    <moqui.basic.Enumeration enumId="namespaces" enumTypeId="SystemMessageTypeParameter"/>
+
+    <!-- EnumerationGroupMember data for system message type and system message parameter -->
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OMSFulfillmentFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="ProductTagsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductTags" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="ProductVariantsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductVariants" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GiftCardActivationFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkCreateGiftCards" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkVariantsMetafieldQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderMetafieldsQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderHeadersQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderItemsQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderCustomAttributesQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="DeleteWebhookSubscription" enumId="queryTemplateLocation" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOperationsFinish" enumId="topic" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OMSSyncedRefundsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="topic" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="incomingSystemMessageParamList" sequenceNum="2"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="3"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="OrderIdsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="namespaces" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="consumeSmrId" sequenceNum="2"/>
+</entity-facade-xml>
