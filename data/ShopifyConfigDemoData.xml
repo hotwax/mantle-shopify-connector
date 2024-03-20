@@ -159,6 +159,10 @@
             parameterName="outgoingSystemMessageParamList"
             parameterValue="[{'systemMessageTypeId':'QueueOrderUpdatedAt','sendNow':'true'}]"
             systemMessageRemoteId=""/>
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OrderIdsFeed"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderMetafieldsFeed"
             parameterName="namespaces"
             parameterValue=""

@@ -329,7 +329,7 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationsFinishWebhookPayload">
         <!-- Following parameters if not configured sets to default values configured in service in attributes
-        <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="enmedpoint" parameterValue="" systemMessageRemoteId=""/>
         -->
     </moqui.service.message.SystemMessageType>
 
