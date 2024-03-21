@@ -61,14 +61,12 @@ under the License.
 
     <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
-    <moqui.basic.Enumeration description="Local Feed File" enumId="LocalFeedFile" enumTypeId="ShopifyMessageTypeEnum"/>
+
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
-    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Imports" enumId="ShopifyBulkImport" enumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk query system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkQuery" description="Parent SystemMessageType for Shopify Bulk Query"/>
-    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Query" enumId="ShopifyBulkQuery" enumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- SystemMessageType record for creating Shopify Fulfillment -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment"
@@ -110,7 +108,6 @@ under the License.
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
             sendPath="${contentRoot}/shopify/ProductTagsFeed">
-
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for updating product tags in Shopify -->
