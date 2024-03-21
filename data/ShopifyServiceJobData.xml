@@ -148,7 +148,7 @@ under the License.
     <!-- ServiceJob data for queuing bulk order custom attributes query -->
     <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderDiscountPromoCodeAppQuery" description="Queue bulk order Discount PromoCode Application query"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderDiscountPromoCodeAppQuery"/>
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderDiscountCodeApplQuery"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="filterQuery" parameterValue=""/>
         <parameters parameterName="fromDate" parameterValue=""/>

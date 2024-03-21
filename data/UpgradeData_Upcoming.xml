@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-facade-xml type="ext-upgrade-upcoming">
+    <!-- SystemMessageType record for bulk order Discount PromoCode Application query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
+            description="Bulk Order Discount PromoCode Application Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountPromoCodeApp.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderDiscountPromoCodeApp/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountPromoQueryResult"
+            description="Send Bulk Order Discount PromoCode Application Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="/home/${sftpUsername}/hotwax/shopify/BulkOrderDiscountPromoCodeAppQueryResult/">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between BulkOrderDiscountCodeApplQuery and SendBulkOrderDiscountPromoCodeAppQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Discount PromoCode Application Query Result" enumId="SendBulkOrderDiscountPromoQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Discount PromoCode Application Query" enumId="BulkOrderDiscountCodeApplQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderDiscountPromoQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk order custom attributes query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderDiscountPromoCodeAppQuery" description="Queue bulk order Discount PromoCode Application query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderDiscountCodeApplQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+</entity-facade-xml>

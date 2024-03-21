@@ -52,7 +52,7 @@ under the License.
                         node {
                             id
                             name
-                            discountApplications(first: 10) {
+                            discountApplications {
                                edges {
                                      node {
                                          ... on DiscountCodeApplication {
