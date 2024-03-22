@@ -458,7 +458,7 @@ You could configure following default parameters and any additional parameters a
             description="Send Bulk Order Discount Code Application Query Result"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="/home/${sftpUsername}/hotwax/shopify/BulkOrderDiscountCodeApplQueryResult/">
+            sendPath="">
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between BulkOrderDiscountCodeApplQuery and SendBulkOrderDiscountCodeApplQueryResult SystemMessageType(s) -->
