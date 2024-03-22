@@ -451,7 +451,7 @@ You could configure following default parameters and any additional parameters a
             sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountCodeApplQueryResult"
