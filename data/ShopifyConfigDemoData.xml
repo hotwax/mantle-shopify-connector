@@ -171,5 +171,9 @@
             parameterName="consumeSmrId"
             parameterValue=""
             systemMessageRemoteId=""/>
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
 
 </entity-facade-xml>
