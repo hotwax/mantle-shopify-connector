@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade-upcoming">
     <!-- EnumerationType for Shopify system message type enum and relationship -->
-    <moqui.basic.Enumeration description="Local Feed File" enumId="LocalFeedFile" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Imports" enumId="ShopifyBulkImport" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Parent SystemMessageType for Shopify Bulk Query" enumId="ShopifyBulkQuery" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Create Shopify Fulfillment System Message" enumId="CreateShopifyFulfillment" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Create OMS Fulfillment Feed System Message" enumId="OMSFulfillmentFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Send Shopify Fulfillment Ack Feed" enumId="SendShopifyFulfillmentAck" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -42,7 +39,7 @@
     <moqui.basic.EnumGroupMember enumGroupEnumId="OrderIdsFeed" enumId="consumeSmrId" sequenceNum="1"/>
     <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="namespaces" sequenceNum="1"/>
     <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="consumeSmrId" sequenceNum="2"/>
-     <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderDiscountCodeApplQuery" enumId="consumeSmrId" sequenceNum="1"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderDiscountCodeApplQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
     <!-- SystemMessageType record for bulk order discount code application query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
@@ -52,7 +49,6 @@
             sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-<!--         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/> -->
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountCodeApplQueryResult"
