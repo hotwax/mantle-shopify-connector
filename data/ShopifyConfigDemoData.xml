@@ -103,10 +103,6 @@
             sendPath="/home/${sftpUsername}/hotwax/shopify/BulkOrderMetafieldsQueryResult/"/>
 
     <!-- Configure shopify config systemMessageRemoteId -->
-    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkOperationsFinish"
-            parameterName="topic"
-            parameterValue="BULK_OPERATIONS_FINISH"
-            systemMessageRemoteId=""/>
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OMSFulfillmentFeed"
             parameterName="consumeSmrId"
             parameterValue=""
