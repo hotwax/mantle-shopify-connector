@@ -352,14 +352,10 @@ under the License.
             parentTypeId="ShopifyWebhook"
             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
             sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
-            consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
-<!--        <parameters parameterName="topic" parameterValue="ORDERS_UPDATED" systemMessageRemoteId=""/>-->
+            consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage"/>
         <!-- Following parameters if not configured sets to default values configured in service in attributes
         <parameters parameterName="endpoint" parameterValue="" systemMessageRemoteId=""/>
         -->
-<!--        <parameters parameterName="incomingSystemMessageParamList" parameterValue="" systemMessageRemoteId=""/>-->
-<!--        <parameters parameterName="outgoingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'QueueOrderUpdatedAt','sendNow':'true'}]" systemMessageRemoteId=""/>-->
-    </moqui.service.message.SystemMessageType>
     <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="topic" sequenceNum="1"/>
     <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="incomingSystemMessageParamList" sequenceNum="2"/>
     <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="3"/>
@@ -415,8 +411,8 @@ under the License.
             sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderDiscountCodeApplQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountCodeApplQueryResult"
             description="Send Bulk Order Discount Code Application Query Result"
