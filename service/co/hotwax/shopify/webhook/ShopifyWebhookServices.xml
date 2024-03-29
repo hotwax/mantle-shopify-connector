@@ -56,7 +56,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="queryParams" type="Map"/>
-            <parameter name="templateLocation" default-value="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl"/>
+            <parameter name="templateLocation" default-value="dbresource://Shopify/template/GraphQL/WebhookSubscriptionsQuery.ftl"/>
         </in-parameters>
         <out-parameters>
             <parameter name="webhookList"/>
@@ -83,7 +83,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="webhookSubscriptionId" required="true"/>
-            <parameter name="templateLocation" default-value="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl"/>
+            <parameter name="templateLocation" default-value="dbresource://Shopify/template/GraphQL/WebhookSubscriptionDelete.ftl"/>
         </in-parameters>
         <out-parameters>
             <parameter name="deletedWebhookSubscriptionId"/>
