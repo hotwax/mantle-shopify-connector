@@ -1,0 +1,1104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed">
+<!--    DbResource of Shopify GraphQL Templates-->
+    <moqui.resource.DbResource filename="Shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
+    <moqui.resource.DbResource filename="template" isFile="N" resourceId="template" parentResourceId="Shopify"/>
+    <moqui.resource.DbResource filename="GraphQL" isFile="N" resourceId="GraphQL" parentResourceId="template"/>
+    <moqui.resource.DbResource filename="BulkCreateGiftCards.ftl" isFile="Y" resourceId="BulkCreateGiftCards" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation {
+        bulkOperationRunMutation(
+            mutation: "mutation call($input: GiftCardCreateInput!) {
+                giftCardCreate(input: $input) {
+                    giftCard {
+                        id
+                        initialValue {
+                            amount
+                        }
+                        expiresOn
+                    }
+                    giftCardCode
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }",
+        stagedUploadPath: "${stagedUploadPath}") {
+            bulkOperation {
+                id
+                url
+                status
+            }
+            userErrors {
+                message
+                field
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOperationResultQuery.ftl" isFile="Y" resourceId="BulkOperationResultQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    query ($id: ID!) {
+        node(id: $id) { ...
+            on BulkOperation {
+                id
+                status
+                errorCode
+                createdAt
+                completedAt
+                objectCount
+                fileSize
+                url
+                partialDataUrl
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOrderCustomAttributesQuery.ftl" isFile="Y" resourceId="BulkOrderCustomAttributesQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    <#if queryParams?has_content>
+        <#if queryParams.filterQuery?has_content>
+            <#assign filterQuery = queryParams.filterQuery/>
+        <#else>
+            <#if queryParams.fromDateLabel?has_content>
+                <#assign fromDateLabel = queryParams.fromDateLabel/>
+            <#else>
+                <#assign fromDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.thruDateLabel?has_content>
+                <#assign thruDateLabel = queryParams.thruDateLabel/>
+            <#else>
+                <#assign thruDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+            </#if>
+            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+        </#if>
+    </#if>
+
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+                orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                    edges {
+                        node {
+                            id
+                            name
+                            customAttributes {
+                                key
+                                value
+                            }
+                        }
+                    }
+                }
+            }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOrderDiscountCodeApplQuery.ftl" isFile="Y" resourceId="BulkOrderDiscountCodeApplQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+            <#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+
+    <#if queryParams?has_content>
+        <#if queryParams.filterQuery?has_content>
+            <#assign filterQuery = queryParams.filterQuery/>
+        <#else>
+            <#if queryParams.fromDateLabel?has_content>
+                <#assign fromDateLabel = queryParams.fromDateLabel/>
+            <#else>
+                <#assign fromDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.thruDateLabel?has_content>
+                <#assign thruDateLabel = queryParams.thruDateLabel/>
+            <#else>
+                <#assign thruDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+            </#if>
+            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+        </#if>
+    </#if>
+
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+                orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                    edges {
+                        node {
+                            id
+                            name
+                            discountApplications {
+                               edges {
+                                     node {
+                                         ... on DiscountCodeApplication {
+                                             code
+                                             targetType
+                                             value {
+                                                 ... on MoneyV2 {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                                ... on PricingPercentageValue {
+                                                    percentage
+                                                }
+                                            }
+                                        }
+                                     }
+                               }
+                            }
+                        }
+                    }
+                }
+            }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOrderHeadersQuery.ftl" isFile="Y" resourceId="BulkOrderHeadersQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+            <#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+
+    <#if queryParams?has_content>
+        <#if queryParams.filterQuery?has_content>
+            <#assign filterQuery = queryParams.filterQuery/>
+        <#else>
+            <#if queryParams.fromDateLabel?has_content>
+                <#assign fromDateLabel = queryParams.fromDateLabel/>
+            <#else>
+                <#assign fromDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.thruDateLabel?has_content>
+                <#assign thruDateLabel = queryParams.thruDateLabel/>
+            <#else>
+                <#assign thruDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+            </#if>
+            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+        </#if>
+    </#if>
+
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+                orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                    edges {
+                        node {
+                            id
+                            name
+                            confirmed
+                            createdAt
+                            updatedAt
+                            cancelledAt
+                            closed
+                            closedAt
+                            processedAt
+                            subtotalLineItemsQuantity
+                            totalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOrderItemsQuery.ftl" isFile="Y" resourceId="BulkOrderItemsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+            <#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    <#if queryParams?has_content>
+        <#if queryParams.filterQuery?has_content>
+            <#assign filterQuery = queryParams.filterQuery/>
+        <#else>
+            <#if queryParams.fromDateLabel?has_content>
+              <#assign fromDateLabel = queryParams.fromDateLabel/>
+            <#else>
+              <#assign fromDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.thruDateLabel?has_content>
+                <#assign thruDateLabel = queryParams.thruDateLabel/>
+            <#else>
+                <#assign thruDateLabel = "created_at"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+            </#if>
+            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+            </#if>
+        </#if>
+    </#if>
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+                orders<#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                    edges {
+                        node {
+                            id
+                            name
+                            confirmed
+                            createdAt
+                            updatedAt
+                            processedAt
+                            cancelledAt
+                            closed
+                            closedAt
+                            subtotalLineItemsQuantity
+                            totalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                                shopMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            currencyCode
+                            fulfillments {
+                                id
+                                status
+                            }
+                            refunds {
+                                id
+                            }
+                            lineItems {
+                                edges {
+                                    node {
+                                        id
+                                        title
+                                        quantity
+                                        currentQuantity
+                                        nonFulfillableQuantity
+                                        refundableQuantity
+                                        product {
+                                            id
+                                            isGiftCard
+                                            productType
+                                            tracksInventory
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkOrderMetafieldsQuery.ftl" isFile="Y" resourceId="BulkOrderMetafieldsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    <#if queryParams?has_content>
+      <#if queryParams.filterQuery?has_content>
+        <#assign filterQuery = queryParams.filterQuery/>
+      <#else>
+          <#if queryParams.fromDateLabel?has_content>
+              <#assign fromDateLabel = queryParams.fromDateLabel/>
+          <#else>
+              <#assign fromDateLabel = "created_at"/>
+          </#if>
+          <#if queryParams.thruDateLabel?has_content>
+              <#assign thruDateLabel = queryParams.thruDateLabel/>
+          <#else>
+              <#assign thruDateLabel = "created_at"/>
+          </#if>
+          <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+              <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+          </#if>
+          <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+              <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+          </#if>
+          <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+              <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+          </#if>
+      </#if>
+    </#if>
+
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+                orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                    edges {
+                        node {
+                            id
+                            <#-- Added below check to request only specific metafields from Shopify based on given namespace list   -->
+                            <#if queryParams?has_content && queryParams.namespaces?has_content>
+                                <#assign namespaceList = queryParams.namespaces.split(",")!/>
+                                <#list namespaceList as namespace>
+                                   metafield${namespace_index + 1}: metafields (<#if namespace?has_content>namespace: "${namespace}"</#if>) {
+                                       edges {
+                                           node {
+                                               id
+                                               key
+                                               namespace
+                                               value
+                                               type
+                                           }
+                                       }
+                                   }
+                                </#list>
+                            </#if>
+                        }
+                    }
+                }
+            }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkUpdateProductTags.ftl" isFile="Y" resourceId="BulkUpdateProductTags" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation {
+        bulkOperationRunMutation(
+            mutation: "mutation call($input: ProductInput!) {
+                productUpdate(input: $input) {
+                    product {
+                        id
+                        tags
+                    }
+                    userErrors {
+                        message
+                        field
+                    }
+                }
+            }",
+        stagedUploadPath: "${stagedUploadPath}") {
+            bulkOperation {
+                id
+                url
+                status
+            }
+            userErrors {
+                message
+                field
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkUpdateProductVariants.ftl" isFile="Y" resourceId="BulkUpdateProductVariants" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation {
+        bulkOperationRunMutation(
+            mutation: "mutation call($input: ProductVariantInput!) {
+                productVariantUpdate(input: $input) {
+                    productVariant {
+                        id
+                        <#if namespaces?has_content>
+                            <#assign namespaceList = StringUtil.split(namespaces, ",")!/>
+                            <#list namespaceList as namespace>
+                                metafield${namespace_index+1}:metafields(namespace:\"${namespace}\" first:10) {
+                                    edges {
+                                        node {
+                                            id
+                                            key
+                                            namespace
+                                            value
+                                            type
+                                        }
+                                    }
+                                }
+                            </#list>
+                        </#if>
+                    }
+                    userErrors {
+                        message
+                        field
+                    }
+                }
+            }",
+            stagedUploadPath: "${stagedUploadPath}") {
+                bulkOperation {
+                id
+                url
+                status
+            }
+            userErrors {
+                message
+                field
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkVariantsMetafieldQuery.ftl" isFile="Y" resourceId="BulkVariantsMetafieldQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation {
+        bulkOperationRunQuery(
+            query: """ {
+            productVariants <#if queryParams?has_content && queryParams.filterQuery?has_content>(query:"${queryParams.filterQuery}")</#if> {
+                edges {
+                    node {
+                        id
+                        <#-- Added below check to request only specific metafields from Shopify based on given namespace list   -->
+                        <#if queryParams?has_content && queryParams.namespaces?has_content>
+                            <#assign namespaceList = queryParams.namespaces.split(",")!/>
+                            <#list namespaceList as namespace>
+                                metafield${namespace_index + 1}: metafields (<#if namespace?has_content>namespace: "${namespace}"</#if>) {
+                                    edges {
+                                        node {
+                                            id
+                                            key
+                                            namespace
+                                            value
+                                            type
+                                        }
+                                    }
+                                }
+                            </#list>
+                        </#if>
+                    }
+                }
+            }
+        }
+        """ ) {
+            bulkOperation {
+                id
+                status
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="OrderMetafieldsQuery.ftl" isFile="Y" resourceId="OrderMetafieldsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    query {
+        node(id: "${shopifyOrderId}") {
+            id
+            ... on
+            Order {
+                id
+                name
+                metafields (first: 10
+                    <#if namespace?has_content>, namespace: "${namespace}"</#if>
+                    <#if cursor?has_content>, after: "${cursor}"</#if>) {
+                    edges {
+                        node {
+                            id
+                            key
+                            namespace
+                            value
+                            type
+                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                    }
+                }
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundLineItemsQuery.ftl" isFile="Y" resourceId="RefundLineItemsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    query {
+        node(id: "${refundId}") {
+            id
+            ... on
+            Refund {
+                id
+                refundLineItems (first : 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                    edges {
+                        node {
+                            lineItem {
+                                id
+                            }
+                            location {
+                                id
+                            }
+                            restockType
+                            quantity
+                            totalTaxSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            subtotalSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                        }
+                        cursor
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ReturnLineItemsByRefundQuery.ftl" isFile="Y" resourceId="ReturnLineItemsByRefundQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    query {
+        node(id: "${refundId}") {
+            id
+            ... on
+            Refund {
+                id
+                order {
+                    id
+                }
+                return {
+                    id
+                    returnLineItems (first : 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                        edges {
+                            node {
+                                fulfillmentLineItem {
+                                    lineItem {
+                                        id
+                                    }
+                                }
+                                returnReason
+                                returnReasonNote
+                                customerNote
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="StagedUploadsCreate.ftl" isFile="Y" resourceId="StagedUploadsCreate" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+        stagedUploadsCreate(input: $input) {
+            stagedTargets  {
+                url,
+                resourceUrl,
+                parameters {
+                    name,
+                    value
+                }
+            }
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="WebhookSubscriptionCreate.ftl" isFile="Y" resourceId="WebhookSubscriptionCreate" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation {
+        webhookSubscriptionCreate(
+            topic: ${topic}
+            webhookSubscription: {
+                format: JSON,
+                callbackUrl: "${endPoint}"}
+        ) {
+            userErrors {
+                field
+                message
+            }
+            webhookSubscription {
+                id
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="WebhookSubscriptionDelete.ftl" isFile="Y" resourceId="WebhookSubscriptionDelete" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    mutation webhookSubscriptionDelete($id: ID!) {
+        webhookSubscriptionDelete(id: $id) {
+            deletedWebhookSubscriptionId
+            userErrors {
+                field
+                message
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="WebhookSubscriptionsQuery.ftl" isFile="Y" resourceId="WebhookSubscriptionsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData><![CDATA[
+<#ftl output_format="HTML">
+<#--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<@compress single_line=true>
+    query {
+        webhookSubscriptions(first: 1
+            <#if queryParams?has_content && queryParams.topics?has_content>, topics: ${queryParams.topics}</#if>
+            <#if queryParams?has_content && queryParams.callbackUrl?has_content>, callbackUrl: "${queryParams.callbackUrl}"</#if>) {
+            edges {
+                node {
+                    id
+                    topic
+                    endpoint {
+                        __typename
+                        ... on WebhookHttpEndpoint {
+                            callbackUrl
+                        }
+                    }
+               }
+            }
+        }
+    }
+</@compress>
+]]></fileData>
+        </file>
+    </moqui.resource.DbResource>
+</entity-facade-xml>
