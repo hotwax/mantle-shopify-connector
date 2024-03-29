@@ -32,7 +32,7 @@ under the License.
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/RefundLineItemsQuery.ftl", sw)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/RefundLineItemsQuery.ftl", sw)
                     queryText = sw.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
@@ -67,7 +67,7 @@ under the License.
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/ReturnLineItemsByRefundQuery.ftl", sw)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/ReturnLineItemsByRefundQuery.ftl", sw)
                     queryText = sw.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
