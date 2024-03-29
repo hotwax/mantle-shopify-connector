@@ -31,7 +31,7 @@ under the License.
         <actions>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/StagedUploadsCreate.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/StagedUploadsCreate.ftl", sw)
                 queryText = sw.toString()
                 try {
                     sw.close()
@@ -153,7 +153,7 @@ under the License.
         <actions>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/BulkOperationResultQuery.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/BulkOperationResultQuery.ftl", sw)
                 queryText = sw.toString()
                 try {
                 sw.close()
