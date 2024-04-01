@@ -359,7 +359,6 @@ You could configure following default parameters and any additional parameters a
 </moqui.service.message.SystemMessageType>
 <moqui.basic.EnumGroupMember enumGroupEnumId="BulkVariantsMetafieldQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
-
 <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
         description="Send Bulk Variants Metafield Query Result"
@@ -394,7 +393,6 @@ You could configure following default parameters and any additional parameters a
         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
 </moqui.service.message.SystemMessageType>
 <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderMetafieldsQuery" enumId="consumeSmrId" sequenceNum="1"/>
-
 
 <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
@@ -689,7 +687,8 @@ Folliowing configuration is added to MoquiConf.xml,
         consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
 </moqui.service.message.SystemMessageType>
 <moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="topic" sequenceNum="1"/>
-<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="2"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="incomingSystemMessageParamList" sequenceNum="2"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="3"/>
 
 <!-- Enumeration for mapping OrderUpdated SystemMessageType to orders/updated shopify webhook topic -->
 <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="OrdersUpdated"
