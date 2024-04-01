@@ -80,7 +80,6 @@ Make sure to setup following configuration data with respect to your environment
         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
 <moqui.basic.Enumeration description="Create Shopify Fulfillment System Message" enumId="CreateShopifyFulfillment" enumTypeId="ShopifyMessageTypeEnum"/>
 
-
 <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
         parentTypeId="LocalFeedFile"
