@@ -193,7 +193,6 @@ under the License.
                 import org.moqui.util.RestClient
 
                 shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
-                ec.logger.info("shopifyUrl: " + shopifyUrl)
                 // Prepare RestClient and call Shopify API
                 RestClient restClient = ec.service.rest()
                 restClient.timeoutRetry(true);
