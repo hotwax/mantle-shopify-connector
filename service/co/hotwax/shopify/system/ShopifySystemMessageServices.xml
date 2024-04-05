@@ -422,21 +422,6 @@ under the License.
                 <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with Synced Refunds Feed file having incorrect data and may contain null, not consuming the feed file."/>
             </if>
 
-            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
-            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
-                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
-            </entity-find-one>
-
-            <if condition="!enumValue || !enumValue.relatedEnumId">
-                <return type="warning" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined, not consuming."/>
-            </if>
-
-            <!-- Fetch the receivePath from SystemMessageType to prepare the path for creating the file in the receiving system. Ex: Moqui's datamanager directory in runtime for creating feeds.-->
-            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
-                <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
-            </entity-find-one>
-            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
-
             <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
                 <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
                 <field-map field-name="parameterName" value="consumeSmrId"/>
@@ -453,6 +438,20 @@ under the License.
             [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
             dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="!enumValue || !enumValue.relatedEnumId">
+                <log level="warn" message="Related SystemMessageType to produce for ${systemMessage?.systemMessageTypeId} not defined,  not producing related system message."/>
+            </if>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+            </entity-find-one>
+            <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
 
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
@@ -493,10 +492,12 @@ under the License.
                 }
             </script>
 
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId,
+            <if condition="relatedSystemMessageType">
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId,
                                    messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
-                          out-map="sendReturnReasonFeedOut" ignore-error="true" transaction="force-new"/>
+                              out-map="sendReturnReasonFeedOut" ignore-error="true" transaction="force-new"/>
+            </if>
         </actions>
     </service>
     <service verb="consume" noun="OrderIdsFeed" authenticate="anonymous-all">
@@ -559,6 +560,34 @@ under the License.
                     dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
 
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="consumeSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="consumeSmrParam">
+                <set field="consumeSmrId" from="consumeSmrParam.parameterValue"/>
+            </if>
+
+            <if condition="consumeSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                    </entity-find-one>
+                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                    <else>
+                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                    </else>
+                </if>
+                <else>
+                    <log level="warn" message="consumeSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
                 import com.fasterxml.jackson.core.JsonFactory
@@ -622,29 +651,10 @@ under the License.
                 }
             </script>
 
-            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
-            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
-                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
-            </entity-find-one>
-
-            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
-                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
-                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
-                </entity-find-one>
-                <if condition="systemMessageType == null"><return type="warning" message="Could not find SystemMessageType with ID ${systemMessageTypeId}, not creating corresponding system message."/></if>
-
-                <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
-                    <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
-                    <field-map field-name="parameterName" value="consumeSmrId"/>
-                    <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-                </entity-find-one>
-                <if condition="!consumeSmrParam || !consumeSmrParam.parameterValue">
-                    <return type="warning" message="consumeSmrId not set for SystemMessageType [${systemMessage.systemMessageTypeId}], not creating corresponding system message."/>
-                </if>
-
+            <if condition="relatedSystemMessageType">
                 <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                              in-map="[systemMessageTypeId:systemMessageType.systemMessageTypeId, systemMessageRemoteId:consumeSmrParam.parameterValue,
-                                   messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:consumeSmrId,
+                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
                               out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
             </if>
         </actions>
