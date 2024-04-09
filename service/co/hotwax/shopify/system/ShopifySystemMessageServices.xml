@@ -405,7 +405,7 @@ under the License.
                           in-map="[systemMessageId:bulkOperationList[0].systemMessageId]" out-map="context"/>
         </actions>
     </service>
-    <service verb="consume" noun="SyncedRefundsFeed" authenticate="anonymous-all">
+    <service verb="consume" noun="SyncedRefundsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>
             Consume Synced Refunds Feed JSON System Message, get return reasons from shopify for each refund and send return reason feed to SFTP.
         </description>
@@ -537,7 +537,7 @@ under the License.
                           out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
         </actions>
     </service>
-    <service verb="generate" noun="OrderMetafieldsFeed" authenticate="anonymous-all">
+    <service verb="generate" noun="OrderMetafieldsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>Generate order metafields json feed for the give orderIds feed, send to SFTP if configured.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
