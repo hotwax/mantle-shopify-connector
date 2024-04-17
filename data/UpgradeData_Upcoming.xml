@@ -35,4 +35,8 @@
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderMetafieldsFeed"
+            sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
 </entity-facade-xml>
