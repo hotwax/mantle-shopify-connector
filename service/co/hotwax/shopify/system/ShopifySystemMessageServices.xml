@@ -436,7 +436,7 @@ under the License.
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
             [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
-            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
 
             <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
@@ -557,7 +557,7 @@ under the License.
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
                     [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
-                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
 
             <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="consumeSmrParam">
