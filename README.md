@@ -440,6 +440,44 @@ You could configure following default parameters and any additional parameters a
     </moqui.service.job.ServiceJob>
 ```
 
+#### Bulk Order Discount Code Application
+
+```aidl
+    <!-- SystemMessageType record for bulk order discount code application query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
+            description="Bulk Order Discount Code Application Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountCodeApplQueryResult"
+            description="Send Bulk Order Discount Code Application Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between BulkOrderDiscountCodeApplQuery and SendBulkOrderDiscountCodeApplQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Order Discount Code Application Query Result" enumId="SendBulkOrderDiscountCodeApplQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Order Discount Code Application Query" enumId="BulkOrderDiscountCodeApplQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderDiscountCodeApplQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk order discount code application query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkOrderDiscountCodeApplQuery" description="Queue bulk order Discount Code Application query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkOrderDiscountCodeApplQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+```
+
 ### Bulk Order Items Query
 
 ```aidl
