@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<entity-facade-xml type="ext-upgrade-upcoming">
+<entity-facade-xml type="ext-upgrade">
     <!-- SystemMessageType record for bulk order discount code application query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
             description="Bulk Order Discount Code Application Query System Message"
@@ -34,5 +34,9 @@
         <parameters parameterName="fromDateLabel" parameterValue=""/>
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderMetafieldsFeed"
+            sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
 
 </entity-facade-xml>
