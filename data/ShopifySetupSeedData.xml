@@ -386,7 +386,7 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderMetafieldsFeed"
             description="Generate Order Metafields Feed For Orders Feed"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderMetafieldsFeed"
-            sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}.json">
+            sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}-${systemMessageId}.json">
     </moqui.service.message.SystemMessageType>
     <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="namespaces" sequenceNum="1"/>
     <moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="consumeSmrId" sequenceNum="2"/>
