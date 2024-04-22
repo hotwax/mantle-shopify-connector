@@ -26,6 +26,18 @@ This is the global configuration needed for most features in this integration.
         description="Shopify Connection Configuration"
         sendUrl="https://[shopifyHost]/admin/api/${shopifyApiVersion}" password="[apiToken]"
         accessScopeEnumId="SHOP_READ_WRITE_ACCESS"/>
+
+<!-- EnumerationType for Shopify system message type enum and relationship -->
+<moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
+
+ <!-- Enumeration data for system message type parameter -->
+ <moqui.basic.EnumerationType description="System Message Type Parameter" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="consumeSmrId" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="queryTemplateLocation" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="topic" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="incomingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="outgoingSystemMessageParamList" enumTypeId="SystemMessageTypeParameter"/>
+ <moqui.basic.Enumeration enumId="namespaces" enumTypeId="SystemMessageTypeParameter"/>
 ```
 
 ## Shopify Fulfillment API Integration
@@ -58,13 +70,15 @@ Make sure to setup following configuration data with respect to your environment
         receiveResponseEnumId="MsgRrMove" 
         receiveMovePath=""
         sendPath="${contentRoot}/Shopify/OMSFulfillmentFeed">
-    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.Enumeration description="Create OMS Fulfillment Feed System Message" enumId="OMSFulfillmentFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OMSFulfillmentFeed" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for creating Shopify Fulfillment -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="CreateShopifyFulfillment"
         description="Create Shopify Fulfillment System Message"
         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ShopifyFulfillmentSystemMessage"/>
+<moqui.basic.Enumeration description="Create Shopify Fulfillment System Message" enumId="CreateShopifyFulfillment" enumTypeId="ShopifyMessageTypeEnum"/>
 
 <!-- SystemMessageType record for sending Shopify Fulfillment Ack Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyFulfillmentAck" description="Send Shopify Fulfillment Ack Feed"
@@ -72,6 +86,7 @@ Make sure to setup following configuration data with respect to your environment
         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
         sendPath=""
         receivePath="${contentRoot}/shopify/ShopifyFulfillmentAckFeed/ShopifyFulfillmentFeed-${dateTime}.json"/>
+<moqui.basic.Enumeration description="Send Shopify Fulfillment Ack Feed" enumId="SendShopifyFulfillmentAck" enumTypeId="ShopifyMessageTypeEnum"/>
 
 <!-- ServiceJob data for polling OMS Fulfilled Items Feed -->
 <moqui.service.job.ServiceJob jobName="poll_SystemMessageSftp_OMSFulfillmentFeed" description="Poll OMS Fulfilled Items Feed"
@@ -138,9 +153,6 @@ Following is the common configuration data,
 <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
 
-<!-- EnumerationType for Shopify system message type enum and relationship -->
-<moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
-
 <!-- ServiceJob data for sending next bulk mutation system message in queue for shopify bulk import -->
 <moqui.service.job.ServiceJob jobName="send_ProducedBulkMutationSystemMessage_ShopifyBulkImport" description="Send next bulk mutation system message in queue for shopify bulk import"
         serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkMutationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
@@ -167,6 +179,7 @@ Supported bulk mutations and configuration,
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
         sendPath="${contentRoot}/Shopify/ProductTagsFeed"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="ProductTagsFeed" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for updating product tags in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags" description="Create Update Product Tags System Message"
@@ -175,8 +188,8 @@ Supported bulk mutations and configuration,
         sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
         receivePath="${contentRoot}/hotwax/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductTags" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for sending bulk update product tags result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkUpdateProductTagsResult"
@@ -208,7 +221,8 @@ Supported bulk mutations and configuration,
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
         receivePath="" receiveResponseEnumId="MsgRrMove" receiveMovePath=""
         sendPath="${contentRoot}/Shopify/ProductVariantsFeed"/>
-
+<moqui.basic.EnumGroupMember enumGroupEnumId="ProductVariantsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+  
 <!-- SystemMessageType record for updating product variants in Shopify -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants" description="Create Update Product Variants System Message"
         parentTypeId="ShopifyBulkImport"
@@ -216,8 +230,8 @@ Supported bulk mutations and configuration,
         sendPath="component://shopify-connector/template/graphQL/BulkUpdateProductTags.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
         receivePath="${contentRoot}/hotwax/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkUpdateProductVariants" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- Additional paramter configuration, a comma seprated values of namespaces -->
 <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkUpdateProductVariants"
@@ -255,8 +269,8 @@ Supported bulk mutations and configuration,
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
             sendPath="${contentRoot}/shopify/GiftCardActivationFeed">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="GiftCardActivationFeed" enumId="consumeSmrId" sequenceNum="1"/>
 
     <!-- SystemMessageType record for creating/activating gift cards in Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
@@ -266,8 +280,8 @@ Supported bulk mutations and configuration,
             sendPath="component://shopify-connector/template/graphQL/BulkCreateGiftCards.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/GiftCardActivationFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkCreateGiftCards" enumId="consumeSmrId" sequenceNum="1"/>
     
     <!-- SystemMessageType record for sending bulk create gift cards result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCreateGiftCardsResult"
@@ -342,8 +356,8 @@ You could configure following default parameters and any additional parameters a
         sendPath="component://shopify-connector/template/graphQL/BulkVariantsMetafieldQuery.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
         receivePath="${contentRoot}/hotwax/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkVariantsMetafieldQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for sending bulk variants metafield query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkVariantsMetafieldQueryResult"
@@ -377,8 +391,8 @@ You could configure following default parameters and any additional parameters a
         sendPath="component://shopify-connector/template/graphQL/BulkOrderMetafieldsQuery.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
         receivePath="${contentRoot}/hotwax/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    <paramters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderMetafieldsQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for sending bulk order metafields query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderMetafieldsQueryResult"
@@ -413,8 +427,8 @@ You could configure following default parameters and any additional parameters a
             sendPath="component://shopify-connector/template/graphQL/BulkOrderHeadersQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderHeadersQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderHeadersQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
     <!-- SystemMessageType record for sending bulk order headers query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderHeadersQueryResult"
@@ -451,8 +465,8 @@ You could configure following default parameters and any additional parameters a
             sendPath="component://shopify-connector/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderDiscountCodeApplQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderDiscountCodeApplQueryResult"
             description="Send Bulk Order Discount Code Application Query Result"
@@ -489,8 +503,8 @@ You could configure following default parameters and any additional parameters a
             sendPath="component://shopify-connector/template/graphQL/BulkOrderItemsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderItemsQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
     <!-- SystemMessageType record for sending bulk order items query result to SFTP -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderItemsQueryResult"
@@ -527,8 +541,8 @@ You could configure following default parameters and any additional parameters a
         sendPath="component://shopify-connector/template/graphQL/BulkOrderCustomAttributesQuery.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
         receivePath="${contentRoot}/shopify/BulkOrderCustomAttributesQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkOrderCustomAttributesQuery" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for sending bulk order custom attributes query result to SFTP -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkOrderCustomAttributesQueryResult"
@@ -635,8 +649,9 @@ Folliowing configuration is added to MoquiConf.xml,
             description="Delete Shopify Webhook Subscription"
             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
             sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionDelete.ftl">
-        <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
+    <moqui.basic.Enumeration description="Delete Shopify Webhook Subscription" enumId="DeleteWebhookSubscription" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="DeleteWebhookSubscription" enumId="queryTemplateLocation" sequenceNum="1"/>
     ```
 2. To unsubscribe webhook invoke _queue#WebhookSubscriptionDeleteSystemMessage_ service.
 
@@ -652,8 +667,8 @@ Folliowing configuration is added to MoquiConf.xml,
         sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
         sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationsFinishWebhookPayload">
-    <parameters parameterName="topic" parameterValue="BULK_OPERATIONS_FINISH" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="BulkOperationsFinish" enumId="topic" sequenceNum="1"/>
 
 <!-- Enumeration for mapping BulkOperationsFinish SystemMessageType to bulk_operations/finish shopify webhook topic -->
 <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="BulkOperationsFinish"
@@ -670,9 +685,10 @@ Folliowing configuration is added to MoquiConf.xml,
         sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
         sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
         consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
-    <parameters parameterName="topic" parameterValue="ORDERS_UPDATED" systemMessageRemoteId=""/>
-    <parameters parameterName="outgoingSystemMessageParamList" parameterValue="[{'systemMessageTypeId':'QueueOrderUpdatedAt','sendNow':'true'}]" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="topic" sequenceNum="1"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="incomingSystemMessageParamList" sequenceNum="2"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrdersUpdated" enumId="outgoingSystemMessageParamList" sequenceNum="3"/>
 
 <!-- Enumeration for mapping OrderUpdated SystemMessageType to orders/updated shopify webhook topic -->
 <moqui.basic.Enumeration description="Shopify Bulk Operation Finish Webhook" enumId="OrdersUpdated"
@@ -682,6 +698,7 @@ Folliowing configuration is added to MoquiConf.xml,
         description="Send Order Update At Date to SQS Queue"
         sendServiceName="co.hotwax.shopify.order.ShopifyOrderServices.send#OrderUpdatedAtToQueue"
         sendPath="[queueUrl]"/>
+<moqui.basic.Enumeration description="Send Order Update At Date to SQS Queue" enumId="QueueOrderUpdatedAt" enumTypeId="ShopifyMessageTypeEnum"/>
 ```
 
 ## Shopify Refund/Return API Integration
@@ -710,8 +727,8 @@ Related configurations,
         receiveResponseEnumId="MsgRrMove"
         receiveMovePath=""
         sendPath="${contentRoot}/shopify/SyncedRefundsFeed">
-    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="OMSSyncedRefundsFeed" enumId="consumeSmrId" sequenceNum="1"/>
 
 <!-- SystemMessageType record for sending Shopify Return Reason Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendShopifyReturnReasonFeed"
@@ -758,16 +775,16 @@ Related configurations,
         receiveResponseEnumId="MsgRrMove"
         receiveMovePath=""
         sendPath="${contentRoot}/shopify/OrderIdsFeed">
-    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
-
+<moqui.basic.EnumGroupMember enumGroupEnumId="OrderIdsFeed" enumId="consumeSmrId" sequenceNum="1"/>
+ 
 <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderMetafieldsFeed"
         description="Generate Order Metafields Feed For Orders Feed"
         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderMetafieldsFeed"
         sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}.json">
-    <parameters parameterName="namespaces" parameterValue="" systemMessageRemoteId=""/>
-    <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
 </moqui.service.message.SystemMessageType>
+<moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="namespaces" sequenceNum="1"/>
+<moqui.basic.EnumGroupMember enumGroupEnumId="GenerateOrderMetafieldsFeed" enumId="consumeSmrId" sequenceNum="2"/>
 
 <!-- SystemMessageType record for sending Order Metafields Feed (sendPath = sftp directory) -->
 <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderMetafieldsFeed"
