@@ -104,4 +104,57 @@ under the License.
             </while>
         </actions>
     </service>
+    <service verb="get" noun="OrderDetails">
+        <description>Get order details for a given shopify orderId</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="orderDetail"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/OrderHeaderByIdQuery.ftl", sw)
+                queryText = sw.toString()
+                ec.logger.info ("queryText" + queryText)
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderHeaderResponse"/>
+            <if condition="!orderHeaderResponse.response.node">
+                <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+            </if>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="orderLineItems" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw1 = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/OrderLineItemByIdQuery.ftl", sw1)
+                    queryText = sw1.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw1.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderLineItemResponse"/>
+                <if condition="!orderLineItemResponse.response.node">
+                    <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+                </if>
+                <if condition="orderLineItemResponse.response.node.lineItems.edges">
+                    <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges)</script>
+                </if>
+                <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+            </while>
+            <set field="orderDetail" from="orderHeaderResponse.response"/>
+            <script>orderDetail.node.lineItems = orderLineItems</script>
+        </actions>
+    </service>
 </services>
