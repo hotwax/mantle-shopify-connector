@@ -52,19 +52,24 @@ under the License.
                         node {
                             id
                             name
-                            confirmed
-                            createdAt
-                            updatedAt
-                            cancelledAt
-                            closed
-                            closedAt
-                            processedAt
-                            subtotalLineItemsQuantity
-                            totalPriceSet {
-                                presentmentMoney {
-                                    amount
-                                    currencyCode
-                                }
+                            discountApplications {
+                               edges {
+                                     node {
+                                         ... on DiscountCodeApplication {
+                                             code
+                                             targetType
+                                             value {
+                                                 ... on MoneyV2 {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                                ... on PricingPercentageValue {
+                                                    percentage
+                                                }
+                                            }
+                                        }
+                                     }
+                               }
                             }
                         }
                     }

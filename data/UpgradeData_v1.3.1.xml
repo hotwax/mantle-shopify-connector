@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+    <!-- SystemMessageType record for importing Gift Card Activation Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GiftCardActivationFeed"
+            description="Create Gift Card Activation Feed System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#GraphQLBulkImportFeed"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            sendPath="${contentRoot}/shopify/GiftCardActivationFeed">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for creating/activating gift cards in Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
+            description="Bulk Create Gift Cards System Message"
+            parentTypeId="ShopifyBulkImport"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
+            sendPath="component://shopify-connector/template/graphQL/BulkCreateGiftCards.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/GiftCardActivationFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GiftCardActivationFeed and BulkCreateGiftCards SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Bulk Create Gift Cards" enumId="BulkCreateGiftCards" enumTypeId="ShopifyMessageTypeEnum" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Gift Card Activation Feed" enumId="GiftCardActivationFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkCreateGiftCards" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for polling Product Variants Feed -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_GiftCardActivationFeed" description="Poll Gift Card Activation Feed"
+            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GiftCardActivationFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+</entity-facade-xml>

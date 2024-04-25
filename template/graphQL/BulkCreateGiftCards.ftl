@@ -19,35 +19,24 @@ under the License.
 <@compress single_line=true>
     mutation {
         bulkOperationRunMutation(
-            mutation: "mutation call($input: ProductVariantInput!) {
-                productVariantUpdate(input: $input) {
-                    productVariant {
+            mutation: "mutation call($input: GiftCardCreateInput!) {
+                giftCardCreate(input: $input) {
+                    giftCard {
                         id
-                        <#if namespaces?has_content>
-                            <#assign namespaceList = StringUtil.split(namespaces, ",")!/>
-                            <#list namespaceList as namespace>
-                                metafield${namespace_index+1}:metafields(namespace:\"${namespace}\" first:10) {
-                                    edges {
-                                        node {
-                                            id
-                                            key
-                                            namespace
-                                            value
-                                            type
-                                        }
-                                    }
-                                }
-                            </#list>
-                        </#if>
+                        initialValue {
+                            amount
+                        }
+                        expiresOn
                     }
+                    giftCardCode
                     userErrors {
-                        message
                         field
+                        message
                     }
                 }
             }",
-            stagedUploadPath: "${stagedUploadPath}") {
-                bulkOperation {
+        stagedUploadPath: "${stagedUploadPath}") {
+            bulkOperation {
                 id
                 url
                 status

@@ -42,15 +42,13 @@ under the License.
                 ec.logger.error("Error closing StringWriter")
                 }
             </script>
-            <set field="requestBody" from="[query:queryText]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="webhookSubscriptionCreateResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="webhookSubscriptionCreateResponse"/>
 
-            <if condition="webhookSubscriptionCreateResponse.response.errors">
-                <return error="true" message="${webhookSubscriptionCreateResponse.response.errors}.toString()"/>
+            <if condition="webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.userErrors">
+                <return error="true" message="${webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.userErrors}"/>
             </if>
 
-            <set field="webhookSubscriptionId" from="webhookSubscriptionCreateResponse.response.data.webhookSubscriptionCreate.webhookSubscription.id"/>
+            <set field="webhookSubscriptionId" from="webhookSubscriptionCreateResponse.response.webhookSubscriptionCreate.webhookSubscription.id"/>
         </actions>
     </service>
     <service verb="get" noun="WebhookSubscriptions" authenticate="anonymous-all">
@@ -75,14 +73,9 @@ under the License.
                 }
             </script>
 
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:[query:queryText]]" out-map="getWebhookSubscriptionsResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="getWebhookSubscriptionsResponse"/>
 
-            <if condition="getWebhookSubscriptionsResponse.response.errors">
-                <return error="true" message="${getWebhookSubscriptionsResponse.response.errors}"/>
-            </if>
-
-            <set field="webhookList" from="getWebhookSubscriptionsResponse.response.data.webhookSubscriptions.edges"/>
+            <set field="webhookList" from="getWebhookSubscriptionsResponse.response.webhookSubscriptions.edges"/>
         </actions>
     </service>
     <service verb="delete" noun="WebhookSubscription" authenticate="anonymous-all">
@@ -107,18 +100,13 @@ under the License.
                 }
             </script>
 
-            <set field="requestBody" from="[query:queryText, variables:[id:webhookSubscriptionId]]"/>
-            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'graphql.json',
-                        requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="deleteWebhookSubscriptionResponse"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[id:webhookSubscriptionId]]" out-map="deleteWebhookSubscriptionResponse"/>
 
-            <if condition="deleteWebhookSubscriptionResponse.response.errors">
-                <return error="true" message="${deleteWebhookSubscriptionResponse.response.errors}"/>
-            </if>
-            <if condition="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors">
-                <return error="true" message="${deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.userErrors}"/>
+            <if condition="deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.userErrors">
+                <return error="true" message="${deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.userErrors}"/>
             </if>
 
-            <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.data.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
+            <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
         </actions>
     </service>
     <service verb="verify" noun="Hmac" authenticate="anonymous-all">
@@ -185,7 +173,7 @@ under the License.
         </actions>
     </service>
 
-    <service verb="produce" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
+    <service verb="queue" noun="WebhookSubscriptionSystemMessage" authenticate="anonymous-all">
         <description>
             Service to initiate webhook subscription of a specific type by creating a system message.
         </description>
@@ -229,7 +217,7 @@ under the License.
             <set field="remoteMessageId" from="webhookSubscriptionId"/>
         </actions>
     </service>
-    <service verb="produce" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
+    <service verb="queue" noun="WebhookSubscriptionDeleteSystemMessage" authenticate="anonymous-all">
         <description>
             Service to initiate delete webhook subscription of a specific type by creating a system message.
         </description>
@@ -289,6 +277,51 @@ under the License.
                 <service-call name="co.hotwax.shopify.webhook.ShopifyWebhookServices.delete#WebhookSubscription" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, webhookSubscriptionId:webhookList[0].node.id, templateLocation:systemMessage.sendPath]" out-map="context"/>
 
                 <set field="remoteMessageId" from="deletedWebhookSubscriptionId"/>
+            </if>
+        </actions>
+    </service>
+    <service verb="consume" noun="WebhookPayloadSystemMessage" authenticate="anonymous-all">
+        <description>Generic service to consume shopify webhook payload and generate multiple incoming or outgoing system messages for further processing.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+            <set field="isConsumable" type="Boolean" value="false"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="incomingSystemMessageListParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="incomingSystemMessageParamList"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="incomingSystemMessageListParam &amp;&amp; incomingSystemMessageListParam.parameterValue">
+                <set field="isConsumable" type="Boolean" value="true"/>
+                <set field="incomingSystemMessageList" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(incomingSystemMessageListParam.parameterValue, List.class)"/>
+            </if>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="outgoingSystemMessageListParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="outgoingSystemMessageParamList"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="outgoingSystemMessageListParam &amp;&amp; outgoingSystemMessageListParam.parameterValue">
+                <set field="isConsumable" type="Boolean" value="true"/>
+                <set field="outgoingSystemMessageList" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(outgoingSystemMessageListParam.parameterValue, List.class)"/>
+            </if>
+            <if condition="!isConsumable">
+                <return error="true" message="No incoming or outgoing system message parameters defined for webhook SystemMessageType [${systemMessage.systemMessageTypeId}]"/>
+            </if>
+            <if condition="incomingSystemMessageList">
+                <iterate list="incomingSystemMessageList" entry="paramMap">
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage"
+                                  in-map="[systemMessageTypeId:paramMap.systemMessageTypeId, systemMessageRemoteId:paramMap.systemMessageRemoteId, messageText:systemMessage.messageText]"
+                                  out-map="receiveMessageResult" ignore-error="true" transaction="force-new"/>
+                </iterate>
+            </if>
+            <if condition="outgoingSystemMessageList">
+                <iterate list="outgoingSystemMessageList" entry="paramMap">
+                    <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                                  in-map="[systemMessageTypeId:paramMap.systemMessageTypeId, systemMessageRemoteId:paramMap.systemMessageRemoteId, messageText:systemMessage.messageText, sendNow:paramMap.sendNow]"
+                                  out-map="queueMessageResult" ignore-error="true" transaction="force-new"/>
+                </iterate>
             </if>
         </actions>
     </service>

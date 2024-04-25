@@ -18,33 +18,27 @@ under the License.
 
 <@compress single_line=true>
     query {
-        node(id: "${shopifyRefundId}") {
+        node(id: "${shopifyOrderId}") {
             id
             ... on
-            Refund {
+            Order {
                 id
-                order {
-                    id
-                }
-                return {
-                    id
-                    returnLineItems (first : 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
-                        edges {
-                            node {
-                                fulfillmentLineItem {
-                                    lineItem {
-                                        id
-                                    }
-                                }
-                                returnReason
-                                returnReasonNote
-                                customerNote
-                            }
+                name
+                metafields (first: 10
+                    <#if namespace?has_content>, namespace: "${namespace}"</#if>
+                    <#if cursor?has_content>, after: "${cursor}"</#if>) {
+                    edges {
+                        node {
+                            id
+                            key
+                            namespace
+                            value
+                            type
                         }
-                        pageInfo {
-                            hasNextPage
-                            endCursor
-                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
                     }
                 }
             }
