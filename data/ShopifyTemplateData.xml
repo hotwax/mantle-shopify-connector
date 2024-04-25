@@ -84,7 +84,6 @@ query {
                         }
                         quantity
                     }
-                    cursor
                 }
                 pageInfo {
                     endCursor
