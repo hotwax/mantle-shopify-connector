@@ -108,4 +108,32 @@ under the License.
             </if>
         </actions>
     </service>
+    <service verb="get" noun="ReturnDetails">
+        <description>Get return details for a given Return Id</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="returnId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="returnDetail"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/ReturnByIdQuery.ftl", sw)
+                queryText = sw.toString()
+                ec.logger.info ("=====queryText" + queryText)
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
+            <if condition="!returnResponse.response.node">
+                <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+            </if>
+            <set field="returnDetail" from="returnResponse.response.node"/>
+        </actions>
+    </service>
 </services>
