@@ -107,7 +107,7 @@ under the License.
     <service verb="get" noun="OrderDetails">
         <description>Get order details for a given shopify orderId</description>
         <in-parameters>
-            <parameter name="systemMessageRemoteId"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
         </in-parameters>
         <out-parameters>
