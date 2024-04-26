@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="seed">
     <!--    DbResource of Shopify GraphQL Templates-->
-    <moqui.resource.DbResource filename="Shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
-    <moqui.resource.DbResource filename="template" isFile="N" resourceId="template" parentResourceId="Shopify"/>
-    <moqui.resource.DbResource filename="GraphQL" isFile="N" resourceId="GraphQL" parentResourceId="template"/>
+    <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
+    <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
+    <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
     <moqui.resource.DbResource filename="FulfillmentByIdQuery.ftl" isFile="Y" resourceId="FulfillmentByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData><![CDATA[
-<#ftl output_format="HTML">
-<@compress single_line=true>
-query{
-    node(id: "${fulfillmentOrderId}") {
-        id
-        ... on
-        FulfillmentOrder {
-            id
-            status
-            updatedAt
-            fulfillAt
-            channelId
-            assignedLocation {
-                location {
-                    id
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${fulfillmentOrderId}") {
+                        id
+                        ... on
+                        FulfillmentOrder {
+                            id
+                            status
+                            updatedAt
+                            fulfillAt
+                            channelId
+                            assignedLocation {
+                                location {
+                                    id
+                                }
+                            }
+                            lineItems (first : 5) {
+                                nodes {
+                                    id
+                                    sku
+                                    variantTitle
+                                    productTitle
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-            lineItems (first : 5) {
-                nodes {
-                    id
-                    sku
-                    variantTitle
-                    productTitle
-                }
-            }
-        }
-    }
-}
-</@compress>
-]]></fileData>
+                </@compress>]]>
+            </fileData>
         </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>

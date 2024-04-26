@@ -228,7 +228,7 @@ under the License.
         <actions>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/FulfillmentByIdQuery.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentByIdQuery.ftl", sw)
                 queryText = sw.toString()
                 ec.logger.info ("=====queryText" + queryText)
                 try {
