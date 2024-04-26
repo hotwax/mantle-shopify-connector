@@ -116,7 +116,7 @@ under the License.
         <actions>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/GraphQL/OrderHeaderByIdQuery.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/OrderHeaderByIdQuery.ftl", sw)
                 queryText = sw.toString()
                 ec.logger.info ("queryText" + queryText)
                 try {
@@ -134,7 +134,7 @@ under the License.
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/OrderLineItemByIdQuery.ftl", sw1)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/OrderLineItemByIdQuery.ftl", sw1)
                     queryText = sw1.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
