@@ -216,4 +216,32 @@ under the License.
                 remote ${systemMessageRemoteId}, saved response in messages ${shopifyFulfillmentAckOut.systemMessageId}"/>
         </actions>
     </service>
+    <service verb="get" noun="FulfillmentOrderDetails">
+        <description>Get fulfillment order details for a given fulfillmentOrder Id</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="fulfillmentOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="fulfillmentOrderDetail"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/FulfillmentByIdQuery.ftl", sw)
+                queryText = sw.toString()
+                ec.logger.info ("=====queryText" + queryText)
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderResponse"/>
+            <if condition="!fulfillmentOrderResponse.response.node">
+                <return type="warning" message="No Shopify order found for id: ${fulfillmentOrderId}"/>
+            </if>
+            <set field="fulfillmentOrderDetail" from="fulfillmentOrderResponse.response.node"/>
+        </actions>
+    </service>
 </services>
