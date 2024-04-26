@@ -4,7 +4,7 @@
     <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
     <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
     <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
-    <moqui.resource.DbResource filename="ReturnByIdQuery.ftl" isFile="Y" resourceId="ReturnByIdQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="ReturnHeaderByIdQuery.ftl" isFile="Y" resourceId="ReturnHeaderByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -17,7 +17,25 @@
                             id
                             status
                             name
-                            returnLineItems (first: 5) {
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ReturnLineItemByIdQuery.ftl" isFile="Y" resourceId="ReturnLineItemByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
+                        id
+                        ... on
+                        Return{
+                            id
+                            returnLineItems (first: 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -35,10 +53,32 @@
                                         }
                                     }
                                 }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
                             }
-                            exchangeLineItems (first: 5) {
-                                edges {
-                                    node {
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ExchangeLineItemByIdQuery.ftl" isFile="Y" resourceId="ExchangeLineItemByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}"){
+                        id
+                        ... on
+                        Return{
+                            id
+                            exchangeLineItems (first: 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges{
+                                    node{
                                         id
                                         lineItem {
                                             id
@@ -52,25 +92,41 @@
                                         }
                                     }
                                 }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
                             }
-                            refunds (first: 5) {
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ReturnsByOrderIDQuery.ftl" isFile="Y" resourceId="ReturnsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            name
+                            returns (first: 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                 edges {
                                     node {
                                         id
-                                        transactions (first: 5) {
-                                            edges {
-                                                node {
-                                                    id
-                                                    amountSet {
-                                                        presentmentMoney {
-                                                            amount
-                                                            currencyCode
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        status
+                                        name
                                     }
+                                }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
                                 }
                             }
                         }
