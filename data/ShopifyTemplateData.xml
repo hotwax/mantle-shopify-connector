@@ -6,8 +6,7 @@
     <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
     <moqui.resource.DbResource filename="OrderHeaderByIdQuery.ftl" isFile="Y" resourceId="OrderHeaderByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData><![CDATA[
-<#ftl output_format="HTML">
+            <fileData><![CDATA[<#ftl output_format="HTML">
 <@compress single_line=true>
 query{
     node(id: "${shopifyOrderId}") {
@@ -57,14 +56,12 @@ query{
         }
     }
 }
-</@compress>
-]]></fileData>
+</@compress>]]></fileData>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="OrderLineItemByIdQuery.ftl" isFile="Y" resourceId="OrderLineItemByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData><![CDATA[
-<#ftl output_format="HTML">
+            <fileData><![CDATA[<#ftl output_format="HTML">
 <@compress single_line=true>
 query {
     node(id: "${shopifyOrderId}") {
@@ -93,8 +90,7 @@ query {
         }
     }
 }
-</@compress>
-]]></fileData>
+</@compress>]]></fileData>
         </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>
