@@ -148,13 +148,13 @@ under the License.
                     <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
                 </if>
                 <if condition="orderLineItemResponse.response.node.lineItems.edges">
-                    <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges)</script>
+                    <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)</script>
                 </if>
                 <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
                 <set field="cursor" from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
             </while>
-            <set field="orderDetail" from="orderHeaderResponse.response"/>
-            <script>orderDetail.node.lineItems = orderLineItems</script>
+            <set field="orderDetail" from="orderHeaderResponse.response.node"/>
+            <set field="orderDetail.lineItems" from="orderLineItems"/>
         </actions>
     </service>
 </services>
