@@ -144,9 +144,6 @@ under the License.
                     }
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderLineItemResponse"/>
-                <if condition="!orderLineItemResponse.response.node">
-                    <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
-                </if>
                 <if condition="orderLineItemResponse.response.node.lineItems.edges">
                     <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)</script>
                 </if>
