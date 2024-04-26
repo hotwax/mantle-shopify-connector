@@ -1,70 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="seed">
     <!--    DbResource of Shopify GraphQL Templates-->
-    <moqui.resource.DbResource filename="Shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
-    <moqui.resource.DbResource filename="template" isFile="N" resourceId="template" parentResourceId="Shopify"/>
-    <moqui.resource.DbResource filename="GraphQL" isFile="N" resourceId="GraphQL" parentResourceId="template"/>
+    <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
+    <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
+    <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
     <moqui.resource.DbResource filename="ReturnByIdQuery.ftl" isFile="Y" resourceId="ReturnByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData><![CDATA[
-<#ftl output_format="HTML">
-<@compress single_line=true>
-query{
-    node(id: "${returnId}") {
-        id
-        ... on
-        Return {
-            id
-            status
-            name
-            returnLineItems (first: 5) {
-                edges {
-                    node {
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
                         id
-                        fulfillmentLineItem {
-                            lineItem {
-                                quantity
-                            }
-                        }
-                        quantity
-                        withCodeDiscountedTotalPriceSet {
-                            presentmentMoney {
-                                amount
-                                currencyCode
-                            }
-                        }
-                    }
-                }
-            }
-            exchangeLineItems (first: 5) {
-                edges {
-                    node {
-                        id
-                        lineItem {
+                        ... on
+                        Return {
                             id
-                            quantity
-                            sku
-                            variantTitle
-                            product {
-                                id
-                                title
+                            status
+                            name
+                            returnLineItems (first: 5) {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentLineItem {
+                                            lineItem {
+                                                quantity
+                                            }
+                                        }
+                                        quantity
+                                        withCodeDiscountedTotalPriceSet {
+                                            presentmentMoney {
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-            }
-            refunds (first: 5) {
-                edges {
-                    node {
-                        id
-                        transactions (first: 5) {
-                            edges {
-                                node {
-                                    id
-                                    amountSet {
-                                        presentmentMoney {
-                                            amount
-                                            currencyCode
+                            exchangeLineItems (first: 5) {
+                                edges {
+                                    node {
+                                        id
+                                        lineItem {
+                                            id
+                                            quantity
+                                            sku
+                                            variantTitle
+                                            product {
+                                                id
+                                                title
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            refunds (first: 5) {
+                                edges {
+                                    node {
+                                        id
+                                        transactions (first: 5) {
+                                            edges {
+                                                node {
+                                                    id
+                                                    amountSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -72,12 +76,8 @@ query{
                         }
                     }
                 }
-            }
-        }
-    }
-}
-</@compress>
-]]></fileData>
+                </@compress>]]>
+            </fileData>
         </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>

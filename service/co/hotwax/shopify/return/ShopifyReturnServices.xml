@@ -120,9 +120,9 @@ under the License.
         <actions>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://Shopify/template/graphQL/ReturnByIdQuery.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReturnByIdQuery.ftl", sw)
                 queryText = sw.toString()
-                ec.logger.info ("=====queryText" + queryText)
+                ec.logger.info ("queryText" + queryText)
                 try {
                     sw.close()
                 } catch (IOException e) {
