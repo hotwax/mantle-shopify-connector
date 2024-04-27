@@ -99,7 +99,48 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentByIdQuery.ftl" isFile="Y" resourceId="FulfillmentByIdQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="FulfillmentByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentByIdQuery"
+                               parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            name
+                            fulfillmentOrders (first: 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        status
+                                        updatedAt
+                                        fulfillAt
+                                        channelId
+                                        assignedLocation {
+                                            location {
+                                                id
+                                            }
+                                        }
+                                    }
+                                }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="FulfillmentLineItemsByIdQuery.ftl" isFile="Y"
+                               resourceId="FulfillmentLineItemsByIdQuery" parentResourceId="GraphQl">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -111,20 +152,18 @@
                         FulfillmentOrder {
                             id
                             status
-                            updatedAt
-                            fulfillAt
-                            channelId
-                            assignedLocation {
-                                location {
-                                    id
+                            lineItems (first : 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges{
+                                    node {
+                                        id
+                                        sku
+                                        variantTitle
+                                        productTitle
+                                    }
                                 }
-                            }
-                            lineItems (first : 5) {
-                                nodes {
-                                    id
-                                    sku
-                                    variantTitle
-                                    productTitle
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
                                 }
                             }
                         }
