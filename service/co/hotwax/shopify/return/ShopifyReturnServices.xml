@@ -189,7 +189,7 @@ under the License.
             <set field="returnDetail.exchangeLineItems" from="exchangeLineItems"/>
         </actions>
     </service>
-    <service verb="get" noun="ReturnsByOrder">
+    <service verb="get" noun="ReturnsByOrderDetails">
         <description>Get all returns detail for a given shopify orderId</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
