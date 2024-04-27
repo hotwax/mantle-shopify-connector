@@ -4,6 +4,101 @@
     <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
     <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
     <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
+    <moqui.resource.DbResource filename="OrderHeaderByIdQuery.ftl" isFile="Y" resourceId="OrderHeaderByIdQuery"
+                               parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            name
+                            updatedAt
+                            returnStatus
+                            customer {
+                                id
+                                firstName
+                                lastName
+                                email
+                                phone
+                            }
+                            originalTotalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            currentTotalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
+                            }
+                            channelInformation {
+                                channelId
+                                channelDefinition {
+                                    channelName
+                                }
+                            }
+                            billingAddress {
+                                firstName
+                                lastName
+                                address1
+                                address2
+                                city
+                                provinceCode
+                                countryCodeV2
+                                phone
+                                zip
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="OrderLineItemByIdQuery.ftl" isFile="Y" resourceId="OrderLineItemByIdQuery"
+                               parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query {
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            name
+                            lineItems (first: 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        variant {
+                                            id
+                                            barcode
+                                            sku
+                                        }
+                                        quantity
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="FulfillmentByIdQuery.ftl" isFile="Y" resourceId="FulfillmentByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
