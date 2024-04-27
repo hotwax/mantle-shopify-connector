@@ -116,15 +116,6 @@
                                 edges {
                                     node {
                                         id
-                                        status
-                                        updatedAt
-                                        fulfillAt
-                                        channelId
-                                        assignedLocation {
-                                            location {
-                                                id
-                                            }
-                                        }
                                     }
                                 }
                                 pageInfo{
@@ -139,7 +130,35 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentLineItemsByIdQuery.ftl" isFile="Y"
+    <moqui.resource.DbResource filename="FulfillmentHeaderByIdQuery.ftl" isFile="Y"
+                               resourceId="FulfillmentHeaderByIdQuery" parentResourceId="GraphQl">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${fulfillmentOrderId}") {
+                        id
+                        ... on
+                        FulfillmentOrder {
+                            id
+                            status
+                            updatedAt
+                            fulfillAt
+                            channelId
+                            assignedLocation {
+                                location {
+                                    id
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+        </file>
+    </moqui.resource.DbResource>
+<moqui.resource.DbResource filename="FulfillmentLineItemsByIdQuery.ftl" isFile="Y"
                                resourceId="FulfillmentLineItemsByIdQuery" parentResourceId="GraphQl">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
