@@ -131,7 +131,7 @@ under the License.
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
             <if condition="!returnResponse.response.node">
-                <return type="warning" message="No Shopify order found for id: ${returnId}"/>
+                <return type="warning" message="No Shopify return found for id: ${returnId}"/>
             </if>
             <set field="returnDetail" from="returnResponse.response.node"/>
 <!--            Getting return line items detail-->
@@ -150,9 +150,6 @@ under the License.
                     }
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemResponse"/>
-                <if condition="!returnLineItemResponse.response.node">
-                    <return type="warning" message="No Shopify order found for id: ${returnId}"/>
-                </if>
                 <if condition="returnLineItemResponse.response.node.returnLineItems.edges">
                     <script>returnLineItems.addAll(returnLineItemResponse.response.node.returnLineItems.edges.node)</script>
                 </if>
@@ -177,9 +174,6 @@ under the License.
                     }
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="exchangeLineItemResponse"/>
-                <if condition="!exchangeLineItemResponse.response.node">
-                    <return type="warning" message="No Shopify order found for id: ${returnId}"/>
-                </if>
                 <if condition="exchangeLineItemResponse.response.node.exchangeLineItems.edges">
                     <script>exchangeLineItems.addAll(exchangeLineItemResponse.response.node.exchangeLineItems.edges.node)</script>
                 </if>
