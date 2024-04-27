@@ -120,8 +120,6 @@
                                 edges {
                                     node {
                                         id
-                                        status
-                                        name
                                     }
                                 }
                                 pageInfo{

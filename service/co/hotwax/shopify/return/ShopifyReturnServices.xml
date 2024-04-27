@@ -190,17 +190,16 @@ under the License.
         </actions>
     </service>
     <service verb="get" noun="ReturnsByOrder">
-        <description>Get returns detail for a given shopify orderId</description>
+        <description>Get all returns detail for a given shopify orderId</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="returnsByOrderDetail"/>
-            <parameter name="returnId"/>
         </out-parameters>
         <actions>
-            <set field="returnsByOrderDetail"/>
+            <set field="returnsByOrderDetail" from="[:]"/>
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="returns" from="[]"/>
             <while condition="hasNextPage">
@@ -222,17 +221,18 @@ under the License.
                 <if condition="returnResponse.response.node.returns.edges">
                     <script>returns.addAll(returnResponse.response.node.returns.edges.node)</script>
                 </if>
-                <set field="returnId" from="returns.id"/>
-                <while condition="">
-
-                </while>
-<!--                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="returnDetails"/>-->
+                <set field="returnDetailsList" from="[]"/>
+                <set field="returnIdList" from="returns.id"/>
+                <iterate list="returnIdList" entry="returnId">
+                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="returnDetails"/>
+                    <script>returnDetailsList.addAll(returnDetails.returnDetail)</script>
+                </iterate>
                 <set field="hasNextPage" from="returnResponse.response.node.returns.pageInfo.hasNextPage"/>
                 <set field="cursor" from="returnResponse.response.node.returns.pageInfo.endCursor"/>
             </while>
-            <set field="returnsByOrderDetail" from="returns"/>
-<!--            <set field="returnsByOrderDetail.id" from="returnResponse.response.node.id"/>-->
-<!--            <set field="orderDetail.lineItems" from="orderLineItems"/>-->
+            <set field="returnsByOrderDetail.id" from="returnResponse.response.node.id"/>
+            <set field="returnsByOrderDetail.name" from="returnResponse.response.node.name"/>
+            <set field="returnsByOrderDetail.returns" from="returnDetailsList"/>
         </actions>
     </service>
 </services>
