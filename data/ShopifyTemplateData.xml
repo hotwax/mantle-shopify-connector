@@ -99,7 +99,7 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentByIdQuery"
+    <moqui.resource.DbResource filename="FulfillmentOrdersByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrdersByOrderIdQuery"
                                parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -130,8 +130,8 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentHeaderByIdQuery.ftl" isFile="Y"
-                               resourceId="FulfillmentHeaderByIdQuery" parentResourceId="GraphQl">
+    <moqui.resource.DbResource filename="FulfillmentOrderHeaderByIdQuery.ftl" isFile="Y"
+                               resourceId="FulfillmentOrderHeaderByIdQuery" parentResourceId="GraphQl">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -158,8 +158,8 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
-<moqui.resource.DbResource filename="FulfillmentLineItemsByIdQuery.ftl" isFile="Y"
-                               resourceId="FulfillmentLineItemsByIdQuery" parentResourceId="GraphQl">
+<moqui.resource.DbResource filename="FulfillmentOrderLineItemsByIdQuery.ftl" isFile="Y"
+                               resourceId="FulfillmentOrderLineItemsByIdQuery" parentResourceId="GraphQl">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -170,7 +170,6 @@
                         ... on
                         FulfillmentOrder {
                             id
-                            status
                             lineItems (first : 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                 edges{
                                     node {
