@@ -297,12 +297,12 @@ under the License.
                 <if condition="!fulfillmentOrderResponse.response.node">
                     <return type="warning" message="No shopify order found for id: ${shopifyOrderId}"/>
                 </if>
-<!--                Getting all the fulfillmentOrderId for the shopifyOrderId-->
+                <!-- Getting all the fulfillmentOrderId for the shopifyOrderId-->
                 <set field="fulfillmentOrderIdList" from="[]"/>
                 <if condition="fulfillmentOrderResponse.response.node.fulfillmentOrders.edges">
                     <script>fulfillmentOrderIdList.addAll(fulfillmentOrderResponse.response.node.fulfillmentOrders.edges.node.id)</script>
                 </if>
-<!--                Getting fulfillment order details for each fulfillmentOrderId-->
+                <!-- Getting fulfillment order details for each fulfillmentOrderId-->
                 <iterate list="fulfillmentOrderIdList" entry="fulfillmentOrderId">
                     <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId]" out-map="fulfillmentOrderDetail"/>
                     <script>fulfillmentOrders.addAll(fulfillmentOrderDetail.fulfillmentOrderDetail)</script>
