@@ -229,7 +229,7 @@ under the License.
             <set field="fulfillmentDetail" from="[:]"/>
             <script>
                 StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentHeaderByIdQuery.ftl", sw)
+                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", sw)
                 queryText = sw.toString()
                 ec.logger.info ("queryText" + queryText)
                 try {
@@ -249,7 +249,7 @@ under the License.
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentLineItemsByIdQuery.ftl", sw1)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", sw1)
                     queryText = sw1.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
@@ -268,23 +268,23 @@ under the License.
             <set field="fulfillmentDetail.lineItems" from="fulfillmentLineItems"/>
         </actions>
     </service>
-    <service verb="get" noun="FulfillmentByOrderDetails">
+    <service verb="get" noun="FulfillmentOrdersByOrderId">
         <description>Get all fulfillment order details for a given shopify order Id</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="fulfillmentByOrderDetail"/>
+            <parameter name="fulfillmentOrdersByOrderId"/>
         </out-parameters>
         <actions>
-            <set field="fulfillmentByOrderDetail" from="[:]"/>
+            <set field="fulfillmentOrdersByOrderId" from="[:]"/>
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="fulfillmentOrders" from="[]"/>
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentByOrderIdQuery.ftl", sw)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", sw)
                     queryText = sw.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
@@ -297,21 +297,22 @@ under the License.
                 <if condition="!fulfillmentOrderResponse.response.node">
                     <return type="warning" message="No shopify order found for id: ${shopifyOrderId}"/>
                 </if>
+<!--                Getting all the fulfillmentOrderId for the shopifyOrderId-->
+                <set field="fulfillmentOrderIdList" from="[]"/>
                 <if condition="fulfillmentOrderResponse.response.node.fulfillmentOrders.edges">
-                    <script>fulfillmentOrders.addAll(fulfillmentOrderResponse.response.node.fulfillmentOrders.edges.node)</script>
+                    <script>fulfillmentOrderIdList.addAll(fulfillmentOrderResponse.response.node.fulfillmentOrders.edges.node.id)</script>
                 </if>
-                <set field="fulfillmentOrderDetailsList" from="[]"/>
-                <set field="fulfillmentOrderIdList" from="fulfillmentOrders.id"/>
+<!--                Getting fulfillment order details for each fulfillmentOrderId-->
                 <iterate list="fulfillmentOrderIdList" entry="fulfillmentOrderId">
                     <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId]" out-map="fulfillmentDetail"/>
-                    <script>fulfillmentOrderDetailsList.addAll(fulfillmentDetail.fulfillmentDetail)</script>
+                    <script>fulfillmentOrders.addAll(fulfillmentDetail.fulfillmentDetail)</script>
                 </iterate>
                 <set field="hasNextPage" from="fulfillmentOrderResponse.response.node.fulfillmentOrders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="fulfillmentOrderResponse.response.node.fulfillmentOrders.pageInfo.endCursor"/>
             </while>
-            <set field="fulfillmentByOrderDetail.id" from="fulfillmentOrderResponse.response.node.id"/>
-            <set field="fulfillmentByOrderDetail.name" from="fulfillmentOrderResponse.response.node.name"/>
-            <set field="fulfillmentByOrderDetail.fulfillmentOrders" from="fulfillmentOrderDetailsList"/>
+            <set field="fulfillmentOrdersByOrderId.id" from="fulfillmentOrderResponse.response.node.id"/>
+            <set field="fulfillmentOrdersByOrderId.name" from="fulfillmentOrderResponse.response.node.name"/>
+            <set field="fulfillmentOrdersByOrderId.fulfillmentOrders" from="fulfillmentOrders"/>
         </actions>
     </service>
 </services>
