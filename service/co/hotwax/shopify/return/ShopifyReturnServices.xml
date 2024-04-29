@@ -108,4 +108,126 @@ under the License.
             </if>
         </actions>
     </service>
+    <service verb="get" noun="ReturnDetails">
+        <description>Get return details for a given Return Id</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="returnId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="returnDetail"/>
+        </out-parameters>
+        <actions>
+            <script>
+                StringWriter sw = new StringWriter()
+                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReturnHeaderByIdQuery.ftl", sw)
+                queryText = sw.toString()
+                ec.logger.info ("queryText" + queryText)
+                try {
+                    sw.close()
+                } catch (IOException e) {
+                    ec.logger.error("Error closing StringWriter")
+                }
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
+            <if condition="!returnResponse.response.node">
+                <return type="warning" message="No Shopify return found for id: ${returnId}"/>
+            </if>
+            <set field="returnDetail" from="returnResponse.response.node"/>
+<!--            Getting return line items detail-->
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="returnLineItems" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw1 = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReturnLineItemByIdQuery.ftl", sw1)
+                    queryText = sw1.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw1.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemResponse"/>
+                <if condition="returnLineItemResponse.response.node.returnLineItems.edges">
+                    <script>returnLineItems.addAll(returnLineItemResponse.response.node.returnLineItems.edges.node)</script>
+                </if>
+                <set field="hasNextPage" from="returnLineItemResponse.response.node.returnLineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="returnLineItemResponse.response.node.returnLineItems.pageInfo.endCursor"/>
+            </while>
+            <set field="returnDetail.returnLineItems" from="returnLineItems"/>
+<!--            Getting exchange line items detail-->
+            <set field="hasNextPage" value="true"/>
+            <set field="cursor" value=""/>
+            <set field="exchangeLineItems" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw2 = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ExchangeLineItemByIdQuery.ftl", sw2)
+                    queryText = sw2.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw2.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="exchangeLineItemResponse"/>
+                <if condition="exchangeLineItemResponse.response.node.exchangeLineItems.edges">
+                    <script>exchangeLineItems.addAll(exchangeLineItemResponse.response.node.exchangeLineItems.edges.node)</script>
+                </if>
+                <set field="hasNextPage" from="exchangeLineItemResponse.response.node.exchangeLineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="exchangeLineItemResponse.response.node.exchangeLineItems.pageInfo.endCursor"/>
+            </while>
+            <set field="returnDetail.exchangeLineItems" from="exchangeLineItems"/>
+        </actions>
+    </service>
+    <service verb="get" noun="ReturnsByOrderId">
+        <description>Get all returns detail for a given shopify orderId</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="orderReturns"/>
+        </out-parameters>
+        <actions>
+            <set field="orderReturns" from="[:]"/>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="returns" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReturnsByOrderIDQuery.ftl", sw)
+                    queryText = sw.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
+                <if condition="!returnResponse.response.node">
+                    <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+                </if>
+<!--                Getting all the returnId for the shopifyOrderId-->
+                <set field="returnIdList" from="[]"/>
+                <if condition="returnResponse.response.node.returns.edges">
+                    <script>returnIdList.addAll(returnResponse.response.node.returns.edges.node.id)</script>
+                </if>
+<!--                Getting return details for each returnId-->
+                <iterate list="returnIdList" entry="returnId">
+                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="returnDetails"/>
+                    <script>returns.addAll(returnDetails.returnDetail)</script>
+                </iterate>
+                <set field="hasNextPage" from="returnResponse.response.node.returns.pageInfo.hasNextPage"/>
+                <set field="cursor" from="returnResponse.response.node.returns.pageInfo.endCursor"/>
+            </while>
+            <set field="orderReturns.id" from="returnResponse.response.node.id"/>
+            <set field="orderReturns.name" from="returnResponse.response.node.name"/>
+            <set field="orderReturns.returns" from="returns"/>
+        </actions>
+    </service>
 </services>
