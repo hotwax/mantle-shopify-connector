@@ -337,21 +337,21 @@ under the License.
                     queryText = sw.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
-                    sw.close()
+                        sw.close()
                     } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
+                        ec.logger.error("Error closing StringWriter")
                     }
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
                 <if condition="!returnResponse.response.node">
                     <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
                 </if>
-                <!--                Getting all the returnId for the shopifyOrderId-->
+                <!-- Getting all the returnId for the shopifyOrderId-->
                 <set field="returnIdList" from="[]"/>
                 <if condition="returnResponse.response.node.returns.edges">
                     <script>returnIdList.addAll(returnResponse.response.node.returns.edges.node.id)</script>
                 </if>
-                <!--                Getting return details for each returnId-->
+                <!-- Getting return details for each returnId-->
                 <iterate list="returnIdList" entry="returnId">
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="returnDetails"/>
                     <script>returns.addAll(returnDetails.returnDetail)</script>
