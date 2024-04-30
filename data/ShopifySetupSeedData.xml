@@ -80,7 +80,7 @@ under the License.
             description="Create Update Product Tags System Message"
             parentTypeId="ShopifyBulkImport"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkUpdateProductTags.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductTags.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/ProductTagsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -115,7 +115,7 @@ under the License.
             description="Create Update Product Variants System Message"
             parentTypeId="ShopifyBulkImport"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkUpdateProductVariants.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductVariants.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/ProductVariantsFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -150,7 +150,7 @@ under the License.
             description="Bulk Create Gift Cards System Message"
             parentTypeId="ShopifyBulkImport"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkMutationSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkCreateGiftCards.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkCreateGiftCards.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/GiftCardActivationFeed/result/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -173,7 +173,7 @@ under the License.
             description="Bulk Variants Metafield Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkVariantsMetafieldQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkVariantsMetafieldQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkVariantsMetafieldFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -194,7 +194,7 @@ under the License.
             description="Bulk Order Metafields Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkOrderMetafieldsQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderMetafieldsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderMetafieldsFeed/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -215,7 +215,7 @@ under the License.
             description="Bulk Order Headers Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkOrderHeadersQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderHeadersQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderHeadersQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -237,7 +237,7 @@ under the License.
             description="Bulk Order Items Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkOrderItemsQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderItemsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -259,7 +259,7 @@ under the License.
             description="Bulk Order Custom Attributes Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkOrderCustomAttributesQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderCustomAttributesQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderCustomAttributesQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
@@ -280,7 +280,7 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
             description="Delete Shopify Webhook Subscription"
             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionDeleteSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/WebhookSubscriptionDelete.ftl">
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionDelete.ftl">
         <parameters parameterName="queryTemplateLocation" parameterValue="component://shopify-connector/template/graphQL/WebhookSubscriptionsQuery.ftl" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
@@ -296,7 +296,7 @@ under the License.
             description="Shopify Bulk Operations Finish Webhook"
             parentTypeId="ShopifyWebhook"
             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/WebhookSubscriptionCreate.ftl"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationsFinishWebhookPayload">
         <parameters parameterName="topic" parameterValue="BULK_OPERATIONS_FINISH" systemMessageRemoteId=""/>
         <!-- Following parameters if not configured sets to default values configured in service in attributes
@@ -337,7 +337,7 @@ under the License.
             description="Shopify Orders Updated Webhook"
             parentTypeId="ShopifyWebhook"
             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/WebhookSubscriptionCreate.ftl"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl"
             consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#WebhookPayloadSystemMessage">
         <parameters parameterName="topic" parameterValue="ORDERS_UPDATED" systemMessageRemoteId=""/>
         <!-- Following parameters if not configured sets to default values configured in service in attributes
@@ -394,7 +394,7 @@ under the License.
             description="Bulk Order Discount Code Application Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://Shopify/template/GraphQL/BulkOrderDiscountCodeApplQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
             receivePath="${contentRoot}/shopify/BulkOrderDiscountCodeAppl/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>

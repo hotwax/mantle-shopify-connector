@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <entity-facade-xml type="ext-upgrade">
     <!-- SystemMessageType record for bulk order discount code application query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
@@ -39,4 +38,52 @@
             sendPath="${contentRoot}/shopify/OrderMetafieldsFeed/OrderMetafieldsFeed-${dateTime}-${systemMessageId}.json">
     </moqui.service.message.SystemMessageType>
 
+    <!--Migrate GraphQL templates to DbResource -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductTags.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductVariants.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
+            sendPath="dbresource://shopify/template/graphQL/BulkCreateGiftCards.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkVariantsMetafieldQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderMetafieldsQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderHeadersQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderHeadersQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderItemsQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderItemsQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderCustomAttributesQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderCustomAttributesQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionDelete.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOperationsFinish"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrdersUpdated"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl">
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
