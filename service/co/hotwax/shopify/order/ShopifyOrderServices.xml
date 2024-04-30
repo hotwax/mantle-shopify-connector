@@ -83,7 +83,7 @@ under the License.
             <while condition="hasNextPage">
                 <script>
                     StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", sw)
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/OrderMetafieldsQuery.ftl", sw)
                     queryText = sw.toString()
                     ec.logger.info ("queryText" + queryText)
                     try {
