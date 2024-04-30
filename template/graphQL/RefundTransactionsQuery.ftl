@@ -1,4 +1,3 @@
-<#ftl output_format="HTML">
 <#--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -26,25 +25,28 @@ under the License.
                 order {
                     id
                 }
-                return {
-                    id
-                    returnLineItems (first : 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
-                        edges {
-                            node {
-                                fulfillmentLineItem {
-                                    lineItem {
-                                        id
-                                    }
+                transactions (first : 5) {
+                    edges {
+                        node {
+                            status
+                            amountSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
                                 }
-                                returnReason
-                                returnReasonNote
-                                customerNote
+                            }
+                            gateway
+                            paymentDetails {
+                                __typename
+                                ... on CardPaymentDetails {
+                                    company
+                                }
                             }
                         }
-                        pageInfo {
-                            hasNextPage
-                            endCursor
-                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
                     }
                 }
             }

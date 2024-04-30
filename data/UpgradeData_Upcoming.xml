@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="seed">
-<!--    DbResource of Shopify GraphQL Templates-->
+    <!--    DbResource of Shopify GraphQL Templates-->
     <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
     <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
     <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
@@ -1208,4 +1208,86 @@
             </fileData>
         </file>
     </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Returned Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
+            description="Generate Returned Order Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${systemMessageId}-${dateTime}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
+            description="Generate Returns and Exchange Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${systemMessageId}-${dateTime}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendReturnsAndExchangeFeed"
+            description="Send Returns and Exchange Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateReturnedOrderIdsFeed, GenerateReturnsAndExchangeFeed and SendReturnsAndExchangeFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!--Migrate GraphQL templates to DbResource -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductTags"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductTags.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkUpdateProductVariants"
+            sendPath="dbresource://shopify/template/graphQL/BulkUpdateProductVariants.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCreateGiftCards"
+            sendPath="dbresource://shopify/template/graphQL/BulkCreateGiftCards.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkVariantsMetafieldQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkVariantsMetafieldQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderMetafieldsQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderMetafieldsQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderHeadersQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderHeadersQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderItemsQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderItemsQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderCustomAttributesQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderCustomAttributesQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="DeleteWebhookSubscription"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionDelete.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOperationsFinish"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrdersUpdated"
+            sendPath="dbresource://shopify/template/graphQL/WebhookSubscriptionCreate.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
+            sendPath="dbresource://shopify/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
+            sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl">
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>

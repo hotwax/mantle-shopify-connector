@@ -18,11 +18,16 @@ under the License.
 
 <@compress single_line=true>
     query {
-        node(id: "${refundId}") {
+        node(id: "${shopifyRefundId}") {
             id
             ... on
             Refund {
                 id
+                order {
+                    id
+                }
+                createdAt
+                note
                 refundLineItems (first : 3<#if cursor?has_content>, after: "${cursor}"</#if>) {
                     edges {
                         node {
@@ -47,7 +52,6 @@ under the License.
                                 }
                             }
                         }
-                        cursor
                     }
                     pageInfo {
                         hasNextPage
