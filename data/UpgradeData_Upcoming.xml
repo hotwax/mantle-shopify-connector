@@ -1286,8 +1286,4 @@
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
             sendPath="dbresource://shopify/template/graphQL/BulkOrderDiscountCodeApplQuery.ftl">
     </moqui.service.message.SystemMessageType>
-
-    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
-            sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl">
-    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
