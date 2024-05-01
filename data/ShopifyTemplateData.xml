@@ -134,6 +134,8 @@
                                         id
                                         fulfillmentLineItem {
                                             lineItem {
+                                                id
+                                                sku
                                                 quantity
                                             }
                                         }
@@ -336,7 +338,7 @@
                             <#assign filterQuery = "return_status:'RETURNED'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
                                 edges {
                                     node {
                                         id

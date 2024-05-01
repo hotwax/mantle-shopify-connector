@@ -735,7 +735,6 @@ under the License.
                     }
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="returnedOrderIdsResponse"/>
-                <log message="returnedOrderIdsResponse: ${returnedOrderIdsResponse}"/>
                 <if condition="!returnedOrderIdsResponse.response.orders.edges">
                     <return message="No returned orderIds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
                 </if>
