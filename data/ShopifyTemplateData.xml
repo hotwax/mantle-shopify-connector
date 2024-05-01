@@ -134,6 +134,8 @@
                                         id
                                         fulfillmentLineItem {
                                             lineItem {
+                                                id
+                                                sku
                                                 quantity
                                             }
                                         }
