@@ -180,7 +180,7 @@ under the License.
         </actions>
     </service>
 
-    <service verb="get" noun="RefundDetails" authenticate="anonymous-all">
+    <service verb="get" noun="RefundsByReturnId" authenticate="anonymous-all">
         <description>Get Shopify Refund Details</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
@@ -308,7 +308,7 @@ under the License.
             </while>
             <set field="returnDetail.exchangeLineItems" from="exchangeLineItems"/>
             <!-- Getting refund details for returnId -->
-            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="refundDetails"/>
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundsByReturnId" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="refundDetails"/>
             <set field="returnDetail.refunds" from="refundDetails.refundDetails"/>
         </actions>
     </service>
