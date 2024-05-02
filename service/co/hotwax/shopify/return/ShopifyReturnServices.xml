@@ -223,9 +223,7 @@ under the License.
                     <!-- Getting refund transactions for each refundId-->
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundTransactions" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:shopifyRefundId]"
                                   out-map="refundTransactionsResponse"/>
-                    <if condition="refundTransactionsResponse">
-                        <set field="refundDetail.transactions" from="refundTransactionsResponse.refundTransactions"/>
-                    </if>
+                    <set field="refundDetail.transactions" from="refundTransactionsResponse.refundTransactions"/>
                     <script>refundDetails.addAll(refundDetail)</script>
                 </iterate>
                 <set field="hasNextPage" from="refundResponse.response.node.refunds.pageInfo.hasNextPage"/>
