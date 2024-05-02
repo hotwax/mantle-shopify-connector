@@ -380,7 +380,7 @@
                                 id
                                 ... on
                                 Return {
-                                    refunds (first: 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    refunds (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                         edges {
                                             node {
                                                 id
@@ -412,7 +412,7 @@
                                 ... on
                                 Refund {
                                     id
-                                    refundLineItems (first : 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                         edges {
                                             node {
                                                 lineItem {
@@ -451,7 +451,7 @@
                                 ... on
                                 Refund {
                                     id
-                                    transactions (first : 5<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    transactions (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                         edges {
                                             node {
                                                 id
