@@ -59,6 +59,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="OrderLineItemByIdQuery.ftl" isFile="Y" resourceId="OrderLineItemByIdQuery" parentResourceId="GraphQL">
@@ -95,6 +96,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ReturnHeaderByIdQuery.ftl" isFile="Y" resourceId="ReturnHeaderByIdQuery" parentResourceId="GraphQL">
@@ -115,6 +117,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ReturnLineItemByIdQuery.ftl" isFile="Y" resourceId="ReturnLineItemByIdQuery" parentResourceId="GraphQL">
@@ -132,6 +135,8 @@
                                 edges {
                                     node {
                                         id
+                                        returnReason
+                                        returnReasonNote
                                         fulfillmentLineItem {
                                             lineItem {
                                                 id
@@ -158,6 +163,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ExchangeLineItemByIdQuery.ftl" isFile="Y" resourceId="ExchangeLineItemByIdQuery" parentResourceId="GraphQL">
@@ -197,6 +203,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ReturnsByOrderIDQuery.ftl" isFile="Y" resourceId="ReturnsByOrderIdQuery" parentResourceId="GraphQL">
@@ -227,6 +234,7 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="FulfillmentOrdersByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrdersByOrderIdQuery"
@@ -258,9 +266,10 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentOrderHeaderByIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrderHeaderByIdQuery" parentResourceId="GraphQl">
+    <moqui.resource.DbResource filename="FulfillmentOrderHeaderByIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrderHeaderByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -285,9 +294,10 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="FulfillmentOrderLineItemsByIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrderLineItemsByIdQuery" parentResourceId="GraphQl">
+    <moqui.resource.DbResource filename="FulfillmentOrderLineItemsByIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrderLineItemsByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -317,9 +327,10 @@
                 }
                 </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQl">
+    <moqui.resource.DbResource filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
@@ -355,6 +366,116 @@
                     </@compress>
                 ]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundIdsByReturnIdQuery.ftl" isFile="Y" resourceId="RefundIdsByReturnIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query{
+                            node(id: "${returnId}") {
+                                id
+                                ... on
+                                Return {
+                                    refunds (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                lineItem {
+                                                    id
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                restockType
+                                                quantity
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundTransactionsByIdQuery.ftl" isFile="Y" resourceId="RefundTransactionsByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    transactions (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                status
+                                                amountSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>
