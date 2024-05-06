@@ -205,6 +205,18 @@
                                                 id
                                                 title
                                             }
+                                            discountedTotalSet {
+                                                presentmentMoney {
+                                                    currencyCode
+                                                    amount
+                                                }
+                                            }
+                                            discountedUnitPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
                                         }
                                     }
                                 }
