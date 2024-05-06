@@ -232,6 +232,69 @@ under the License.
         </actions>
     </service>
 
+    <service verb="get" noun="ReverseFulfillmentOrders" authenticate="anonymous-all">
+        <description>Get reverse fulfillment orders for a given Return Id</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="returnId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="reverseFulfillmentOrders"/>
+        </out-parameters>
+        <actions>
+            <set field="reverseFulfillmentOrders" from="[]"/>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    StringWriter sw = new StringWriter()
+                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReverseFulfillmentOrdersByIdQuery.ftl", sw)
+                    queryText = sw.toString()
+                    ec.logger.info ("queryText" + queryText)
+                    try {
+                        sw.close()
+                    } catch (IOException e) {
+                        ec.logger.error("Error closing StringWriter")
+                    }
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="reverseFulfillmentOrderResponse"/>
+                <if condition="!reverseFulfillmentOrderResponse.response.node">
+                    <return type="warning" message="No Shopify return found for id: ${returnId}"/>
+                </if>
+                <if condition="reverseFulfillmentOrderResponse.response.node.reverseFulfillmentOrders.edges">
+                    <script>reverseFulfillmentOrders.addAll(reverseFulfillmentOrderResponse.response.node.reverseFulfillmentOrders.edges.node)</script>
+                </if>
+                <set field="hasNextPage" from="reverseFulfillmentOrderResponse.response.node.reverseFulfillmentOrders.pageInfo.hasNextPage"/>
+                <set field="cursor" from="reverseFulfillmentOrderResponse.response.node.reverseFulfillmentOrders.pageInfo.endCursor"/>
+            </while>
+            <iterate list="reverseFulfillmentOrders" entry="reverseFulfillmentOrder">
+                <set field="reverseFulfillmentOrderId" from="reverseFulfillmentOrder.id"/>
+                <set field="hasNextPage" value="true"/>
+                <set field="cursor" value=""/>
+                <set field="lineItems" from="[]"/>
+                <while condition="hasNextPage">
+                    <script>
+                        StringWriter sw2 = new StringWriter()
+                        ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ReverseFulfillmentOrderLineItemsByIdQuery.ftl", sw2)
+                        queryText = sw2.toString()
+                        ec.logger.info ("queryText" + queryText)
+                        try {
+                            sw2.close()
+                        } catch (IOException e) {
+                            ec.logger.error("Error closing StringWriter")
+                        }
+                    </script>
+                    <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="lineItemResponse"/>
+                    <if condition="lineItemResponse.response.node.lineItems.edges">
+                        <script>lineItems.addAll(lineItemResponse.response.node.lineItems.edges.node)</script>
+                    </if>
+                    <set field="hasNextPage" from="lineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="lineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+                </while>
+                <set field="reverseFulfillmentOrder.lineItems" from="lineItems"/>
+            </iterate>
+        </actions>
+    </service>
+
     <service verb="get" noun="ReturnDetails">
         <description>Get return details for a given Return Id</description>
         <in-parameters>
@@ -308,6 +371,10 @@ under the License.
             <!-- Getting refund details for returnId -->
             <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundsByReturnId" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="refundDetails"/>
             <set field="returnDetail.refunds" from="refundDetails.refundDetails"/>
+
+            <!-- Getting reverse fulfillment orders for returnId -->
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReverseFulfillmentOrders" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:returnId]" out-map="reverseFulfillmentOrdersResponse"/>
+            <set field="returnDetail.reverseFulfillmentOrders" from="reverseFulfillmentOrdersResponse.reverseFulfillmentOrders"/>
         </actions>
     </service>
 

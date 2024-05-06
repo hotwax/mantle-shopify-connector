@@ -54,6 +54,21 @@
                                 phone
                                 zip
                             }
+                            transactions {
+                                id
+                                parentTransaction {
+                                    id
+                                }
+                                kind
+                                status
+                                processedAt
+                                amountSet {
+                                    presentmentMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -474,6 +489,78 @@
                         }
                     </@compress>
                 ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ReverseFulfillmentOrdersByIdQuery.ftl" isFile="Y" resourceId="ReverseFulfillmentOrdersByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
+                        id
+                        ... on
+                        Return {
+                            id
+                            reverseFulfillmentOrders (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        status
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ReverseFulfillmentOrderLineItemsByIdQuery.ftl" isFile="Y" resourceId="ReverseLineItemsByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${reverseFulfillmentOrderId}") {
+                        id
+                        ... on
+                        ReverseFulfillmentOrder {
+                            id
+                            lineItems (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        fulfillmentLineItem {
+                                            lineItem {
+                                                id
+                                            }
+                                        }
+                                        dispositions {
+                                            location {
+                                                id
+                                            }
+                                            type
+                                            quantity
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>

@@ -224,6 +224,8 @@ under the License.
                 }
             ]]></script>
 
+            <if condition="!gqlResponse"><return error="true" message="Could not get response object while calling GraphQL api"/></if>
+
             <if condition="gqlResponse.errors">
                 <return error="true" message="${gqlResponse.errors}"/>
             </if>
