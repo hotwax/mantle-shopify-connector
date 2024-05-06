@@ -416,14 +416,14 @@ under the License.
             description="Generate Returned Order Ids Feed"
             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
-            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${systemMessageId}-${dateTime}.json">
+            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json">
     </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for generating Returns and Exchange Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
             description="Generate Returns and Exchange Feed"
             parentTypeId="LocalFeedFile"
-            sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${systemMessageId}-${dateTime}.json"
+            sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
         <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>

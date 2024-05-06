@@ -659,7 +659,7 @@ under the License.
             </if>
         </actions>
     </service>
-    <service verb="queue" noun="ReturnedOrderIdsFeedSystemMessage" authenticate="anonymous-all">
+    <service verb="queue" noun="ReturnedOrderIdsFeed" authenticate="anonymous-all">
         <in-parameters>
             <parameter name="systemMessageTypeId" required="true"/>
             <parameter name="systemMessageRemoteId" required="true"/>
