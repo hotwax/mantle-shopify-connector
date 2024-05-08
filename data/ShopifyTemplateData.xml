@@ -342,6 +342,9 @@
                                         sku
                                         variantTitle
                                         productTitle
+                                        lineItem {
+                                            id
+                                        }
                                     }
                                 }
                                 pageInfo{
