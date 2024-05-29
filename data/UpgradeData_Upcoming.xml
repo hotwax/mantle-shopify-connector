@@ -69,6 +69,12 @@
                                         currencyCode
                                     }
                                 }
+                                gateway
+                                paymentDetails {
+                                    ... on CardPaymentDetails {
+                                        company
+                                    }
+                                }
                             }
                         }
                     }
@@ -522,6 +528,13 @@
                                                     presentmentMoney {
                                                         amount
                                                         currencyCode
+                                                    }
+                                                }
+                                                kind
+                                                gateway
+                                                paymentDetails {
+                                                    ... on CardPaymentDetails {
+                                                        company
                                                     }
                                                 }
                                             }
