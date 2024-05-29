@@ -17,7 +17,7 @@ under the License.
 -->
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
-    <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all">
+    <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all" transaction-timeout="7200">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
         </description>
