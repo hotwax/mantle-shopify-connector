@@ -17,6 +17,33 @@ under the License.
 -->
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="get" noun="OrderDetails" authenticate="anonymous-all">
+        <description>Get Shopify Order Id on given parameters</description>
+        <in-parameters>
+            <parameter name="id" required="true"/>
+            <parameter name="customFields"/>
+            <parameter name="systemMessageRemoteId"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="response" type="map"/>
+        </out-parameters>
+        <actions>
+            <script>
+                queryString = new StringBuffer()
+                if (customFields) queryString.append("fields=").append(customFields)
+            </script>
+            <set field="endPoint" value="orders/${id}.json?${queryString}"/>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:endPoint,
+                        requestType:'GET', contentType:'application/json']" out-map="orderResponse"/>
+
+            <if condition="orderResponse.statusCode != 200">
+                <return error="true" message="System message from SystemMessageRemote with ID
+                    ${systemMessageRemoteId} sent error response ${orderResponse.statusCode}: ${orderResponse.response}"/>
+            </if>
+            <set field="response" from="orderResponse.response"/>
+        </actions>
+    </service>
+
     <service verb="get" noun="OrderCount" authenticate="anonymous-all">
         <description>Get Shopify Order Count on given parameters</description>
         <in-parameters>
