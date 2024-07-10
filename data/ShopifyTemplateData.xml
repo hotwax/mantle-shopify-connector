@@ -106,6 +106,9 @@
                                             sku
                                         }
                                         quantity
+                                        currentQuantity
+                                        fulfillableQuantity
+                                        fulfillmentStatus
                                     }
                                 }
                                 pageInfo {

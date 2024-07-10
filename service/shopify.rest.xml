@@ -39,7 +39,7 @@ under the License.
         </resource>
     </resource>
     <resource name="OrderDetails" require-authentication="anonymous-all">
-        <method type="get">
+        <method type="post">
             <service name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"/>
         </method>
     </resource>
