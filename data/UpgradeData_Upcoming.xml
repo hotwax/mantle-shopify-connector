@@ -666,4 +666,10 @@
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <artifactGroups artifactGroupId="SHOPIFY_API" description="Shopify REST API">
+        <artifacts artifactTypeEnumId="AT_REST_PATH" inheritAuthz="Y" artifactName="/shopify"/>
+        <!-- Full permissions for the ADMIN user group -->
+        <authz artifactAuthzId="SHOPIFY_API_AUTHZ_ALL" userGroupId="ADMIN" authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    </artifactGroups>
 </entity-facade-xml>
