@@ -18,7 +18,7 @@ under the License.
 
 <@compress single_line=true>
     query {
-        node(id: "${refundId}") {
+        node(id: "${shopifyRefundId}") {
             id
             ... on
             Refund {

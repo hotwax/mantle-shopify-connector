@@ -38,4 +38,9 @@ under the License.
             </method>
         </resource>
     </resource>
+    <resource name="order">
+        <method type="get">
+            <service name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"/>
+        </method>
+    </resource>
 </resource>

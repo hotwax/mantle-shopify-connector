@@ -224,13 +224,15 @@ under the License.
                 }
             ]]></script>
 
+            <if condition="!gqlResponse"><return error="true" message="Could not get response object while calling GraphQL api"/></if>
+
             <if condition="gqlResponse.errors">
                 <return error="true" message="${gqlResponse.errors}"/>
             </if>
             <set field="response" from="gqlResponse.data"/>
             <if condition="gqlResponse.extensions &amp;&amp; gqlResponse.extensions.cost">
                 <log level="info" message="GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
-                <log level="info" message="GraphQL query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
+                <log level="info" message="GraphQL actual query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
                 <log level="info" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
             </if>
         </actions>
