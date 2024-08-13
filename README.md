@@ -559,7 +559,7 @@ You could configure following default parameters and any additional parameters a
 ```aidl
 <!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
  <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
-         description="Bulk Canceled Ordesr and Items Query System Message"
+         description="Bulk Canceled Orders and Items Query System Message"
          parentTypeId="ShopifyBulkQuery"
          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
          sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
