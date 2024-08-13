@@ -190,7 +190,6 @@ under the License.
             <parameter name="refundDetails" type="List"/>
         </out-parameters>
         <actions>
-            <set field="refundDetail" from="[:]"/>
             <set field="refundDetails" from="[]"/>
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
@@ -215,6 +214,7 @@ under the License.
                     <script>refundIdList.addAll(refundResponse.response.node.refunds.edges.node.id)</script>
                 </if>
                 <iterate list="refundIdList" entry="shopifyRefundId">
+                    <set field="refundDetail" from="[:]"/>
                     <set field="refundDetail.id" from="shopifyRefundId"/>
                     <!-- Getting refund line items for each refundId-->
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundLineItems" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:shopifyRefundId]"
@@ -224,7 +224,7 @@ under the License.
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundTransactions" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:shopifyRefundId]"
                                   out-map="refundTransactionsResponse"/>
                     <set field="refundDetail.transactions" from="refundTransactionsResponse.refundTransactions"/>
-                    <script>refundDetails.addAll(refundDetail)</script>
+                    <script>refundDetails.add(refundDetail)</script>
                 </iterate>
                 <set field="hasNextPage" from="refundResponse.response.node.refunds.pageInfo.hasNextPage"/>
                 <set field="cursor" from="refundResponse.response.node.refunds.pageInfo.endCursor"/>
