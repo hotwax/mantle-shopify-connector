@@ -725,4 +725,68 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="OrderIdsByTagQuery.ftl" isFile="Y" resourceId="OrderIdsByTagQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if !filterQuery?has_content>
+                            <#assign filterQuery = "tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.tagNot?has_content>
+                            <#assign filterQuery = filterQuery + "AND tag_not:'${queryParams.tagNot}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        tags
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="UpdateOrderTags.ftl" isFile="Y" resourceId="UpdateOrderTags" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                mutation orderUpdate($input: OrderInput!) {
+                    orderUpdate(input: $input) {
+                        order {
+                            id
+                            tags
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>

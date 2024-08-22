@@ -113,4 +113,24 @@
             parameterName="consumeSmrId"
             parameterValue=""
             systemMessageRemoteId=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderRestJsonFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure tagsToAdd against your shopify config for the tags to be added to exported orders -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderRestJsonFeed"
+            parameterName="tagsToAdd"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderRestJsonFeed"
+            description="Send Order Json Rest Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
