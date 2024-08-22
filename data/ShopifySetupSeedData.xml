@@ -439,4 +439,26 @@ under the License.
     <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
+            description="Bulk Canceled Orders and Items Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkCanceledOrdersAndItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk canceled orders and items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrdersAndItemsQueryResult"
+            description="Send Bulk Canceled Orders and Items Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkCanceledOrdersAndItemsQuery and SendBulkCanceledOrdersAndItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Canceled Orders and Items Query Result" enumId="SendBulkCanceledOrdersAndItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Canceled Orders and Items Query" enumId="BulkCanceledOrdersAndItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrdersAndItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>

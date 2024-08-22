@@ -628,6 +628,103 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkCanceledOrdersAndItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrdersAndItemsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.filterQuery?has_content>
+                            <#assign filterQuery = queryParams.filterQuery/>
+                        <#else>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                    </#if>
+                    mutation {
+                        bulkOperationRunQuery(
+                            query: """ {
+                                orders<#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                    edges {
+                                        node {
+                                            id
+                                            name
+                                            displayFulfillmentStatus
+                                            cancelledAt
+                                            cancelReason
+                                            cancellation {
+                                                staffNote
+                                            }
+                                            transactions {
+                                                id
+                                                parentTransaction {
+                                                    id
+                                                }
+                                                kind
+                                                status
+                                                processedAt
+                                                amountSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                gateway
+                                                paymentDetails {
+                                                    ... on CardPaymentDetails {
+                                                        company
+                                                    }
+                                                }
+                                            }
+                                            lineItems {
+                                                edges {
+                                                    node {
+                                                        id
+                                                        sku
+                                                        quantity
+                                                        currentQuantity
+                                                        unfulfilledQuantity
+                                                        nonFulfillableQuantity
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        """ ) {
+                            bulkOperation {
+                                id
+                                status
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 
     <!-- SystemMessageType record for generating Returned Order Ids Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
@@ -643,7 +740,6 @@
             parentTypeId="LocalFeedFile"
             sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
-        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendReturnsAndExchangeFeed"
@@ -666,4 +762,25 @@
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
+            description="Bulk Canceled Orders and Items Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkCanceledOrdersAndItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk canceled orders and items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrdersAndItemsQueryResult"
+            description="Send Bulk Canceled Orders and Items Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkCanceledOrdersAndItemsQuery and SendBulkCanceledOrdersAndItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Canceled Orders and Items Query Result" enumId="SendBulkCanceledOrdersAndItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Canceled Orders and Items Query" enumId="BulkCanceledOrdersAndItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrdersAndItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>
