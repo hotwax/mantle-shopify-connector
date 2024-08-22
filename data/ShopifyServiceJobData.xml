@@ -191,4 +191,15 @@ under the License.
         <parameters parameterName="fromDateLabel" parameterValue=""/>
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing orderIds by tag feed -->
+    <moqui.service.job.ServiceJob jobName="queue_OrderIdsByTagFeed" description="Queue orderIds by tag feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#OrderIdsByTagFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateOrderIdsByTagFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="tag" parameterValue=""/>
+        <parameters parameterName="tagNot" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
