@@ -789,6 +789,136 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ExchangesByOrderIdQuery.ftl" isFile="Y" resourceId="ExchangesByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyOrderId}") {
+                                id
+                                ... on
+                                Order {
+                                   id
+                                    name
+                                    exchangeV2s (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                completedAt
+                                                location {
+                                                    id
+                                                }
+                                                additions {
+                                                    lineItems {
+                                                        lineItem {
+                                                            id
+                                                            quantity
+                                                            sku
+                                                            variantTitle
+                                                            isGiftCard
+                                                            product {
+                                                                id
+                                                                title
+                                                            }
+                                                            originalUnitPriceSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            originalTotalSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountedUnitPriceSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountedUnitPriceAfterAllDiscountsSet {
+                                                                presentmentMoney {
+                                                                    currencyCode
+                                                                    amount
+                                                                }
+                                                            }
+                                                            discountedTotalSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountAllocations {
+                                                                allocatedAmountSet {
+                                                                    presentmentMoney {
+                                                                        amount
+                                                                        currencyCode
+                                                                    }
+                                                                }
+                                                            }
+                                                            taxLines {
+                                                                priceSet {
+                                                                    presentmentMoney {
+                                                                        amount
+                                                                        currencyCode
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                refunds {
+                                                    id
+                                                    return {
+                                                        id
+                                                    }
+                                                }
+                                                totalAmountProcessedSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                transactions {
+                                                    id
+                                                    parentTransaction {
+                                                        id
+                                                    }
+                                                    kind
+                                                    status
+                                                    processedAt
+                                                    amountSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
+                                                    gateway
+                                                    paymentDetails {
+                                                        ... on CardPaymentDetails {
+                                                            company
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo{
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 
     <!-- SystemMessageType record for generating Returned Order Ids Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
