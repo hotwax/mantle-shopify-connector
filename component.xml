@@ -17,6 +17,6 @@ under the License.
 -->
 
 <component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd"
-           name="shopify-connector" version="1.3.2">
+           name="shopify-connector" version="1.3.4">
     <!-- no dependencies -->
 </component>
