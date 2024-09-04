@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed">
+    <!-- DbResource of Shopify GraphQL Templates-->
+    <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
+    <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
+    <moqui.resource.DbResource filename="graphQL" isFile="N" resourceId="GraphQL" parentResourceId="Template"/>
+    <moqui.resource.DbResource filename="OrderIdsByTagQuery.ftl" isFile="Y" resourceId="OrderIdsByTagQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if !filterQuery?has_content>
+                            <#assign filterQuery = "tag:'${queryParams.tag}'"/>
+                        </#if>
+                        <#if queryParams.tagNot?has_content>
+                            <#assign filterQuery = filterQuery + "AND tag_not:'${queryParams.tagNot}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        tags
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="UpdateOrderTags.ftl" isFile="Y" resourceId="UpdateOrderTags" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                mutation orderUpdate($input: OrderInput!) {
+                    orderUpdate(input: $input) {
+                        order {
+                            id
+                            tags
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Order Ids By Tag Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderIdsByTagFeed"
+                                             description="Generate Order Ids By Tag Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/OrderIdsByTagQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderIdsByTagFeed"
+                                             receivePath="${contentRoot}/shopify/OrderIdsByTagFeed/OrderIdsByTagFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Order Rest Json Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderRestJsonFeed"
+                                             description="Generate Order Rest Json Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/OrderRestJsonFeed/OrderRestJsonFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderRestJsonFeed">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderRestJsonFeed"
+                                             description="Send Order Json Rest Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateOrderIdsByTagFeed, GenerateOrderRestJsonFeed and SendOrderRestJsonFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Order Json Rest Feed" enumId="SendOrderRestJsonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Rest Json Feed" enumId="GenerateOrderRestJsonFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderRestJsonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Ids By Tag Feed" enumId="GenerateOrderIdsByTagFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderRestJsonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing orderIds by tag feed -->
+    <moqui.service.job.ServiceJob jobName="queue_OrderIdsByTagFeed" description="Queue orderIds by tag feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#OrderIdsByTagFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateOrderIdsByTagFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="tag" parameterValue=""/>
+        <parameters parameterName="tagNot" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+</entity-facade-xml>
