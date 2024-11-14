@@ -439,4 +439,40 @@ under the License.
     <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk fulfillment order query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQuery"
+            description="Bulk Fulfillment Order Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkFulfillmentOrderQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkFulfillmentOrderQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk fulfillment order query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+            description="Send Bulk Fulfillment Order Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- SystemMessageType record for polling bulk fulfillment order query result from SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQueryResult"
+            description="Get Fulfillment Orders Query Result System Message"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkFulfillmentOrderQueryResult"
+            receivePath=""
+            receiveResponseEnumId="MsgRrMove"
+            receiveMovePath=""
+            receiveFilePattern=""
+            sendPath="${contentRoot}/shopify/BulkFulfillmentOrderQueryResult">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Get Bulk Fulfillment Order Query Result" enumId="BulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
 </entity-facade-xml>

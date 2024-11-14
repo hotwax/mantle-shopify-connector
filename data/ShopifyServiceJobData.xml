@@ -179,4 +179,23 @@ under the License.
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for queuing bulk fulfillment order query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkFulfillmentOrderQuery" description="Queue bulk fulfillment order query"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- ServiceJob data for poling bulk fulfillment order query result -->
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_BulkFulfillmentOrderQuery" description="Poll Bulk Fulfillment Order Query Result"
+                                  serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQueryResult"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
