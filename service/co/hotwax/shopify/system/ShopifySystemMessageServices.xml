@@ -888,7 +888,7 @@ under the License.
         <description>
             Consume Bulk FulfillmentOrder Query Result JSON Lines and call 'run#ShopifyAllocation'.
         </description>
-                <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
                 <field-map field-name="systemMessageId"/>
@@ -936,7 +936,7 @@ under the License.
                     }
                 }
             ]]></script>
-            <service-call name="co.hotwax.order.routing.CommonServices.run#ShopifyAllocation" in-map="[fulfillmentOrdersList:fulfillmentOrdersList]"/>
+            <service-call name="co.hotwax.ofbiz.InventoryServices.run#ShopifyAllocation" in-map="[fulfillmentOrdersList:fulfillmentOrdersList]" out-map="result"/>
         </actions>
     </service>
 </services>

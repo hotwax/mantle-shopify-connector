@@ -471,8 +471,7 @@ under the License.
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Get Bulk Fulfillment Order Query Result" enumId="BulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 </entity-facade-xml>
