@@ -893,50 +893,13 @@ under the License.
             <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
-            <set field="inputStream" from="ec.resource.getLocationStream(systemMessage.messageText)"/>
-            <set field="fulfillmentOrders_jsonList" from="[]"/>
-            <set field="fulfillmentOrdersList" from="[]"/>
-            <script><![CDATA[
-                import org.moqui.impl.context.ContextJavaUtil
-
-                // transform json lines to list of maps
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
-                def line
-                while ((line = reader.readLine()) != null) {
-                    line_map = ContextJavaUtil.jacksonMapper.readValue(line, Map.class)
-                    fulfillmentOrders_jsonList.add(line_map)
-                }
-
-                // transformation to nested map
-                fulfillmentOrders_jsonList.each { item ->
-                    if (!item.containsKey("__parentId")) {
-                        def parentMap = [:]
-                        parentMap.id = item.id
-                        fulfillmentOrdersList << parentMap
-                    } else if (item.id.contains("/FulfillmentOrder/")) {
-                        fulfillmentOrdersList.each { parentMap ->
-                            if (item.__parentId == parentMap.id) {
-                                if (!parentMap.FulfillmentOrder) {
-                                    parentMap.FulfillmentOrder = []
-                                }
-                                parentMap.FulfillmentOrder << item
-                            }
-                        }
-                    } else {
-                        fulfillmentOrdersList.each { parentMap ->
-                            parentMap.FulfillmentOrder.each { fulfillmentOrder ->
-                                if (item.__parentId == fulfillmentOrder.id) {
-                                    if (!fulfillmentOrder.FulfillmentOrderLineItem) {
-                                        fulfillmentOrder.FulfillmentOrderLineItem = []
-                                    }
-                                    fulfillmentOrder.FulfillmentOrderLineItem << item
-                                }
-                            }
-                        }
-                    }
-                }
-            ]]></script>
-            <service-call name="co.hotwax.ofbiz.InventoryServices.run#ShopifyAllocation" in-map="[fulfillmentOrdersList:fulfillmentOrdersList]" out-map="result"/>
+            <set field="location" from="systemMessage.messageText"/>
+            <set field="childNode_one" value="FulfillmentOrder"/>
+            <set field="childNode_two" value="FulfillmentOrderLineItem"/>
+            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([location:location, childNode_one:childNode_one, childNode_two:childNode_two])" out-map="result"/>
+            <iterate list="result.jsonList" entry="fulfillmentOrdersItem">
+                <service-call name="co.hotwax.ofbiz.InventoryServices.run#ShopifyAllocation" in-map="([fulfillmentOrdersItem:fulfillmentOrdersItem])"/>
+            </iterate>
         </actions>
     </service>
 </services>
