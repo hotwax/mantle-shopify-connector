@@ -890,14 +890,20 @@ under the License.
         </description>
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
-            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
-            <set field="location" from="systemMessage.messageText"/>
-            <set field="childNode_one" value="FulfillmentOrder"/>
-            <set field="childNode_two" value="FulfillmentOrderLineItem"/>
-            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([location:location, childNode_one:childNode_one, childNode_two:childNode_two])" out-map="result"/>
-            <iterate list="result.jsonList" entry="fulfillmentOrdersItem">
+            <set field="inputPath" from="systemMessage.messageText"/>
+            <set field="childNodes" from="['FulfillmentOrder','FulfillmentOrderLineItem']"/>
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([inputPath:inputPath, outputPath:jsonFilePath, childNodes:childNodes])"/>
+            <set field="fileText" from="ec.resource.getLocationReference(jsonFilePathRef).getText()"/>
+            <set field="fulfillmentOrders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+            <iterate list="fulfillmentOrders" entry="fulfillmentOrdersItem">
                 <service-call name="co.hotwax.ofbiz.InventoryServices.run#ShopifyAllocation" in-map="([fulfillmentOrdersItem:fulfillmentOrdersItem])"/>
             </iterate>
         </actions>
