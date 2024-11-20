@@ -894,13 +894,12 @@ under the License.
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
             <set field="inputPath" from="systemMessage.messageText"/>
-            <set field="childNodes" from="['FulfillmentOrder','FulfillmentOrderLineItem']"/>
             <set field="nowDate" from="ec.user.nowTimestamp"/>
             <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
             [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
             dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([inputPath:inputPath, outputPath:jsonFilePath, childNodes:childNodes])"/>
+            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([inputPath:inputPath, outputPath:jsonFilePath])"/>
             <set field="fileText" from="ec.resource.getLocationReference(jsonFilePathRef).getText()"/>
             <set field="fulfillmentOrders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
             <iterate list="fulfillmentOrders" entry="fulfillmentOrdersItem">
