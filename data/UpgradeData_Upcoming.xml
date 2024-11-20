@@ -694,7 +694,7 @@
             receiveResponseEnumId="MsgRrMove"
             receiveMovePath=""
             receiveFilePattern=""
-            sendPath="${contentRoot}/shopify/BulkFulfillmentOrderQueryResult">
+            sendPath="${contentRoot}/shopify/BulkFulfillmentOrderJson/FulfillmentOrderJson-${systemMessageId}-${dateTime}.json">
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
