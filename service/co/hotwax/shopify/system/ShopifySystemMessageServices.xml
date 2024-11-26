@@ -313,7 +313,6 @@ under the License.
         <actions>
             <set field="queryParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
-                <econdition field-name="parameterName" operator="in" value="filterQuery,fromDateBuffer,thruDateBuffer"/>
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
             </entity-find>
