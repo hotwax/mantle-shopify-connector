@@ -1140,9 +1140,9 @@ under the License.
             </if>
         </actions>
     </service>
-    <service verb="consume" noun="BulkFulfillmentOrderQueryResult" authenticate="anonymous-all" transaction-timeout="7200">
+    <service verb="process" noun="BulkFulfillmentOrderQueryResult" authenticate="anonymous-all" transaction-timeout="7200">
         <description>
-            Consume Bulk FulfillmentOrder Query Result JSON Lines and call 'run#ShopifyAllocation'.
+            Process Bulk FulfillmentOrder Query Result JSON Lines and call 'run#ShopifyAllocation'.
         </description>
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
