@@ -507,7 +507,7 @@ under the License.
             description="Send Bulk Product Metafields by Tags Query Result"
             sendServiceName="co.hotwax.ofbiz.ProductServices.process#BulkProductMetaFieldByTagsQueryResult"
             sendPath="${contentRoot}/shopify/BulkProductMetaFieldByTagsResult/BulkProductQueryResult-${systemMessageId}-${dateTime}.json">
-        <parameters parameterName="consumeSmrId" parameterValue="RemoteSftp" systemMessageRemoteId=""/>
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="ProductCategoryMemberFeed"
