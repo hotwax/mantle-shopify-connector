@@ -628,4 +628,83 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkProductMetaFieldByTagsQuery.ftl" isFile="Y" resourceId="BulkProductMetaFieldByTagsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.namespace?has_content>
+                            <#assign namespace = queryParams.namespace/>
+                        </#if>
+                        <#if queryParams.filterQuery?has_content>
+                            <#assign filterQuery = queryParams.filterQuery/>
+                        <#else>
+                            <#if queryParams.filterCondition?has_content>
+                                <#assign filterCondition = queryParams.filterCondition/>
+                            </#if>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                    </#if>
+                    mutation {
+                        bulkOperationRunQuery(
+                            query: """ {
+                                products <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                    edges {
+                                        node {
+                                            id
+                                            variants{
+                                                edges{
+                                                    node{
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            metafields <#if namespace?has_content>(namespace:"${namespace}")</#if> {
+                                                edges{
+                                                    node{
+                                                        id
+                                                        key
+                                                        value
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        """ ) {
+                            bulkOperation {
+                                id
+                                status
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>
