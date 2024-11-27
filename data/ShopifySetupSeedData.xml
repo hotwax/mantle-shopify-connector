@@ -453,7 +453,7 @@ under the License.
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
             description="Send Bulk Product Metafields by Tags Query Result"
-            sendServiceName="co.hotwax.ofbiz.ProductServices.send#BulkProductMetaFieldByTagsQueryResult"
+            sendServiceName="co.hotwax.ofbiz.ProductServices.process#BulkProductMetaFieldByTagsQueryResult"
             sendPath="${contentRoot}/shopify/BulkProductMetaFieldByTagsResult/BulkProductQueryResult-${systemMessageId}-${dateTime}.json">
         <parameters parameterName="consumeSmrId" parameterValue="RemoteSftp" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
