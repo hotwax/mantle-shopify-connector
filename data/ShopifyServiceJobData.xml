@@ -214,11 +214,4 @@ under the License.
         <parameters parameterName="fromDateLabel" parameterValue=""/>
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
-
-    <!-- ServiceJob data for poling bulk fulfillment order query result -->
-    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_BulkFulfillmentOrderQuery" description="Poll Bulk Fulfillment Order Query Result"
-                                  serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0/15 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQueryResult"/>
-        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-    </moqui.service.job.ServiceJob>
 </entity-facade-xml>

@@ -791,23 +791,12 @@
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
-    <!-- SystemMessageType record for sending bulk fulfillment order query result to SFTP -->
+    <!-- SystemMessageType record for processing bulk fulfillment order query result -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
-            description="Send Bulk Fulfillment Order Query Result"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""/>
-
-    <!-- SystemMessageType record for polling bulk fulfillment order query result from SFTP -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQueryResult"
-            description="Get Fulfillment Orders Query Result System Message"
-            parentTypeId="LocalFeedFile"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkFulfillmentOrderQueryResult"
-            receivePath=""
-            receiveResponseEnumId="MsgRrMove"
-            receiveMovePath=""
-            receiveFilePattern=""
+            description="Process Bulk Fulfillment Order Query Result"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkFulfillmentOrderQueryResult"
             sendPath="${contentRoot}/shopify/BulkFulfillmentOrderJson/FulfillmentOrderJson-${systemMessageId}-${dateTime}.json">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
