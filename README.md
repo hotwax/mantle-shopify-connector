@@ -554,6 +554,43 @@ You could configure following default parameters and any additional parameters a
 </moqui.service.job.ServiceJob>
 ```
 
+### Bulk Canceled Orders and Items Query
+
+```aidl
+<!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
+ <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
+         description="Bulk Canceled Orders and Items Query System Message"
+         parentTypeId="ShopifyBulkQuery"
+         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+         sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
+         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+         receivePath="${contentRoot}/shopify/BulkCanceledOrdersAndItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+     <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+ </moqui.service.message.SystemMessageType>
+
+ <!-- SystemMessageType record for sending bulk canceled orders and items query result to SFTP -->
+ <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrdersAndItemsQueryResult"
+         description="Send Bulk Canceled Orders and Items Query Result"
+         parentTypeId="LocalFeedFile"
+         sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+         sendPath=""/>
+
+ <!-- Enumeration to create relation between BulkCanceledOrdersAndItemsQuery and SendBulkCanceledOrdersAndItemsQueryResult SystemMessageType(s) -->
+ <moqui.basic.Enumeration description="Send Bulk Canceled Orders and Items Query Result" enumId="SendBulkCanceledOrdersAndItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+ <moqui.basic.Enumeration description="Bulk Canceled Orders and Items Query" enumId="BulkCanceledOrdersAndItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrdersAndItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+ <!-- ServiceJob data for queuing bulk canceled orders and items query -->
+ <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkCanceledOrdersAndItemsQuery" description="Queue Bulk Canceled Orders and Items query"
+         serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+     <parameters parameterName="systemMessageTypeId" parameterValue="BulkCanceledOrdersAndItemsQuery"/>
+     <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+     <parameters parameterName="filterQuery" parameterValue=""/>
+     <parameters parameterName="fromDate" parameterValue=""/>
+     <parameters parameterName="thruDate" parameterValue=""/>
+     <parameters parameterName="fromDateLabel" parameterValue=""/>
+     <parameters parameterName="thruDateLabel" parameterValue=""/>
+ </moqui.service.job.ServiceJob>
+```
 ## Shopify Webhook Integration
 
 Set of services and configuration to integrate with Shopify Webhook GraphQL API.  

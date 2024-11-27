@@ -30,6 +30,11 @@ under the License.
                 <service name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderCount"/>
             </method>
         </resource>
+        <resource name="details" require-authentication="anonymous-all">
+            <method type="get">
+                <service name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"/>
+            </method>
+        </resource>
     </resource>
     <resource name="bulk" require-authentication="anonymous-all">
         <resource name="query" require-authentication="anonymous-all">
@@ -37,10 +42,5 @@ under the License.
                 <service name="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage"/>
             </method>
         </resource>
-    </resource>
-    <resource name="order">
-        <method type="get">
-            <service name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"/>
-        </method>
     </resource>
 </resource>
