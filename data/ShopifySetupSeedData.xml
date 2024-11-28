@@ -504,23 +504,13 @@ under the License.
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
-            description="Send Bulk Product Metafields by Tags Query Result"
-            sendServiceName="co.hotwax.ofbiz.ProductServices.process#BulkProductMetaFieldByTagsQueryResult"
-            sendPath="${contentRoot}/shopify/BulkProductMetaFieldByTagsResult/BulkProductQueryResult-${systemMessageId}-${dateTime}.json">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        description="Send Bulk Product Metafields by Tags Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath="">
     </moqui.service.message.SystemMessageType>
 
-    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductCategoryMemberFeed"
-            description="Create Product Category Member Feed"
-            parentTypeId="LocalFeedFile"
-            consumeServiceName="co.hotwax.ofbiz.ProductServices.generate#ProductCategoryMemberFeed"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""
-            receivePath="${contentRoot}/hotwax/NewLaunchProduct/ProductCategoryFeed-${systemMessageId}-${dateTime}.json">
-    </moqui.service.message.SystemMessageType>
-
-    <!-- Enumeration to create relation between BulkProductMetaFieldByTagsQuery, SendBulkProductMetaFieldsQueryResult and ProductCategoryMemberFeed SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Product Metafields by Tags Query Result" enumId="ProductCategoryMemberFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Send Bulk Product Metafields by Tags Query Result" enumId="SendBulkProductMetaFieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="ProductCategoryMemberFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <!-- Enumeration to create relation between BulkProductMetaFieldByTagsQuery and SendBulkProductMetaFieldsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Product Metafields by Tags Query Result" enumId="SendBulkProductMetaFieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Bulk Product Metafields Query" enumId="BulkProductMetaFieldByTagsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkProductMetaFieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>
