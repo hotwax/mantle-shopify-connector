@@ -520,4 +520,27 @@ under the License.
     <moqui.basic.Enumeration description="Send Order Updates Feed" enumId="SendOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Order Updates Feed" enumId="GenerateOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Updated Order Ids Feed" enumId="GenerateUpdatedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk fulfillment order query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQuery"
+            description="Bulk Fulfillment Order Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkFulfillmentOrderQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkFulfillmentOrderQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for processing bulk fulfillment order query result -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+        description="Send Bulk Fulfillment Order Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
 </entity-facade-xml>
