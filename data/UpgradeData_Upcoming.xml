@@ -793,11 +793,10 @@
 
     <!-- SystemMessageType record for processing bulk fulfillment order query result -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
-            description="Process Bulk Fulfillment Order Query Result"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkFulfillmentOrderQueryResult"
-            sendPath="${contentRoot}/shopify/BulkFulfillmentOrderJson/FulfillmentOrderJson-${systemMessageId}-${dateTime}.json">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
-    </moqui.service.message.SystemMessageType>
+        description="Send Bulk Fulfillment Order Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -813,13 +812,6 @@
         <parameters parameterName="thruDate" parameterValue=""/>
         <parameters parameterName="fromDateLabel" parameterValue=""/>
         <parameters parameterName="thruDateLabel" parameterValue=""/>
-    </moqui.service.job.ServiceJob>
-
-    <!-- ServiceJob data for poling bulk fulfillment order query result -->
-    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_BulkFulfillmentOrderQuery" description="Poll Bulk Fulfillment Order Query Result"
-            serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0/15 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQueryResult"/>
-        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
     <!-- DbResource template data for GraphQl query to Shopify -->

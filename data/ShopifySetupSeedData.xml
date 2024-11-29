@@ -505,11 +505,10 @@ under the License.
 
     <!-- SystemMessageType record for processing bulk fulfillment order query result -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
-            description="Process Bulk Fulfillment Order Query Result"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.process#BulkFulfillmentOrderQueryResult"
-            sendPath="${contentRoot}/shopify/BulkFulfillmentOrderJson/FulfillmentOrderJson-${systemMessageId}-${dateTime}.json">
-        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
-    </moqui.service.message.SystemMessageType>
+        description="Send Bulk Fulfillment Order Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>

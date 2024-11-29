@@ -1140,27 +1140,4 @@ under the License.
             </if>
         </actions>
     </service>
-    <service verb="process" noun="BulkFulfillmentOrderQueryResult" authenticate="anonymous-all" transaction-timeout="7200">
-        <description>
-            Process Bulk FulfillmentOrder Query Result JSON Lines and call 'run#ShopifyAllocation'.
-        </description>
-        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
-        <actions>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
-                <field-map field-name="systemMessageId"/>
-            </entity-find-one>
-            <set field="inputPath" from="systemMessage.messageText"/>
-            <set field="nowDate" from="ec.user.nowTimestamp"/>
-            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
-            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
-            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
-            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-            <service-call name="co.hotwax.common.CommonServices.transform#JsonLToJson" in-map="([inputPath:inputPath, outputPath:jsonFilePath])"/>
-            <set field="fileText" from="ec.resource.getLocationReference(jsonFilePathRef).getText()"/>
-            <set field="fulfillmentOrders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
-            <iterate list="fulfillmentOrders" entry="fulfillmentOrdersItem">
-                <service-call name="co.hotwax.ofbiz.InventoryServices.run#ShopifyAllocation" in-map="([fulfillmentOrdersItem:fulfillmentOrdersItem])"/>
-            </iterate>
-        </actions>
-    </service>
 </services>
