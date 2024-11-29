@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-facade-xml type="ext-seed">
+
+<!-- Enumeration Types for Service Jobs -->
+<moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
+<moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
+
+        <!-- Enumeration for Service Jobs -->
+<moqui.basic.Enumeration enumId="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+<moqui.basic.Enumeration enumId="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+<moqui.basic.Enumeration enumId="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue" enumTypeId="MISC_SYS_JOB"/>
+<moqui.basic.Enumeration enumId="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result" enumTypeId="MISC_SYS_JOB"/>
+
+</entity-facade-xml>
