@@ -32,7 +32,8 @@ under the License.
         <actions>
             <script>
                 if (!endPoint) endPoint = System.getProperty('shopify_webhook_end_point')
-                endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
+               // endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
+                endPoint = "https://dbj11nv7-8080.inc1.devtunnels.ms" + endPoint
                 StringWriter sw = new StringWriter()
                 ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
                 queryText = sw.toString()
@@ -362,10 +363,10 @@ under the License.
                 <service-call name="co.hotwax.ofbiz.OrderServices.send#CreateOrderRequest"
                               in-map="[shopifyShopId: shopifyShop.remoteId, payload: result.transformedJson]"
                               out-map="response"/>
-                <if condition="response &amp;&amp; response.orderId">
-                    <log level="info" message="Order created successfully with HC Order ID: ${response.orderId}"/>
+                <if condition="response.response &amp;&amp; response.response.orderId">
+                    <log level="info" message="Order created successfully with HC Order ID: ${response.response.orderId}"/>
                     <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
-                                  in-map="[systemMessageId:systemMessageId, orderId:response.orderId]"/>
+                                  in-map="[systemMessageId:systemMessageId, orderId:response.response.orderId]"/>
                 </if>
             </if>
         </actions>
