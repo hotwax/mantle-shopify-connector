@@ -325,4 +325,49 @@ under the License.
             </if>
         </actions>
     </service>
+    <service verb="consume" noun="OrdersCreateWebhookPayloadSystemMessage" authenticate="anonymous-all">
+        <description>Service to consume shopify webhook order payload, transform it and then call createShopifyOrder OMS API.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+            <!-- Pass the messageText to the service for Order JSON transformation -->
+            <if condition="systemMessage.messageText">
+                <!-- Fetch Groovy Script's location to transform the order Json -->
+                <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="transformationScriptLocation">
+                    <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                    <field-map field-name="parameterName" value="resourceId"/>
+                    <select-field field-name="parameterValue"/>
+                </entity-find-one>
+                <entity-find-one entity-name="moqui.resource.DbResource" value-field="transformationScript">
+                    <field-map field-name="resourceId" from="transformationScriptLocation.parameterValue"/>
+                </entity-find-one>
+                <!-- Return error if transformation script is not found -->
+                <if condition="!transformationScript">
+                    <return error="true" message=""/>
+                </if>
+
+                <set field="orderPayload" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+                <service-call name="co.hotwax.ofbiz.OrderServices.transform#OrderJson"
+                              in-map="[orderPayload: orderPayload, filename:transformationScript.filename]"
+                              out-map="result"/>
+
+                <!-- Get the transformed Order JSON, Call OMS API to create the order -->
+                <!-- Fetch shopifyShopId from SystemMessageRemote.remoteId -->
+                <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="shopifyShop" cache="true">
+                    <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+                    <select-field field-name="remoteId"/>
+                </entity-find-one>
+                <service-call name="co.hotwax.ofbiz.OrderServices.send#CreateOrderRequest"
+                              in-map="[shopifyShopId: shopifyShop.remoteId, payload: result.transformedJson]"
+                              out-map="response"/>
+                <if condition="response &amp;&amp; response.orderId">
+                    <log level="info" message="Order created successfully with HC Order ID: ${response.orderId}"/>
+                    <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
+                                  in-map="[systemMessageId:systemMessageId, orderId:response.orderId]"/>
+                </if>
+            </if>
+        </actions>
+    </service>
 </services>
