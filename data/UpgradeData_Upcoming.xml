@@ -816,4 +816,19 @@
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for shopify ORDERS_CREATE webhook -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrdersCreate"
+                                             description="Shopify Orders Create Webhook"
+                                             parentTypeId="ShopifyWebhook"
+                                             sendServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.send#WebhookSubscriptionSystemMessage"
+                                             sendPath="component://shopify-connector/template/graphQL/WebhookSubscriptionCreate.ftl"
+                                             consumeServiceName="co.hotwax.shopify.webhook.ShopifyWebhookServices.consume#OrdersCreateWebhookPayloadSystemMessage">
+        <parameters parameterName="topic" parameterValue="ORDERS_CREATE" systemMessageRemoteId=""/>
+        <parameters parameterName="resourceId" parameterValue="OrderTransformation" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration for mapping OrdersCreate SystemMessageType to orders/create shopify webhook topic -->
+    <moqui.basic.Enumeration description="Shopify Orders Create Webhook" enumId="OrdersCreate"
+                             enumTypeId="ShopifyMessageTypeEnum" enumCode="orders/create"/>
 </entity-facade-xml>
