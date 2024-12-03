@@ -32,8 +32,7 @@ under the License.
         <actions>
             <script>
                 if (!endPoint) endPoint = System.getProperty('shopify_webhook_end_point')
-               // endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
-                endPoint = "https://dbj11nv7-8080.inc1.devtunnels.ms" + endPoint
+                endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
                 StringWriter sw = new StringWriter()
                 ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
                 queryText = sw.toString()
