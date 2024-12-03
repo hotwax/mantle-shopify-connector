@@ -364,8 +364,8 @@ under the License.
                               out-map="response"/>
                 <if condition="response.response &amp;&amp; response.response.orderId">
                     <log level="info" message="Order created successfully with HC Order ID: ${response.response.orderId}"/>
-                    <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
-                                  in-map="[systemMessageId:systemMessageId, orderId:response.response.orderId]"/>
+<!--                    <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"-->
+<!--                                  in-map="[systemMessageId:systemMessageId, orderId:response.response.orderId]"/>-->
                 </if>
             </if>
         </actions>
