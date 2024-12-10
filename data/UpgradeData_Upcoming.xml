@@ -817,6 +817,123 @@
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
+    <!-- SystemMessageType record for bulk fulfillment order query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQuery"
+            description="Bulk Fulfillment Order Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkFulfillmentOrderQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkFulfillmentOrderQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for processing bulk fulfillment order query result -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+        description="Send Bulk Fulfillment Order Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk fulfillment order query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkFulfillmentOrderQuery" description="Queue bulk fulfillment order query"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- DbResource template data for GraphQl query to Shopify -->
+    <moqui.resource.DbResource filename="BulkFulfillmentOrderQuery.ftl" isFile="Y" resourceId="BulkFulfillmentOrderQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+            <@compress single_line=true>
+                <#if queryParams?has_content>
+                    <#if queryParams.filterQuery?has_content>
+                        <#assign filterQuery = queryParams.filterQuery/>
+                    <#else>
+                        <#if queryParams.fromDateLabel?has_content>
+                            <#assign fromDateLabel = queryParams.fromDateLabel/>
+                        <#else>
+                            <#assign fromDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.thruDateLabel?has_content>
+                            <#assign thruDateLabel = queryParams.thruDateLabel/>
+                        <#else>
+                            <#assign thruDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                </#if>
+                mutation {
+                    bulkOperationRunQuery(
+                        query: """ {
+                            orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentOrders {
+                                            edges{
+                                                node{
+                                                    id
+                                                    status
+                                                    assignedLocation{
+                                                        location{
+                                                            id
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        edges{
+                                                            node{
+                                                                id
+                                                                totalQuantity
+                                                                lineItem{
+                                                                    id
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    """ ) {
+                        bulkOperation {
+                            id
+                            status
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
     <!-- Enumeration Types for Service Jobs -->
     <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
     <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
