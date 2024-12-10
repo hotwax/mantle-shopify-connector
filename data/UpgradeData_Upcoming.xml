@@ -933,4 +933,20 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+
+    <!-- Enumeration Types for Service Jobs -->
+    <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
+
+    <!-- Enumeration for Service Jobs -->
+    <moqui.basic.Enumeration enumId="SND_SHPFY_FUL_ACK_FD" enumCode="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="POL_OMS_FLFLMNT_FD" enumCode="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="SND_BLK_SYS_M_SHPFY" enumCode="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue" enumTypeId="MISC_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="POL_BLK_RSLT_SHPFY" enumCode="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result" enumTypeId="MISC_SYS_JOB"/>
+
+    <!-- Updated Service Jobs with jobTypeEnumIds -->
+    <moqui.service.job.ServiceJob jobName="sendShopifyFulfillmentAckFeed" jobTypeEnumId="SND_SHPFY_FUL_ACK_FD"
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSFulfillmentFeed" jobTypeEnumId="POL_OMS_FLFLMNT_FD"
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" jobTypeEnumId="SND_BLK_SYS_M_SHPFY"
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" jobTypeEnumId="POL_BLK_RSLT_SHPFY"
 </entity-facade-xml>
