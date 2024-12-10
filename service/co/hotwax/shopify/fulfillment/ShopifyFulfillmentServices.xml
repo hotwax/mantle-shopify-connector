@@ -64,18 +64,6 @@ under the License.
         <actions>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrders" in-map="[shopifyOrderId:shopifyOrderId, systemMessageRemoteId:systemMessageRemoteId]" out-map="context"/>
 
-            <set field="aggregatedLineItemMap" from="[:]"/>
-            <iterate list="lineItems" entry="lineItem">
-                <if condition="aggregatedLineItemMap.get(lineItem.shopifyLineItemId) == null">
-                    <then>
-                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, lineItem.quantity)</script>
-                    </then>
-                    <else>
-                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, aggregatedLineItemMap.get(lineItem.shopifyLineItemId) + lineItem.quantity)</script>
-                    </else>
-                </if>
-            </iterate>
-
             <set field="lineItemsMapById" from="[:]"/>
             <iterate list="fulfillmentOrders" entry="fulfillmentOrder">
                 <set field="fulfillmentOrderLineItems" from="fulfillmentOrder.line_items"/>
@@ -86,10 +74,10 @@ under the License.
             </iterate>
 
             <set field="fulfillmentItemsByFulfillmentOrderId" from="[:]"/>
-            <iterate list="aggregatedLineItemMap" entry="quantity" key="shopifyLineItemId">
-                <set field="lineItemMap" from="lineItemsMapById.get(shopifyLineItemId)"/>
+            <iterate list="lineItems" entry="lineItem">
+                <set field="lineItemMap" from="lineItemsMapById.get(lineItem.shopifyLineItemId)"/>
                 <script>
-                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": quantity], fulfillmentItemsByFulfillmentOrderId)
+                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": lineItemMap.quantity], fulfillmentItemsByFulfillmentOrderId)
                 </script>
             </iterate>
 
@@ -184,14 +172,12 @@ under the License.
 
             <iterate list="systemMessageList" entry="systemMessage">
                 <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-                <iterate list="shipment.shipmentItems" entry="shipmentItem">
-                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipmentItem.shipmentId, orderId:shipmentItem.orderId, orderItemSeqId: shipmentItem.orderItemSeqId, externalFulfillmentId: systemMessage.remoteMessageId]"/>
+                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipment.shipmentId, primaryOrderId:shipment.orderId, externalId: systemMessage.remoteMessageId]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
                         .writerWithDefaultPrettyPrinter().writeValue(jGenerator, shopifyFulfillmentAckMap)
                     </script>
-                </iterate>
             </iterate>
             <script>
                         jGenerator.writeEndArray()
