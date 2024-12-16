@@ -64,6 +64,18 @@ under the License.
         <actions>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrders" in-map="[shopifyOrderId:shopifyOrderId, systemMessageRemoteId:systemMessageRemoteId]" out-map="context"/>
 
+            <set field="aggregatedLineItemMap" from="[:]"/>
+            <iterate list="lineItems" entry="lineItem">
+                <if condition="aggregatedLineItemMap.get(lineItem.shopifyLineItemId) == null">
+                    <then>
+                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, lineItem.quantity)</script>
+                    </then>
+                    <else>
+                        <script>aggregatedLineItemMap.put(lineItem.shopifyLineItemId, aggregatedLineItemMap.get(lineItem.shopifyLineItemId) + lineItem.quantity)</script>
+                    </else>
+                </if>
+            </iterate>
+
             <set field="lineItemsMapById" from="[:]"/>
             <iterate list="fulfillmentOrders" entry="fulfillmentOrder">
                 <set field="fulfillmentOrderLineItems" from="fulfillmentOrder.line_items"/>
@@ -74,10 +86,10 @@ under the License.
             </iterate>
 
             <set field="fulfillmentItemsByFulfillmentOrderId" from="[:]"/>
-            <iterate list="lineItems" entry="lineItem">
-                <set field="lineItemMap" from="lineItemsMapById.get(lineItem.shopifyLineItemId)"/>
+            <iterate list="aggregatedLineItemMap" entry="quantity" key="shopifyLineItemId">
+                <set field="lineItemMap" from="lineItemsMapById.get(shopifyLineItemId)"/>
                 <script>
-                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": lineItemMap.quantity], fulfillmentItemsByFulfillmentOrderId)
+                    org.moqui.util.CollectionUtilities.addToListInMap(lineItemMap.fulfillment_order_id, ["id": lineItemMap.id, "quantity": quantity], fulfillmentItemsByFulfillmentOrderId)
                 </script>
             </iterate>
 
