@@ -624,7 +624,7 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="BulkCanceledOrdersAndItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrdersAndItemsQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="BulkCanceledOrderItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrderItemsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
