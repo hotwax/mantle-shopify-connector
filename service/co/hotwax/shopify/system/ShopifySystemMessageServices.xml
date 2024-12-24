@@ -860,6 +860,10 @@ under the License.
                                   out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.fulfillmentOrders" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId.fulfillmentOrders"/>
 
+                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ExchangesByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                                  out-map="orderExchangesResponse" ignore-error="true" transaction="force-new"/>
+                    <set field="orderMap.exchanges" from="orderExchangesResponse.orderExchanges.exchanges"/>
+
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
