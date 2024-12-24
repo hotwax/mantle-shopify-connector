@@ -68,6 +68,10 @@
                                         amount
                                         currencyCode
                                     }
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
                                 }
                                 gateway
                                 paymentDetails {
@@ -75,6 +79,7 @@
                                         company
                                     }
                                 }
+                                receiptJson
                             }
                         }
                     }
@@ -109,6 +114,7 @@
                                         currentQuantity
                                         fulfillableQuantity
                                         fulfillmentStatus
+                                        nonFulfillableQuantity
                                     }
                                 }
                                 pageInfo {
@@ -628,7 +634,7 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="BulkCanceledOrdersAndItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrdersAndItemsQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="BulkCanceledOrderItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrderItemsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -785,6 +791,202 @@
                     }
                 }
                 </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkProductMetaFieldByTagsQuery.ftl" isFile="Y" resourceId="BulkProductMetaFieldByTagsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.namespace?has_content>
+                            <#assign namespace = queryParams.namespace/>
+                        </#if>
+                        <#if queryParams.filterQuery?has_content>
+                            <#assign filterQuery = queryParams.filterQuery/>
+                        <#else>
+                            <#if queryParams.filterCondition?has_content>
+                                <#assign filterCondition = queryParams.filterCondition/>
+                            </#if>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                    </#if>
+                    mutation {
+                        bulkOperationRunQuery(
+                            query: """ {
+                                products <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                    edges {
+                                        node {
+                                            id
+                                            variants{
+                                                edges{
+                                                    node{
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            metafields <#if namespace?has_content>(namespace:"${namespace}")</#if> {
+                                                edges{
+                                                    node{
+                                                        id
+                                                        key
+                                                        value
+                                                        createdAt
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        """ ) {
+                            bulkOperation {
+                                id
+                                status
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="UpdatedOrderIdsQuery.ftl" isFile="Y" resourceId="UpdatedOrderIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkFulfillmentOrderQuery.ftl" isFile="Y" resourceId="BulkFulfillmentOrderQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+            <@compress single_line=true>
+                <#if queryParams?has_content>
+                    <#if queryParams.filterQuery?has_content>
+                        <#assign filterQuery = queryParams.filterQuery/>
+                    <#else>
+                        <#if queryParams.fromDateLabel?has_content>
+                            <#assign fromDateLabel = queryParams.fromDateLabel/>
+                        <#else>
+                            <#assign fromDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.thruDateLabel?has_content>
+                            <#assign thruDateLabel = queryParams.thruDateLabel/>
+                        <#else>
+                            <#assign thruDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                </#if>
+                mutation {
+                    bulkOperationRunQuery(
+                        query: """ {
+                            orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentOrders {
+                                            edges{
+                                                node{
+                                                    id
+                                                    status
+                                                    assignedLocation{
+                                                        location{
+                                                            id
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        edges{
+                                                            node{
+                                                                id
+                                                                totalQuantity
+                                                                lineItem{
+                                                                    id
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    """ ) {
+                        bulkOperation {
+                            id
+                            status
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            </@compress>]]>
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
