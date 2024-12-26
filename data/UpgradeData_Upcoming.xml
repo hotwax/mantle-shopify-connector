@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="seed">
     <moqui.resource.DbResource filename="OrderHeaderByIdQuery.ftl" isFile="Y" resourceId="OrderHeaderByIdQuery" parentResourceId="GraphQL">
@@ -624,7 +625,7 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="BulkCanceledOrdersAndItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrdersAndItemsQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="BulkCanceledOrderItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrderItemsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
@@ -721,6 +722,361 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Returned Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
+                                             description="Generate Returned Order Ids Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
+                                             description="Generate Returns and Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendReturnsAndExchangeFeed"
+                                             description="Send Returns and Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateReturnedOrderIdsFeed, GenerateReturnsAndExchangeFeed and SendReturnsAndExchangeFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing returned orderIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeed" description="Queue returned orderIds feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#ReturnedOrderIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateReturnedOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for bulk canceled order items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrderItemsQuery"
+                                             description="Bulk Canceled Order Items Query System Message"
+                                             parentTypeId="ShopifyBulkQuery"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                             sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrderItemsQuery.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/shopify/BulkCanceledOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for sending bulk canceled order items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrderItemsQueryResult"
+                                             description="Send Bulk Order Items Query Result"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkCanceledOrderItemsQuery and SendBulkCanceledOrderItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Canceled Order Items Query Result" enumId="SendBulkCanceledOrderItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Canceled Order Items Query" enumId="BulkCanceledOrderItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrderItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk canceled order items query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkCanceledOrderItemsQuery" description="Queue Bulk Canceled Orders and Items query"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkCanceledOrderItemsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for generating Updated Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateUpdatedOrderIdsFeed"
+                                             description="Generate Updated Order Ids Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/UpdatedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#UpdatedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/UpdatedOrderIdsFeed/UpdatedOrderIdsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Order Updates Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderUpdatesFeed"
+                                             description="Generate Order Updates Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/OrderUpdatesFeed/OrderUpdatesFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderUpdatesFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderUpdatesFeed"
+                                             description="Send Order Updates Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateUpdatedOrderIdsFeed, GenerateUpdatedOrderIdsFeed and SendOrderUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Order Updates Feed" enumId="SendOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Updates Feed" enumId="GenerateOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Order Ids Feed" enumId="GenerateUpdatedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing Updated orderIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedOrderIdsFeed" description="Queue orderIds by tag feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for bulk fulfillment order query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQuery"
+                                             description="Bulk Fulfillment Order Query System Message"
+                                             parentTypeId="ShopifyBulkQuery"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                             sendPath="dbresource://shopify/template/graphQL/BulkFulfillmentOrderQuery.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/shopify/BulkFulfillmentOrderQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for processing bulk fulfillment order query result -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+                                             description="Send Bulk Fulfillment Order Query Result"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing bulk fulfillment order query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkFulfillmentOrderQuery" description="Queue bulk fulfillment order query"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkFulfillmentOrderQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- DbResource template data for GraphQl query to Shopify -->
+    <moqui.resource.DbResource filename="BulkFulfillmentOrderQuery.ftl" isFile="Y" resourceId="BulkFulfillmentOrderQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+            <@compress single_line=true>
+                <#if queryParams?has_content>
+                    <#if queryParams.filterQuery?has_content>
+                        <#assign filterQuery = queryParams.filterQuery/>
+                    <#else>
+                        <#if queryParams.fromDateLabel?has_content>
+                            <#assign fromDateLabel = queryParams.fromDateLabel/>
+                        <#else>
+                            <#assign fromDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.thruDateLabel?has_content>
+                            <#assign thruDateLabel = queryParams.thruDateLabel/>
+                        <#else>
+                            <#assign thruDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                </#if>
+                mutation {
+                    bulkOperationRunQuery(
+                        query: """ {
+                            orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentOrders {
+                                            edges{
+                                                node{
+                                                    id
+                                                    status
+                                                    assignedLocation{
+                                                        location{
+                                                            id
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        edges{
+                                                            node{
+                                                                id
+                                                                totalQuantity
+                                                                lineItem{
+                                                                    id
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    """ ) {
+                        bulkOperation {
+                            id
+                            status
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- ServiceJob data for queuing bulk product metafields by tags query -->
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkProductMetaFieldByTagsQuery" description="Queue bulk products query"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkProductMetaFieldByTagsQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for bulk product metafield by tags query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkProductMetaFieldByTagsQuery"
+                                             description="Bulk Product Metafields By Tags Query System Message"
+                                             parentTypeId="ShopifyBulkQuery"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                             sendPath="dbresource://shopify/template/graphQL/BulkProductMetaFieldByTagsQuery.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/shopify/BulkProductMetaFieldByTagsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
+                                             description="Send Bulk Product Metafields by Tags Query Result"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between BulkProductMetaFieldByTagsQuery and SendBulkProductMetaFieldsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Product Metafields by Tags Query Result" enumId="SendBulkProductMetaFieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Product Metafields Query" enumId="BulkProductMetaFieldByTagsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkProductMetaFieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <moqui.resource.DbResource filename="BulkProductMetaFieldByTagsQuery.ftl" isFile="Y" resourceId="BulkProductMetaFieldByTagsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.namespace?has_content>
+                            <#assign namespace = queryParams.namespace/>
+                        </#if>
+                        <#if queryParams.filterQuery?has_content>
+                            <#assign filterQuery = queryParams.filterQuery/>
+                        <#else>
+                            <#if queryParams.filterCondition?has_content>
+                                <#assign filterCondition = queryParams.filterCondition/>
+                            </#if>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                    </#if>
+                    mutation {
+                        bulkOperationRunQuery(
+                            query: """ {
+                                products <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                    edges {
+                                        node {
+                                            id
+                                            variants{
+                                                edges{
+                                                    node{
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            metafields <#if namespace?has_content>(namespace:"${namespace}")</#if> {
+                                                edges{
+                                                    node{
+                                                        id
+                                                        key
+                                                        value
+                                                        createdAt
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        """ ) {
+                            bulkOperation {
+                                id
+                                status
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- Enumeration Types for Service Jobs -->
+    <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
+
+    <!-- Enumeration for Service Jobs -->
+    <moqui.basic.Enumeration enumId="SND_SHPFY_FUL_ACK_FD" enumCode="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="POL_OMS_FLFLMNT_FD" enumCode="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="SND_BLK_SYS_M_SHPFY" enumCode="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue" enumTypeId="MISC_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="POL_BLK_RSLT_SHPFY" enumCode="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result" enumTypeId="MISC_SYS_JOB"/>
+
+    <!-- Updated Service Jobs with jobTypeEnumIds -->
+    <moqui.service.job.ServiceJob jobName="sendShopifyFulfillmentAckFeed" jobTypeEnumId="SND_SHPFY_FUL_ACK_FD"/>
+    <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSFulfillmentFeed" jobTypeEnumId="POL_OMS_FLFLMNT_FD"/>
+    <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" jobTypeEnumId="SND_BLK_SYS_M_SHPFY"/>
+    <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" jobTypeEnumId="POL_BLK_RSLT_SHPFY"/>
     <moqui.resource.DbResource filename="ExchangesByOrderIdQuery.ftl" isFile="Y" resourceId="ExchangesByOrderIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -851,62 +1207,4 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-
-    <!-- SystemMessageType record for generating Returned Order Ids Feed -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
-            description="Generate Returned Order Ids Feed"
-            sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
-            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json">
-    </moqui.service.message.SystemMessageType>
-
-    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
-            description="Generate Returns and Exchange Feed"
-            parentTypeId="LocalFeedFile"
-            sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
-    </moqui.service.message.SystemMessageType>
-
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendReturnsAndExchangeFeed"
-            description="Send Returns and Exchange Feed"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
-
-    <!-- Enumeration to create relation between GenerateReturnedOrderIdsFeed, GenerateReturnsAndExchangeFeed and SendReturnsAndExchangeFeed SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-
-    <!-- ServiceJob data for queuing returned orderIds feed -->
-    <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeed" description="Queue returned orderIds feed"
-            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#ReturnedOrderIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateReturnedOrderIdsFeed"/>
-        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-        <parameters parameterName="fromDate" parameterValue=""/>
-        <parameters parameterName="thruDate" parameterValue=""/>
-    </moqui.service.job.ServiceJob>
-
-    <!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
-            description="Bulk Canceled Orders and Items Query System Message"
-            parentTypeId="ShopifyBulkQuery"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/BulkCanceledOrdersAndItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
-    </moqui.service.message.SystemMessageType>
-
-    <!-- SystemMessageType record for sending bulk canceled orders and items query result to SFTP -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrdersAndItemsQueryResult"
-            description="Send Bulk Canceled Orders and Items Query Result"
-            parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""/>
-
-    <!-- Enumeration to create relation between BulkCanceledOrdersAndItemsQuery and SendBulkCanceledOrdersAndItemsQueryResult SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Bulk Canceled Orders and Items Query Result" enumId="SendBulkCanceledOrdersAndItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Bulk Canceled Orders and Items Query" enumId="BulkCanceledOrdersAndItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrdersAndItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>
