@@ -810,10 +810,10 @@
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderUpdatesFeed"
-        description="Send Order Updates Feed"
-        parentTypeId="LocalFeedFile"
-        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-        sendPath="">
+            description="Send Order Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between GenerateUpdatedOrderIdsFeed, GenerateUpdatedOrderIdsFeed and SendOrderUpdatesFeed SystemMessageType(s) -->
@@ -842,10 +842,10 @@
 
     <!-- SystemMessageType record for processing bulk fulfillment order query result -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
-        description="Send Bulk Fulfillment Order Query Result"
-        parentTypeId="LocalFeedFile"
-        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-        sendPath=""/>
+            description="Send Bulk Fulfillment Order Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 
     <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -960,20 +960,20 @@
 
     <!-- SystemMessageType record for bulk product metafield by tags query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkProductMetaFieldByTagsQuery"
-        description="Bulk Product Metafields By Tags Query System Message"
-        parentTypeId="ShopifyBulkQuery"
-        sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-        sendPath="dbresource://shopify/template/graphQL/BulkProductMetaFieldByTagsQuery.ftl"
-        consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-        receivePath="${contentRoot}/shopify/BulkProductMetaFieldByTagsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+            description="Bulk Product Metafields By Tags Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkProductMetaFieldByTagsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkProductMetaFieldByTagsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
-        description="Send Bulk Product Metafields by Tags Query Result"
-        parentTypeId="LocalFeedFile"
-        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-        sendPath="">
+            description="Send Bulk Product Metafields by Tags Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
     </moqui.service.message.SystemMessageType>
 
     <!-- Enumeration to create relation between BulkProductMetaFieldByTagsQuery and SendBulkProductMetaFieldsQueryResult SystemMessageType(s) -->
