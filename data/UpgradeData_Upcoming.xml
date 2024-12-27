@@ -1206,4 +1206,184 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ProductIdsQuery.ftl" isFile="Y" resourceId="ProductIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams?has_content>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "created_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "created_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                        query {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery})</#if> {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ProductByIdQuery.ftl" isFile="Y" resourceId="ProductByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node(id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                handle
+                                title
+                                productType
+                                featuredMedia {
+                                    mediaContentType
+                                    preview {
+                                        image {
+                                            url
+                                        }
+                                    }
+                                }
+                                options {
+                                    id
+                                    name
+                                    position
+                                    optionValues {
+                                        id
+                                        name
+                                    }
+                                }
+                                tags
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ProductVariantsByProductIdQuery.ftl" isFile="Y" resourceId="ProductVariantsByProductIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node (id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query:"exclude_variants_with_components:true") {
+                                    edges {
+                                        node {
+                                            id
+                                            title
+                                            sku
+                                            barcode
+                                            product {
+                                                id
+                                                handle
+                                                title
+                                            }
+                                            price
+                                            compareAtPrice
+                                            position
+                                            image {
+                                                url
+                                            }
+                                            selectedOptions {
+                                                name
+                                                value
+                                            }
+                                            inventoryItem {
+                                                id
+                                                measurement {
+                                                    weight {
+                                                        unit
+                                                        value
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    pageInfo {
+                                        hasNextPage
+                                        endCursor
+                                    }
+                                }
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Created Product Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateCreatedProductIdsFeed"
+            description="Generate Created Product Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/ProductIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductIdsFeed"
+            receivePath="${contentRoot}/shopify/CreatedProductIdsFeed/CreatedProductIdsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Created Products Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateCreatedProductsFeed"
+            description="Generate Created Products Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/CreatedProductsFeed/CreatedProductsFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductsFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendCreatedProductsFeed"
+            description="Send Created Products Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateCreatedProductIdsFeed, GenerateCreatedProductsFeed and SendCreatedProductsFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Created Products Feed" enumId="SendCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate CreatedProducts Feed" enumId="GenerateCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Created Product Ids Feed" enumId="GenerateCreatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing Created productIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateCreatedProductIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
