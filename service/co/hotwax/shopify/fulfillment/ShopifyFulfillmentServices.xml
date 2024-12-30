@@ -228,15 +228,7 @@ under the License.
         <actions>
             <set field="fulfillmentOrderDetail" from="[:]"/>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", sw)
-                queryText = sw.toString()
-                ec.logger.info ("queryText" + queryText)
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", null)
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentResponse"/>
             <if condition="!fulfillmentResponse.response.node">
@@ -248,15 +240,7 @@ under the License.
             <set field="fulfillmentLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", sw1)
-                    queryText = sw1.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw1.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
                 <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
@@ -283,15 +267,7 @@ under the License.
             <set field="fulfillmentOrders" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderResponse"/>
                 <if condition="!fulfillmentOrderResponse.response.node">
