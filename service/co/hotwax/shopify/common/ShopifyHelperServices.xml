@@ -61,7 +61,7 @@ under the License.
             <if condition="endPoint">
                 <then>
                     <set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
-                    <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')]"/>
+                    <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')])"/>
                     <set field="shopifyUrl" from="sendUrl + endPoint"/>
                 </then>
                 <else-if condition="url">
@@ -188,7 +188,7 @@ under the License.
             </if>
 
             <set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
-            <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')]"/>
+            <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')])"/>
             <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>
 
             <script><![CDATA[
