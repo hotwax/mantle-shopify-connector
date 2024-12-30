@@ -28,15 +28,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ProductByIdQuery.ftl", sw)
-                queryText = sw.toString()
-                ec.logger.info ("queryText" + queryText)
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductByIdQuery.ftl", null)
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productResponse"/>
             <if condition="!productResponse.response.node">
@@ -46,15 +38,7 @@ under the License.
             <set field="productVariants" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/ProductVariantsByProductIdQuery.ftl", sw1)
-                    queryText = sw1.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                    sw1.close()
-                    } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductVariantsByProductIdQuery.ftl", null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productVariantResponse"/>
                 <if condition="productVariantResponse.response.node.variants.edges">

@@ -33,14 +33,7 @@ under the License.
             <script>
                 if (!endPoint) endPoint = System.getProperty('shopify_webhook_end_point')
                 endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
-                queryText = sw.toString()
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template(templateLocation, null)
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="webhookSubscriptionCreateResponse"/>
 
@@ -63,14 +56,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
-                queryText = sw.toString()
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template(templateLocation, null)
             </script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="getWebhookSubscriptionsResponse"/>
@@ -90,14 +76,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(templateLocation, sw)
-                queryText = sw.toString()
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template(templateLocation, null)
             </script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[id:webhookSubscriptionId]]" out-map="deleteWebhookSubscriptionResponse"/>

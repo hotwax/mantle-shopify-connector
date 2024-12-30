@@ -723,15 +723,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="returnedOrderIdsResponse"/>
                 <if condition="!returnedOrderIdsResponse.response.orders.edges">
@@ -958,15 +950,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="orderIdsByTagResponse"/>
                 <if condition="!orderIdsByTagResponse.response.orders.edges">
@@ -1110,14 +1094,7 @@ under the License.
                     </script>
 
                     <script>
-                        StringWriter sw = new StringWriter()
-                        ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/UpdateOrderTags.ftl", sw)
-                        queryText = sw.toString()
-                        try {
-                            sw.close()
-                        } catch (IOException e) {
-                            ec.logger.error("Error closing StringWriter")
-                        }
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/UpdateOrderTags.ftl", null)
                     </script>
                     <if condition="tagsToAdd">
                         <set field="tags" from="order.tags"/>
@@ -1232,15 +1209,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, null)
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="updatedOrderIdsResponse"/>
                 <if condition="!updatedOrderIdsResponse.response.orders.edges">
