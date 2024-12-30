@@ -60,7 +60,8 @@ under the License.
             <!-- Preparing the shopify url -->
             <if condition="endPoint">
                 <then>
-                    <set field="sendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
+                    <set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
+                    <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')]"/>
                     <set field="shopifyUrl" from="sendUrl + endPoint"/>
                 </then>
                 <else-if condition="url">
@@ -71,7 +72,7 @@ under the License.
             <script><![CDATA[
                 import org.moqui.util.RestClient
 
-                shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
+                //shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
                 // Prepare RestClient and call Shopify API
                 RestClient restClient = ec.service.rest()
                 restClient.timeoutRetry(true);
