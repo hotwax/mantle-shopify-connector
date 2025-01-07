@@ -33,7 +33,7 @@ under the License.
             <script>
                 if (!endPoint) endPoint = System.getProperty('shopify_webhook_end_point')
                 endPoint = ec.web.getWebappRootUrl(true, false) + endPoint
-                queryText = ec.resourceFacade.template(templateLocation, null)
+                queryText = ec.resourceFacade.template(templateLocation, "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="webhookSubscriptionCreateResponse"/>
 
@@ -56,7 +56,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                queryText = ec.resourceFacade.template(templateLocation, null)
+                queryText = ec.resourceFacade.template(templateLocation, "")
             </script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="getWebhookSubscriptionsResponse"/>
@@ -76,7 +76,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                queryText = ec.resourceFacade.template(templateLocation, null)
+                queryText = ec.resourceFacade.template(templateLocation, "")
             </script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[id:webhookSubscriptionId]]" out-map="deleteWebhookSubscriptionResponse"/>

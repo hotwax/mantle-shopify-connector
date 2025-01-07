@@ -82,7 +82,7 @@ under the License.
             <set field="orderMetafields" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderMetafieldsResponse"/>
                 <if condition="!orderMetafieldsResponse.response.node">
@@ -107,7 +107,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderHeaderByIdQuery.ftl", null)
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderHeaderByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderHeaderResponse"/>
             <if condition="!orderHeaderResponse.response.node">
@@ -117,7 +117,7 @@ under the License.
             <set field="orderLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderLineItemByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderLineItemByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderLineItemResponse"/>
                 <if condition="orderLineItemResponse.response.node.lineItems.edges">

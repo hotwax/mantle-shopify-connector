@@ -31,7 +31,7 @@ under the License.
             <set field="refundLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundLineItemsByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundLineItemsByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundLineItemsResponse"/>
                 <if condition="!refundLineItemsResponse.response.node">
@@ -61,7 +61,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/ReturnLineItemsByRefundQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/ReturnLineItemsByRefundQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemsResponse"/>
                 <if condition="!returnLineItemsResponse.response.node">
@@ -110,7 +110,7 @@ under the License.
             <set field="refundTransactions" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundTransactionsByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundTransactionsByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundTransactionsResponse"/>
                 <log level="info" message="refundTransactionsResponse: ${refundTransactionsResponse}"/>
@@ -170,7 +170,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundIdsByReturnIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundIdsByReturnIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundResponse"/>
                 <if condition="!refundResponse.response.node">
@@ -214,7 +214,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReverseFulfillmentOrdersByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReverseFulfillmentOrdersByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="reverseFulfillmentOrderResponse"/>
                 <if condition="!reverseFulfillmentOrderResponse.response.node">
@@ -233,7 +233,7 @@ under the License.
                 <set field="lineItems" from="[]"/>
                 <while condition="hasNextPage">
                     <script>
-                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReverseFulfillmentOrderLineItemsByIdQuery.ftl", null)
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReverseFulfillmentOrderLineItemsByIdQuery.ftl", "")
                     </script>
                     <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="lineItemResponse"/>
                     <if condition="lineItemResponse.response.node.lineItems.edges">
@@ -258,7 +258,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnHeaderByIdQuery.ftl", null)
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnHeaderByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
             <if condition="!returnResponse.response.node">
@@ -270,7 +270,7 @@ under the License.
             <set field="returnLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnLineItemByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnLineItemByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemResponse"/>
                 <if condition="returnLineItemResponse.response.node.returnLineItems.edges">
@@ -286,7 +286,7 @@ under the License.
             <set field="exchangeLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ExchangeLineItemByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ExchangeLineItemByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="exchangeLineItemResponse"/>
                 <if condition="exchangeLineItemResponse.response.node.exchangeLineItems.edges">
@@ -321,7 +321,7 @@ under the License.
             <set field="returns" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnsByOrderIDQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ReturnsByOrderIDQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnResponse"/>
                 <if condition="!returnResponse.response.node">
@@ -361,7 +361,7 @@ under the License.
             <set field="exchanges" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ExchangesByOrderIDQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ExchangesByOrderIDQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="exchangeResponse"/>
                 <if condition="!exchangeResponse.response.node">

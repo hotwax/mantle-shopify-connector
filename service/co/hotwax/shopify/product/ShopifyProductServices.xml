@@ -28,7 +28,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductByIdQuery.ftl", null)
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productResponse"/>
             <if condition="!productResponse.response.node">
@@ -38,7 +38,7 @@ under the License.
             <set field="productVariants" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductVariantsByProductIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductVariantsByProductIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productVariantResponse"/>
                 <if condition="productVariantResponse.response.node.variants.edges">

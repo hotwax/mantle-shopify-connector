@@ -228,7 +228,7 @@ under the License.
         <actions>
             <set field="fulfillmentOrderDetail" from="[:]"/>
             <script>
-                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", null)
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentResponse"/>
             <if condition="!fulfillmentResponse.response.node">
@@ -240,7 +240,7 @@ under the License.
             <set field="fulfillmentLineItems" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
                 <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
@@ -267,7 +267,7 @@ under the License.
             <set field="fulfillmentOrders" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", null)
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderResponse"/>
                 <if condition="!fulfillmentOrderResponse.response.node">
