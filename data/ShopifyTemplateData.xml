@@ -16,15 +16,64 @@
                         Order {
                             id
                             name
+                            createdAt
                             updatedAt
+                            cancelledAt
+                            displayFulfillmentStatus
                             returnStatus
                             taxesIncluded
+                            phone
+                            email
+                            tags
+                            note
+                            statusPageUrl
+                            currencyCode
+                            presentmentCurrencyCode
                             customer {
                                 id
                                 firstName
                                 lastName
-                                email
+                            }
+                            channelInformation {
+                                channelId
+                                channelDefinition {
+                                    handle
+                                }
+                            }
+                            customAttributes {
+                                key
+                                value
+                            }
+                            shippingAddress {
+                                name
+                                address1
+                                address2
+                                city
+                                zip
+                                provinceCode
+                                countryCodeV2
+                                latitude
+                                longitude
                                 phone
+                            }
+                            billingAddress {
+                                firstName
+                                lastName
+                                address1
+                                address2
+                                city
+                                zip
+                                provinceCode
+                                countryCodeV2
+                                latitude
+                                longitude
+                                phone
+                            }
+                            totalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
                             }
                             originalTotalPriceSet {
                                 presentmentMoney {
@@ -38,22 +87,11 @@
                                     currencyCode
                                 }
                             }
-                            channelInformation {
-                                channelId
-                                channelDefinition {
-                                    channelName
+                            totalTipReceivedSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
                                 }
-                            }
-                            billingAddress {
-                                firstName
-                                lastName
-                                address1
-                                address2
-                                city
-                                provinceCode
-                                countryCodeV2
-                                phone
-                                zip
                             }
                             transactions {
                                 id
@@ -360,6 +398,10 @@
                                     id
                                 }
                             }
+                            deliveryMethod {
+                                methodType
+                                serviceCode
+                            }
                         }
                     }
                 }
@@ -383,11 +425,53 @@
                                 edges{
                                     node {
                                         id
-                                        sku
-                                        variantTitle
-                                        productTitle
                                         lineItem {
                                             id
+                                            sku
+                                            variant {
+                                                id
+                                                barcode
+                                                title
+                                            }
+                                            originalUnitPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                }
+                                            }
+                                            quantity
+                                            nonFulfillableQuantity
+                                            customAttributes {
+                                                key
+                                                value
+                                            }
+                                            taxLines {
+                                                title
+                                                ratePercentage
+                                                priceSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                            }
+                                            discountAllocations {
+                                                allocatedAmountSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                discountApplication {
+                                                    ... on DiscountCodeApplication {
+                                                        code
+                                                        value {
+                                                            ... on PricingPercentageValue {
+                                                                percentage
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1260,6 +1344,105 @@
                         }
                     }
                 </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ShippingLinesByOrderIdQuery.ftl" isFile="Y" resourceId="ShippingLinesByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query {
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            shippingLines (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        title
+                                        originalPriceSet {
+                                            presentmentMoney {
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                        discountAllocations {
+                                            allocatedAmountSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                            discountApplication {
+                                                ... on DiscountCodeApplication {
+                                                    code
+                                                    targetType
+                                                    value {
+                                                        ... on PricingPercentageValue {
+                                                            percentage
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        taxLines {
+                                            title
+                                            priceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="NewOrderIdsQuery.ftl" isFile="Y" resourceId="NewOrderIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
