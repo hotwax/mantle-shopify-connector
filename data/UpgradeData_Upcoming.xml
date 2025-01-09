@@ -198,21 +198,23 @@
                             returnLineItems (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                 edges {
                                     node {
-                                        id
-                                        returnReason
-                                        returnReasonNote
-                                        fulfillmentLineItem {
-                                            lineItem {
-                                                id
-                                                sku
-                                                quantity
+                                        ... on ReturnLineItem {
+                                            id
+                                            returnReason
+                                            returnReasonNote
+                                            fulfillmentLineItem {
+                                                lineItem {
+                                                    id
+                                                    sku
+                                                    quantity
+                                                }
                                             }
-                                        }
-                                        quantity
-                                        withCodeDiscountedTotalPriceSet {
-                                            presentmentMoney {
-                                                amount
-                                                currencyCode
+                                            quantity
+                                            withCodeDiscountedTotalPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
                                             }
                                         }
                                     }
