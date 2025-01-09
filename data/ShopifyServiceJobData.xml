@@ -251,6 +251,14 @@ under the License.
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
+    <!-- ServiceJob data for queuing Updated productIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedProductIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
     <!-- ServiceJob data for queuing New orderIds feed -->
     <moqui.service.job.ServiceJob jobName="queue_NewOrderIdsFeed" description="Queue new orderIds feed"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">

@@ -1295,35 +1295,23 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="ProductIdsQuery.ftl" isFile="Y" resourceId="ProductIdsQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="NewProductIdsQuery.ftl" isFile="Y" resourceId="NewProductIdsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
                     <#ftl output_format="HTML">
                     <@compress single_line=true>
-                        <#if queryParams?has_content>
-                            <#if queryParams.fromDateLabel?has_content>
-                                <#assign fromDateLabel = queryParams.fromDateLabel/>
-                            <#else>
-                                <#assign fromDateLabel = "created_at"/>
-                            </#if>
-                            <#if queryParams.thruDateLabel?has_content>
-                                <#assign thruDateLabel = queryParams.thruDateLabel/>
-                            <#else>
-                                <#assign thruDateLabel = "created_at"/>
-                            </#if>
-                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
-                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
-                            </#if>
-                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
-                                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
-                            </#if>
-                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
-                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
-                            </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery})</#if> {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
                                 edges {
                                     node {
                                         id
@@ -1392,7 +1380,7 @@
                             ... on
                             Product {
                                 id
-                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query:"exclude_variants_with_components:true") {
+                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                     edges {
                                         node {
                                             id
@@ -1442,7 +1430,7 @@
     <!-- SystemMessageType record for generating Created Product Ids Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateCreatedProductIdsFeed"
             description="Generate Created Product Ids Feed"
-            sendPath="dbresource://shopify/template/graphQL/ProductIdsQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/NewProductIdsQuery.ftl"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductIdsFeed"
             receivePath="${contentRoot}/shopify/CreatedProductIdsFeed/CreatedProductIdsFeed-${dateTime}-${systemMessageId}.json">
     </moqui.service.message.SystemMessageType>
@@ -1453,7 +1441,6 @@
             parentTypeId="LocalFeedFile"
             sendPath="${contentRoot}/shopify/CreatedProductsFeed/CreatedProductsFeed-${dateTime}-${systemMessageId}.json"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductsFeed">
-        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendCreatedProductsFeed"
@@ -1590,7 +1577,6 @@
             parentTypeId="LocalFeedFile"
             sendPath="${contentRoot}/shopify/NewOrdersFeed/NewOrdersFeed-${dateTime}-${systemMessageId}.json"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#NewOrdersFeed">
-        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendNewOrdersFeed"
@@ -1609,6 +1595,77 @@
     <moqui.service.job.ServiceJob jobName="queue_NewOrderIdsFeed" description="Queue new orderIds feed"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateNewOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
+    <moqui.resource.DbResource filename="UpdatedProductIdsQuery.ftl" isFile="Y" resourceId="UpdatedProductIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Updated Product Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateUpdatedProductIdsFeed"
+            description="Generate Updated Product Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/UpdatedProductIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#UpdatedProductIdsFeed"
+            receivePath="${contentRoot}/shopify/UpdatedProductIdsFeed/UpdatedProductIdsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Product Updates Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateProductUpdatesFeed"
+            description="Generate Product Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/ProductUpdatesFeed/ProductUpdatesFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductUpdatesFeed">
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendProductUpdatesFeed"
+            description="Send Product Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateUpdatedProductIdsFeed, GenerateProductUpdatesFeed and SendProductUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Product Updates Feed" enumId="SendProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Product Updates Feed" enumId="GenerateProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Product Ids Feed" enumId="GenerateUpdatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing Updated productIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
