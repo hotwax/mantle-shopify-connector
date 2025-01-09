@@ -108,12 +108,6 @@
             parameterValue="BULK_OPERATIONS_FINISH"
             systemMessageRemoteId=""/>
 
-    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
-    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
-            parameterName="consumeSmrId"
-            parameterValue=""
-            systemMessageRemoteId=""/>
-
     <!-- Configure remote SFTP server against your shopify config for sending the feed -->
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderRestJsonFeed"
             parameterName="sendSmrId"
