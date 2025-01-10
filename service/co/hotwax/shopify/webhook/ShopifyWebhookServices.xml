@@ -161,7 +161,7 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
         </in-parameters>
         <actions>
-            <entity-find-one entity-name="SystemMessageType" value-field="systemMessageType"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType"/>
             <set field="messageParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="systemMessageParams">
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
