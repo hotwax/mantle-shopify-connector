@@ -184,14 +184,12 @@ under the License.
 
             <iterate list="systemMessageList" entry="systemMessage">
                 <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-                <iterate list="shipment.shipmentItems" entry="shipmentItem">
-                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipmentItem.shipmentId, orderId:shipmentItem.orderId, orderItemSeqId: shipmentItem.orderItemSeqId, externalFulfillmentId: systemMessage.remoteMessageId]"/>
+                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipment.shipmentId, primaryOrderId:shipment.orderId, externalId: systemMessage.remoteMessageId]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
                         .writerWithDefaultPrettyPrinter().writeValue(jGenerator, shopifyFulfillmentAckMap)
                     </script>
-                </iterate>
             </iterate>
             <script>
                         jGenerator.writeEndArray()
