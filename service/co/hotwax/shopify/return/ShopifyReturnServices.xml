@@ -177,13 +177,15 @@ under the License.
                     <return type="warning" message="No Shopify return found for id: ${returnId}"/>
                 </if>
                 <!-- Getting all the refundId associated with returnId-->
-                <set field="refundIdList" from="[]"/>
+                <set field="refundsList" from="[]"/>
                 <if condition="refundResponse.response.node.refunds.edges">
-                    <script>refundIdList.addAll(refundResponse.response.node.refunds.edges.node.id)</script>
+                    <script>refundsList.addAll(refundResponse.response.node.refunds.edges.node)</script>
                 </if>
-                <iterate list="refundIdList" entry="shopifyRefundId">
+                <iterate list="refundsList" entry="shopifyRefund">
                     <set field="refundDetail" from="[:]"/>
+                    <set field="shopifyRefundId" from="shopifyRefund.id"/>
                     <set field="refundDetail.id" from="shopifyRefundId"/>
+                    <set field="refundDetail.createdAt" from="shopifyRefund.createdAt"/>
                     <!-- Getting refund line items for each refundId-->
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundLineItems" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:shopifyRefundId]"
                                   out-map="refundLineItemsResponse"/>
