@@ -212,6 +212,9 @@
                                                     id
                                                     sku
                                                     quantity
+                                                    product {
+                                                        id
+                                                    }
                                                 }
                                             }
                                             quantity
@@ -392,6 +395,7 @@
                         FulfillmentOrder {
                             id
                             status
+                            createdAt
                             updatedAt
                             fulfillAt
                             channelId
@@ -544,6 +548,7 @@
                                         edges {
                                             node {
                                                 id
+                                                createdAt
                                             }
                                         }
                                         pageInfo {
