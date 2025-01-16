@@ -549,6 +549,12 @@
                                             node {
                                                 id
                                                 createdAt
+                                                totalRefundedSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
                                             }
                                         }
                                         pageInfo {
@@ -1006,6 +1012,12 @@
                                                     id
                                                 }
                                                 additions {
+                                                    totalPriceSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
                                                     lineItems {
                                                         lineItem {
                                                             id
@@ -1068,6 +1080,12 @@
                                                 }
                                                 refunds {
                                                     id
+                                                    totalRefundedSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
                                                     return {
                                                         id
                                                     }
@@ -1077,6 +1095,12 @@
                                                         amount
                                                         currencyCode
                                                     }
+                                                }
+                                                totalPriceSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }    
                                                 }
                                                 transactions {
                                                     id
