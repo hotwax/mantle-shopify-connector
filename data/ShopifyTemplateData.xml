@@ -16,6 +16,8 @@
                         Order {
                             id
                             name
+                            updatedAt
+                            cancelledAt
                             createdAt                                                       
                             displayFulfillmentStatus
                             returnStatus
@@ -392,6 +394,20 @@
                         ... on
                         FulfillmentOrder {
                             id
+                            status
+                            createdAt
+                            updatedAt
+                            fulfillAt
+                            channelId
+                            assignedLocation {
+                                location {
+                                    id
+                                }
+                            }
+                            deliveryMethod {
+                                methodType
+                                serviceCode
+                            }
                             createdAt                            
                         }
                     }
