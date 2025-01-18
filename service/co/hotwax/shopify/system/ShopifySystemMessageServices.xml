@@ -848,7 +848,7 @@ under the License.
                                   out-map="orderReturnsResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.returns" from="orderReturnsResponse.orderReturns.returns"/>
 
-                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyId:order.id, includeFulfillmentLineItems:false]"
+                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id, includeFulfillmentLineItems:false]"
                                   out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.fulfillmentOrders" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId.fulfillmentOrders"/>
 
