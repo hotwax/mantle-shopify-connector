@@ -186,6 +186,7 @@ under the License.
                     <set field="shopifyRefundId" from="shopifyRefund.id"/>
                     <set field="refundDetail.id" from="shopifyRefundId"/>
                     <set field="refundDetail.createdAt" from="shopifyRefund.createdAt"/>
+                    <set field="refundDetail.totalRefundedSet" from="shopifyRefund.totalRefundedSet"/>
                     <!-- Getting refund line items for each refundId-->
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundLineItems" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:shopifyRefundId]"
                                   out-map="refundLineItemsResponse"/>

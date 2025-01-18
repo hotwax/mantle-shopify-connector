@@ -219,6 +219,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="fulfillmentOrderId" required="true"/>
+            <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="fulfillmentOrderDetail"/>
@@ -234,20 +235,22 @@ under the License.
             </if>
             <set field="fulfillmentOrderDetail" from="fulfillmentResponse.response.node"/>
 <!--            Getting Fulfillment LineItems details-->
-            <set field="hasNextPage" type="Boolean" value="true"/>
-            <set field="fulfillmentLineItems" from="[]"/>
-            <while condition="hasNextPage">
-                <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", "")
-                </script>
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
-                <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
-                    <script>fulfillmentLineItems.addAll(fulfillmentLineItemResponse.response.node.lineItems.edges.node)</script>
-                </if>
-                <set field="hasNextPage" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
-                <set field="cursor" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
-            </while>
-            <set field="fulfillmentOrderDetail.lineItems" from="fulfillmentLineItems"/>
+            <if condition="includeFulfillmentLineItems">
+                <set field="hasNextPage" type="Boolean" value="true"/>
+                <set field="fulfillmentLineItems" from="[]"/>
+                <while condition="hasNextPage">
+                    <script>
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", "")
+                    </script>
+                    <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
+                    <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
+                        <script>fulfillmentLineItems.addAll(fulfillmentLineItemResponse.response.node.lineItems.edges.node)</script>
+                    </if>
+                    <set field="hasNextPage" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+                </while>
+                <set field="fulfillmentOrderDetail.lineItems" from="fulfillmentLineItems"/>
+            </if>
         </actions>
     </service>
     <service verb="get" noun="FulfillmentOrdersByOrderId">
@@ -255,6 +258,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="fulfillmentOrdersByOrderId"/>
@@ -278,7 +282,7 @@ under the License.
                 </if>
                 <!-- Getting fulfillment order details for each fulfillmentOrderId-->
                 <iterate list="fulfillmentOrderIdList" entry="fulfillmentOrderId">
-                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId]" out-map="fulfillmentOrderDetail"/>
+                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId, includeFulfillmentLineItems:includeFulfillmentLineItems]" out-map="fulfillmentOrderDetail"/>
                     <script>fulfillmentOrders.addAll(fulfillmentOrderDetail.fulfillmentOrderDetail)</script>
                 </iterate>
                 <set field="hasNextPage" from="fulfillmentOrderResponse.response.node.fulfillmentOrders.pageInfo.hasNextPage"/>
