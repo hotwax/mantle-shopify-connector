@@ -16,9 +16,7 @@
                         Order {
                             id
                             name
-                            createdAt
-                            updatedAt
-                            cancelledAt
+                            createdAt                                                       
                             displayFulfillmentStatus
                             returnStatus
                             taxesIncluded
@@ -394,20 +392,7 @@
                         ... on
                         FulfillmentOrder {
                             id
-                            status
-                            createdAt
-                            updatedAt
-                            fulfillAt
-                            channelId
-                            assignedLocation {
-                                location {
-                                    id
-                                }
-                            }
-                            deliveryMethod {
-                                methodType
-                                serviceCode
-                            }
+                            createdAt                            
                         }
                     }
                 }
