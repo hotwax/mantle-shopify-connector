@@ -181,6 +181,9 @@
                             id
                             status
                             name
+                            order {
+                                id
+                            }
                         }
                     }
                 }
@@ -431,6 +434,8 @@
                                 edges{
                                     node {
                                         id
+                                        totalQuantity
+                                        remainingQuantity
                                         lineItem {
                                             id
                                             sku
