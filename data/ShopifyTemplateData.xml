@@ -641,6 +641,10 @@
                                                         amount
                                                         currencyCode
                                                     }
+                                                    shopMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
                                                 }
                                                 kind
                                                 gateway
@@ -1121,6 +1125,10 @@
                                                             amount
                                                             currencyCode
                                                         }
+                                                        shopMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
                                                     }
                                                     gateway
                                                     paymentDetails {
@@ -1288,6 +1296,7 @@
                                             }
                                             inventoryItem {
                                                 id
+                                                requiresShipping
                                                 measurement {
                                                     weight {
                                                         unit
