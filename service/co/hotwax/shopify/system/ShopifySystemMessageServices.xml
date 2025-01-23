@@ -1143,7 +1143,7 @@ under the License.
                         <set field="fromDate" from="systemMessageList[0].messageDate" type="String"/>
                     </if>
                 </if>
-                <set field="thruDate" value="ec.user.nowTimestamp" type="String"/>
+                <set field="thruDate" from="ec.user.nowTimestamp" type="String"/>
             </if>
             <if condition="fromDate">
                 <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
