@@ -1160,7 +1160,7 @@ under the License.
                           out-map="queueSystemMessageOut"/>
 
             <if condition="runAsBatch">
-                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessageList[0].systemMessageId, messageDate:thruDate]"/>
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:queueSystemMessageOut.systemMessageId, messageDate:thruDate]"/>
             </if>
         </actions>
     </service>
