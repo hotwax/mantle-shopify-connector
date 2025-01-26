@@ -17,14 +17,63 @@
                             id
                             name
                             updatedAt
+                            cancelledAt
+                            createdAt                                                       
+                            displayFulfillmentStatus
                             returnStatus
                             taxesIncluded
+                            phone
+                            email
+                            tags
+                            note
+                            statusPageUrl
+                            currencyCode
+                            presentmentCurrencyCode
                             customer {
                                 id
                                 firstName
                                 lastName
-                                email
+                            }
+                            channelInformation {
+                                channelId
+                                channelDefinition {
+                                    handle
+                                }
+                            }
+                            customAttributes {
+                                key
+                                value
+                            }
+                            shippingAddress {
+                                name
+                                address1
+                                address2
+                                city
+                                zip
+                                provinceCode
+                                countryCodeV2
+                                latitude
+                                longitude
                                 phone
+                            }
+                            billingAddress {
+                                firstName
+                                lastName
+                                address1
+                                address2
+                                city
+                                zip
+                                provinceCode
+                                countryCodeV2
+                                latitude
+                                longitude
+                                phone
+                            }
+                            totalPriceSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
+                                }
                             }
                             originalTotalPriceSet {
                                 presentmentMoney {
@@ -38,22 +87,11 @@
                                     currencyCode
                                 }
                             }
-                            channelInformation {
-                                channelId
-                                channelDefinition {
-                                    channelName
+                            totalTipReceivedSet {
+                                presentmentMoney {
+                                    amount
+                                    currencyCode
                                 }
-                            }
-                            billingAddress {
-                                firstName
-                                lastName
-                                address1
-                                address2
-                                city
-                                provinceCode
-                                countryCodeV2
-                                phone
-                                zip
                             }
                             transactions {
                                 id
@@ -143,6 +181,9 @@
                             id
                             status
                             name
+                            order {
+                                id
+                            }
                         }
                     }
                 }
@@ -165,21 +206,26 @@
                             returnLineItems (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                 edges {
                                     node {
-                                        id
-                                        returnReason
-                                        returnReasonNote
-                                        fulfillmentLineItem {
-                                            lineItem {
-                                                id
-                                                sku
-                                                quantity
+                                        ... on ReturnLineItem {
+                                            id
+                                            returnReason
+                                            returnReasonNote
+                                            fulfillmentLineItem {
+                                                lineItem {
+                                                    id
+                                                    sku
+                                                    quantity
+                                                    product {
+                                                        id
+                                                    }
+                                                }
                                             }
-                                        }
-                                        quantity
-                                        withCodeDiscountedTotalPriceSet {
-                                            presentmentMoney {
-                                                amount
-                                                currencyCode
+                                            quantity
+                                            withCodeDiscountedTotalPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
                                             }
                                         }
                                     }
@@ -352,6 +398,7 @@
                         FulfillmentOrder {
                             id
                             status
+                            createdAt
                             updatedAt
                             fulfillAt
                             channelId
@@ -360,6 +407,11 @@
                                     id
                                 }
                             }
+                            deliveryMethod {
+                                methodType
+                                serviceCode
+                            }
+                            createdAt                            
                         }
                     }
                 }
@@ -383,11 +435,55 @@
                                 edges{
                                     node {
                                         id
-                                        sku
-                                        variantTitle
-                                        productTitle
+                                        totalQuantity
+                                        remainingQuantity
                                         lineItem {
                                             id
+                                            sku
+                                            variant {
+                                                id
+                                                barcode
+                                                title
+                                            }
+                                            originalUnitPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                }
+                                            }
+                                            quantity
+                                            nonFulfillableQuantity
+                                            customAttributes {
+                                                key
+                                                value
+                                            }
+                                            taxLines {
+                                                title
+                                                ratePercentage
+                                                priceSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                            }
+                                            discountAllocations {
+                                                allocatedAmountSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                discountApplication {
+                                                    ... on DiscountCodeApplication {
+                                                        code
+                                                        value {
+                                                            ... on PricingPercentageValue {
+                                                                percentage
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -458,6 +554,13 @@
                                         edges {
                                             node {
                                                 id
+                                                createdAt
+                                                totalRefundedSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
                                             }
                                         }
                                         pageInfo {
@@ -535,6 +638,10 @@
                                                 status
                                                 amountSet {
                                                     presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney {
                                                         amount
                                                         currencyCode
                                                     }
@@ -634,103 +741,6 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="BulkCanceledOrdersAndItemsQuery.ftl" isFile="Y" resourceId="BulkCanceledOrdersAndItemsQuery" parentResourceId="GraphQL">
-        <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData>
-                <![CDATA[<#ftl output_format="HTML">
-                <@compress single_line=true>
-                    <#if queryParams?has_content>
-                        <#if queryParams.filterQuery?has_content>
-                            <#assign filterQuery = queryParams.filterQuery/>
-                        <#else>
-                            <#if queryParams.fromDateLabel?has_content>
-                                <#assign fromDateLabel = queryParams.fromDateLabel/>
-                            <#else>
-                                <#assign fromDateLabel = "updated_at"/>
-                            </#if>
-                            <#if queryParams.thruDateLabel?has_content>
-                                <#assign thruDateLabel = queryParams.thruDateLabel/>
-                            <#else>
-                                <#assign thruDateLabel = "updated_at"/>
-                            </#if>
-                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
-                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
-                            </#if>
-                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
-                                <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
-                            </#if>
-                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
-                                <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
-                            </#if>
-                        </#if>
-                    </#if>
-                    mutation {
-                        bulkOperationRunQuery(
-                            query: """ {
-                                orders<#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                            displayFulfillmentStatus
-                                            cancelledAt
-                                            cancelReason
-                                            cancellation {
-                                                staffNote
-                                            }
-                                            transactions {
-                                                id
-                                                parentTransaction {
-                                                    id
-                                                }
-                                                kind
-                                                status
-                                                processedAt
-                                                amountSet {
-                                                    presentmentMoney {
-                                                        amount
-                                                        currencyCode
-                                                    }
-                                                }
-                                                gateway
-                                                paymentDetails {
-                                                    ... on CardPaymentDetails {
-                                                        company
-                                                    }
-                                                }
-                                            }
-                                            lineItems {
-                                                edges {
-                                                    node {
-                                                        id
-                                                        sku
-                                                        quantity
-                                                        currentQuantity
-                                                        unfulfilledQuantity
-                                                        nonFulfillableQuantity
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        """ ) {
-                            bulkOperation {
-                                id
-                                status
-                            }
-                            userErrors {
-                                field
-                                message
-                            }
-                        }
-                    }
-                </@compress>]]>
-            </fileData>
-            <histories versionName="01" previousVersionName="01"/>
-        </file>
-    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="OrderIdsByTagQuery.ftl" isFile="Y" resourceId="OrderIdsByTagQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -795,6 +805,86 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkProductMetaFieldByTagsQuery.ftl" isFile="Y" resourceId="BulkProductMetaFieldByTagsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.namespace?has_content>
+                            <#assign namespace = queryParams.namespace/>
+                        </#if>
+                        <#if queryParams.filterQuery?has_content>
+                            <#assign filterQuery = queryParams.filterQuery/>
+                        <#else>
+                            <#if queryParams.filterCondition?has_content>
+                                <#assign filterCondition = queryParams.filterCondition/>
+                            </#if>
+                            <#if queryParams.fromDateLabel?has_content>
+                                <#assign fromDateLabel = queryParams.fromDateLabel/>
+                            <#else>
+                                <#assign fromDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.thruDateLabel?has_content>
+                                <#assign thruDateLabel = queryParams.thruDateLabel/>
+                            <#else>
+                                <#assign thruDateLabel = "updated_at"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "${filterCondition} AND ${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                    </#if>
+                    mutation {
+                        bulkOperationRunQuery(
+                            query: """ {
+                                products <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                    edges {
+                                        node {
+                                            id
+                                            variants{
+                                                edges{
+                                                    node{
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            metafields <#if namespace?has_content>(namespace:"${namespace}")</#if> {
+                                                edges{
+                                                    node{
+                                                        id
+                                                        key
+                                                        value
+                                                        createdAt
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        """ ) {
+                            bulkOperation {
+                                id
+                                status
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="UpdatedOrderIdsQuery.ftl" isFile="Y" resourceId="UpdatedOrderIdsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -809,6 +899,504 @@
                         </#if>
                         <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="BulkFulfillmentOrderQuery.ftl" isFile="Y" resourceId="BulkFulfillmentOrderQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+            <@compress single_line=true>
+                <#if queryParams?has_content>
+                    <#if queryParams.filterQuery?has_content>
+                        <#assign filterQuery = queryParams.filterQuery/>
+                    <#else>
+                        <#if queryParams.fromDateLabel?has_content>
+                            <#assign fromDateLabel = queryParams.fromDateLabel/>
+                        <#else>
+                            <#assign fromDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.thruDateLabel?has_content>
+                            <#assign thruDateLabel = queryParams.thruDateLabel/>
+                        <#else>
+                            <#assign thruDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                </#if>
+                mutation {
+                    bulkOperationRunQuery(
+                        query: """ {
+                            orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentOrders {
+                                            edges{
+                                                node{
+                                                    id
+                                                    status
+                                                    assignedLocation{
+                                                        location{
+                                                            id
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        edges{
+                                                            node{
+                                                                id
+                                                                totalQuantity
+                                                                lineItem{
+                                                                    id
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    """ ) {
+                        bulkOperation {
+                            id
+                            status
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ExchangesByOrderIdQuery.ftl" isFile="Y" resourceId="ExchangesByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyOrderId}") {
+                                id
+                                ... on
+                                Order {
+                                   id
+                                    name
+                                    exchangeV2s (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                completedAt
+                                                location {
+                                                    id
+                                                }
+                                                additions {
+                                                    totalPriceSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        lineItem {
+                                                            id
+                                                            quantity
+                                                            sku
+                                                            variantTitle
+                                                            isGiftCard
+                                                            product {
+                                                                id
+                                                                title
+                                                            }
+                                                            originalUnitPriceSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            originalTotalSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountedUnitPriceSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountedUnitPriceAfterAllDiscountsSet {
+                                                                presentmentMoney {
+                                                                    currencyCode
+                                                                    amount
+                                                                }
+                                                            }
+                                                            discountedTotalSet {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                    currencyCode
+                                                                }
+                                                            }
+                                                            discountAllocations {
+                                                                allocatedAmountSet {
+                                                                    presentmentMoney {
+                                                                        amount
+                                                                        currencyCode
+                                                                    }
+                                                                }
+                                                            }
+                                                            taxLines {
+                                                                priceSet {
+                                                                    presentmentMoney {
+                                                                        amount
+                                                                        currencyCode
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                refunds {
+                                                    id
+                                                    totalRefundedSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
+                                                    return {
+                                                        id
+                                                    }
+                                                }
+                                                totalAmountProcessedSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                totalPriceSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }    
+                                                }
+                                                transactions {
+                                                    id
+                                                    parentTransaction {
+                                                        id
+                                                    }
+                                                    kind
+                                                    status
+                                                    processedAt
+                                                    amountSet {
+                                                        presentmentMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                        shopMoney {
+                                                            amount
+                                                            currencyCode
+                                                        }
+                                                    }
+                                                    gateway
+                                                    paymentDetails {
+                                                        ... on CardPaymentDetails {
+                                                            company
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo{
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="NewProductIdsQuery.ftl" isFile="Y" resourceId="NewProductIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="UpdatedProductIdsQuery.ftl" isFile="Y" resourceId="UpdatedProductIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ProductByIdQuery.ftl" isFile="Y" resourceId="ProductByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node(id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                handle
+                                title
+                                productType
+                                featuredMedia {
+                                    mediaContentType
+                                    preview {
+                                        image {
+                                            url
+                                        }
+                                    }
+                                }
+                                options {
+                                    id
+                                    name
+                                    position
+                                    optionValues {
+                                        id
+                                        name
+                                    }
+                                }
+                                tags
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ProductVariantsByProductIdQuery.ftl" isFile="Y" resourceId="ProductVariantsByProductIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node (id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    edges {
+                                        node {
+                                            id
+                                            title
+                                            sku
+                                            barcode
+                                            product {
+                                                id
+                                                handle
+                                                title
+                                            }
+                                            price
+                                            compareAtPrice
+                                            position
+                                            image {
+                                                url
+                                            }
+                                            selectedOptions {
+                                                name
+                                                value
+                                            }
+                                            inventoryItem {
+                                                id
+                                                requiresShipping
+                                                measurement {
+                                                    weight {
+                                                        unit
+                                                        value
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    pageInfo {
+                                        hasNextPage
+                                        endCursor
+                                    }
+                                }
+                            }
+                        }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ShippingLinesByOrderIdQuery.ftl" isFile="Y" resourceId="ShippingLinesByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query {
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            shippingLines (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        title
+                                        originalPriceSet {
+                                            presentmentMoney {
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                        discountAllocations {
+                                            allocatedAmountSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                            discountApplication {
+                                                ... on DiscountCodeApplication {
+                                                    code
+                                                    targetType
+                                                    value {
+                                                        ... on PricingPercentageValue {
+                                                            percentage
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        taxLines {
+                                            title
+                                            priceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="NewOrderIdsQuery.ftl" isFile="Y" resourceId="NewOrderIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
                             orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {

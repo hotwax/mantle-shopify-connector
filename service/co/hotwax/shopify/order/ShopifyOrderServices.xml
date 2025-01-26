@@ -82,15 +82,7 @@ under the License.
             <set field="orderMetafields" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderMetafieldsQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderMetafieldsResponse"/>
                 <if condition="!orderMetafieldsResponse.response.node">
@@ -109,49 +101,59 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="includeLineItems" type="Boolean" default-value="true"/>
+            <parameter name="includeFulfillmentOrders" type="Boolean" default-value="true"/>
+            <parameter name="includeShippingLines" type="Boolean" default-value="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="orderDetail"/>
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/OrderHeaderByIdQuery.ftl", sw)
-                queryText = sw.toString()
-                ec.logger.info ("queryText" + queryText)
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderHeaderByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderHeaderResponse"/>
             <if condition="!orderHeaderResponse.response.node">
                 <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
             </if>
-            <set field="hasNextPage" type="Boolean" value="true"/>
-            <set field="orderLineItems" from="[]"/>
-            <while condition="hasNextPage">
-                <script>
-                    StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/OrderLineItemByIdQuery.ftl", sw1)
-                    queryText = sw1.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw1.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
-                </script>
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderLineItemResponse"/>
-                <if condition="orderLineItemResponse.response.node.lineItems.edges">
-                    <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)</script>
-                </if>
-                <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
-                <set field="cursor" from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
-            </while>
             <set field="orderDetail" from="orderHeaderResponse.response.node"/>
-            <set field="orderDetail.lineItems" from="orderLineItems"/>
+            <if condition="includeLineItems">
+                <set field="hasNextPage" type="Boolean" value="true"/>
+                <set field="orderLineItems" from="[]"/>
+                <while condition="hasNextPage">
+                    <script>
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/OrderLineItemByIdQuery.ftl", "")
+                    </script>
+                    <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="orderLineItemResponse"/>
+                    <if condition="orderLineItemResponse.response.node.lineItems.edges">
+                        <script>orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)</script>
+                    </if>
+                    <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+                </while>
+                <set field="orderDetail.lineItems" from="orderLineItems"/>
+            </if>
+            <if condition="includeShippingLines">
+                <set field="hasNextPage" type="Boolean" value="true"/>
+                <set field="shippingLines" from="[]"/>
+                <while condition="hasNextPage">
+                    <script>
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ShippingLinesByOrderIdQuery.ftl", "")
+                    </script>
+                    <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="shippingLinesResponse"/>
+                    <if condition="shippingLinesResponse.response.node.shippingLines.edges">
+                        <script>shippingLines.addAll(shippingLinesResponse.response.node.shippingLines.edges.node)</script>
+                    </if>
+                    <set field="hasNextPage" from="shippingLinesResponse.response.node.shippingLines.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="shippingLinesResponse.response.node.shippingLines.pageInfo.endCursor"/>
+                </while>
+                <set field="orderDetail.shippingLines" from="shippingLines"/>
+            </if>
+            <if condition="includeFulfillmentOrders">
+                <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]"
+                              out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
+                <set field="orderDetail.fulfillmentOrders" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId.fulfillmentOrders"/>
+            </if>
         </actions>
     </service>
 </services>

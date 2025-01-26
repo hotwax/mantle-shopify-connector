@@ -30,14 +30,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/StagedUploadsCreate.ftl", sw)
-                queryText = sw.toString()
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/StagedUploadsCreate.ftl", "")
             </script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText,
@@ -79,14 +72,7 @@ under the License.
                     }
                 }
 
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(fileLocation, sw)
-                fileText = sw.toString()
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                fileText = ec.resourceFacade.template(fileLocation, "")
                 restClient.addFilePart("file", fileName, fileText)
 
                 try {
@@ -120,14 +106,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(mutationTemplateLocation, sw)
-                queryText = sw.toString()
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template(mutationTemplateLocation, "")
             </script>
             <set field="requestBody" from="[query:queryText]"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="bulkMutationResponse"/>
@@ -152,14 +131,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("component://shopify-connector/template/graphQL/BulkOperationResultQuery.ftl", sw)
-                queryText = sw.toString()
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/BulkOperationResultQuery.ftl", "")
             </script>
             <set field="requestBody" from="[query:queryText, variables:[id:shopifyBulkOperationId]]"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText,
@@ -212,14 +184,7 @@ under the License.
         </out-parameters>
         <actions>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render(queryTemplateLocation, sw)
-                queryText = sw.toString()
-                try {
-                sw.close()
-                } catch (IOException e) {
-                ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template(queryTemplateLocation, "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="bulkQueryResponse"/>
 

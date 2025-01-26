@@ -65,23 +65,10 @@ under the License.
             </entity-find-one>
 
             <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-            <set field="lineItems" from="[]"/>
-            <iterate list="shipment.shipmentItems" entry="shipmentItem">
-                <set field="lineItem" from="[:]"/>
-                <set field="lineItem.shopifyLineItemId" from="shipmentItem.shopifyOrderLineId"/>
-                <set field="lineItem.quantity" from="shipmentItem.quantity"/>
-                <script>lineItems.add(lineItem)</script>
-            </iterate>
 
-            <set field="fulfillmentContext" from="[:]"/>
-            <set field="fulfillmentContext.lineItems" from="lineItems"/>
-            <set field="fulfillmentContext.shopifyOrderId" from="shipment.shopifyOrderId"/>
-            <set field="fulfillmentContext.trackingNumber" from="shipment.trackingNumber"/>
-            <set field="fulfillmentContext.trackingUrl" from="shipment.trackingUrl"/>
-            <set field="fulfillmentContext.carrier" from="shipment.carrierPartyId"/>
-            <set field="fulfillmentContext.notifyCustomer" from="shipment.notifyCustomer"/>
-            <set field="fulfillmentContext.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
+            <set field="shipment.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+
+            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="shipment" out-map="outMap"/>
 
             <set field="remoteMessageId" from="outMap.shopifyFulfillmentId"/>
         </actions>
@@ -723,15 +710,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="returnedOrderIdsResponse"/>
                 <if condition="!returnedOrderIdsResponse.response.orders.edges">
@@ -846,7 +825,7 @@ under the License.
             </script>
 
             <iterate list="orders" entry="order">
-                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id, includeLineItems:false]"
                               out-map="orderDetailsResponse" ignore-error="true" transaction="force-new"/>
 
                 <if condition="orderDetailsResponse.orderDetail">
@@ -856,9 +835,13 @@ under the License.
                                   out-map="orderReturnsResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.returns" from="orderReturnsResponse.orderReturns.returns"/>
 
-                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id, includeFulfillmentLineItems:false]"
                                   out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.fulfillmentOrders" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId.fulfillmentOrders"/>
+
+                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ExchangesByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                                  out-map="orderExchangesResponse" ignore-error="true" transaction="force-new"/>
+                    <set field="orderMap.exchanges" from="orderExchangesResponse.orderExchanges.exchanges"/>
 
                     <script>
                         new ObjectMapper()
@@ -954,15 +937,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="orderIdsByTagResponse"/>
                 <if condition="!orderIdsByTagResponse.response.orders.edges">
@@ -1106,14 +1081,7 @@ under the License.
                     </script>
 
                     <script>
-                        StringWriter sw = new StringWriter()
-                        ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/UpdateOrderTags.ftl", sw)
-                        queryText = sw.toString()
-                        try {
-                            sw.close()
-                        } catch (IOException e) {
-                            ec.logger.error("Error closing StringWriter")
-                        }
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/UpdateOrderTags.ftl", "")
                     </script>
                     <if condition="tagsToAdd">
                         <set field="tags" from="order.tags"/>
@@ -1151,6 +1119,8 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="fromDate"/>
             <parameter name="thruDate"/>
+            <parameter name="fromDateLabel"/>
+            <parameter name="thruDateLabel"/>
             <parameter name="additionalParameters" type="Map"/>
             <parameter name="runAsBatch" type="Boolean" default-value="false"/>
         </in-parameters>
@@ -1159,6 +1129,8 @@ under the License.
             <if condition="additionalParameters">
                 <set field="queryParams" from="additionalParameters"/>
             </if>
+            <set field="queryParams.fromDateLabel" from="fromDateLabel"/>
+            <set field="queryParams.thruDateLabel" from="thruDateLabel"/>
             <if condition="runAsBatch">
                 <if condition="!fromDate">
                     <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
@@ -1171,7 +1143,7 @@ under the License.
                         <set field="fromDate" from="systemMessageList[0].messageDate" type="String"/>
                     </if>
                 </if>
-                <set field="thruDate" value="ec.user.nowTimestamp"/>
+                <set field="thruDate" from="ec.user.nowTimestamp" type="String"/>
             </if>
             <if condition="fromDate">
                 <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
@@ -1188,7 +1160,7 @@ under the License.
                           out-map="queueSystemMessageOut"/>
 
             <if condition="runAsBatch">
-                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessageList[0].systemMessageId, messageDate:thruDate]"/>
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:queueSystemMessageOut.systemMessageId, messageDate:thruDate]"/>
             </if>
         </actions>
     </service>
@@ -1224,15 +1196,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render(systemMessage.sendPath, sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="updatedOrderIdsResponse"/>
                 <if condition="!updatedOrderIdsResponse.response.orders.edges">
@@ -1362,6 +1326,525 @@ under the License.
                     }
                 } catch (IOException e) {
                     logger.error("Error preparing Order Rest Json Feed file", e)
+                }
+            </script>
+
+            <if condition="relatedSystemMessageType">
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
+                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            </if>
+        </actions>
+    </service>
+    <service verb="generate" noun="CreatedProductIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate created productIds feed.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+                <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                <else>
+                    <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="createdProductIdsResponse"/>
+                <if condition="!createdProductIdsResponse.response.products.edges">
+                    <return message="No productIds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <script>
+                    try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                    jGenerator.writeStartArray()
+                </script>
+                <set field="createdProductIds" from="createdProductIdsResponse.response.products.edges.node"/>
+                <iterate list="createdProductIds" entry="productMap">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
+                    </script>
+                </iterate>
+                <script>
+                    jGenerator.writeEndArray()
+                    }
+                    } catch (IOException e) {
+                    logger.error("Error preparing CreatedProductIds Feed file", e)
+                    }
+                </script>
+                <if condition="relatedSystemMessageType">
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+                </if>
+                <set field="hasNextPage" from="createdProductIdsResponse.response.products.pageInfo.hasNextPage"/>
+                <set field="cursor" from="createdProductIdsResponse.response.products.pageInfo.endCursor"/>
+            </while>
+        </actions>
+    </service>
+    <service verb="generate" noun="CreatedProductsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="sendSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="sendSmrParam">
+                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
+            </if>
+
+            <if condition="sendSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                    </entity-find-one>
+                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                    <else>
+                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                    </else>
+                </if>
+                <else>
+                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="products" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!products">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+            </if>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <log message="jsonFilePath: ${jsonFilePath}"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="products" entry="product">
+                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id]"
+                              out-map="productDetailsResponse" ignore-error="true" transaction="force-new"/>
+
+                <if condition="productDetailsResponse.productDetail">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productDetailsResponse.productDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Created Products Feed file", e)
+                }
+            </script>
+
+            <if condition="relatedSystemMessageType">
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
+                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            </if>
+        </actions>
+    </service>
+    <service verb="generate" noun="UpdatedProductIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate updated productIds feed.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+                <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                <else>
+                    <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="updatedProductIdsResponse"/>
+                <if condition="!updatedProductIdsResponse.response.products.edges">
+                    <return message="No productIds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <script>
+                    try {
+                        //json file
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
+
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                        JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                            jGenerator.writeStartArray()
+                </script>
+                <set field="updatedProductIds" from="updatedProductIdsResponse.response.products.edges.node"/>
+                <iterate list="updatedProductIds" entry="productMap">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
+                    </script>
+                </iterate>
+                <script>
+                            jGenerator.writeEndArray()
+                        }
+                    } catch (IOException e) {
+                        logger.error("Error preparing UpdatedProductIds Feed file", e)
+                    }
+                </script>
+                <if condition="relatedSystemMessageType">
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+                </if>
+                <set field="hasNextPage" from="updatedProductIdsResponse.response.products.pageInfo.hasNextPage"/>
+                <set field="cursor" from="updatedProductIdsResponse.response.products.pageInfo.endCursor"/>
+            </while>
+        </actions>
+    </service>
+    <service verb="generate" noun="ProductUpdatesFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="sendSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="sendSmrParam">
+                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
+            </if>
+
+            <if condition="sendSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                    </entity-find-one>
+                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                    <else>
+                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                    </else>
+                </if>
+                <else>
+                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="products" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!products">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+            </if>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <log message="jsonFilePath: ${jsonFilePath}"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="products" entry="product">
+                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id]"
+                              out-map="productDetailsResponse" ignore-error="true" transaction="force-new"/>
+
+                <if condition="productDetailsResponse.productDetail">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productDetailsResponse.productDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Updated Products Feed file", e)
+                }
+            </script>
+
+            <if condition="relatedSystemMessageType">
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
+                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            </if>
+        </actions>
+    </service>
+    <service verb="generate" noun="NewOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate new orderIds feed.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+                <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                <else>
+                    <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="newOrderIdsResponse"/>
+                <if condition="!newOrderIdsResponse.response.orders.edges">
+                    <return message="No orderIds found between ${queryParams.fromDate} and ${queryParams.thruDate} for tag [${queryParams.tag}]"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <script>
+                    try {
+                        //json file
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
+
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                        JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                            jGenerator.writeStartArray()
+                </script>
+                <set field="newOrderIds" from="newOrderIdsResponse.response.orders.edges.node"/>
+                <iterate list="newOrderIds" entry="orderMap">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderMap)
+                    </script>
+                </iterate>
+                <script>
+                            jGenerator.writeEndArray()
+                        }
+                    } catch (IOException e) {
+                        logger.error("Error preparing UpdatedOrderIds Feed file", e)
+                    }
+                </script>
+                <if condition="relatedSystemMessageType">
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+                </if>
+                <set field="hasNextPage" from="newOrderIdsResponse.response.orders.pageInfo.hasNextPage"/>
+                <set field="cursor" from="newOrderIdsResponse.response.orders.pageInfo.endCursor"/>
+            </while>
+        </actions>
+    </service>
+    <service verb="generate" noun="NewOrdersFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="sendSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="sendSmrParam">
+                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
+            </if>
+
+            <if condition="sendSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                    </entity-find-one>
+                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                    <else>
+                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                    </else>
+                </if>
+                <else>
+                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!orders">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+            </if>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <log message="jsonFilePath: ${jsonFilePath}"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="orders" entry="order">
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id, includeLineItems:false]"
+                              out-map="orderDetailsResponse" ignore-error="true" transaction="force-new"/>
+
+                <if condition="orderDetailsResponse.orderDetail">
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderDetailsResponse.orderDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing New Orders Feed file", e)
                 }
             </script>
 

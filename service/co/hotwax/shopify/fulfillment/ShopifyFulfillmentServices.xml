@@ -184,14 +184,12 @@ under the License.
 
             <iterate list="systemMessageList" entry="systemMessage">
                 <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-                <iterate list="shipment.shipmentItems" entry="shipmentItem">
-                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipmentItem.shipmentId, orderId:shipmentItem.orderId, orderItemSeqId: shipmentItem.orderItemSeqId, externalFulfillmentId: systemMessage.remoteMessageId]"/>
+                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipment.shipmentId, primaryOrderId:shipment.orderId, externalId: systemMessage.remoteMessageId]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
                         .writerWithDefaultPrettyPrinter().writeValue(jGenerator, shopifyFulfillmentAckMap)
                     </script>
-                </iterate>
             </iterate>
             <script>
                         jGenerator.writeEndArray()
@@ -221,6 +219,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="fulfillmentOrderId" required="true"/>
+            <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="fulfillmentOrderDetail"/>
@@ -228,15 +227,7 @@ under the License.
         <actions>
             <set field="fulfillmentOrderDetail" from="[:]"/>
             <script>
-                StringWriter sw = new StringWriter()
-                ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", sw)
-                queryText = sw.toString()
-                ec.logger.info ("queryText" + queryText)
-                try {
-                    sw.close()
-                } catch (IOException e) {
-                    ec.logger.error("Error closing StringWriter")
-                }
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderHeaderByIdQuery.ftl", "")
             </script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentResponse"/>
             <if condition="!fulfillmentResponse.response.node">
@@ -244,28 +235,22 @@ under the License.
             </if>
             <set field="fulfillmentOrderDetail" from="fulfillmentResponse.response.node"/>
 <!--            Getting Fulfillment LineItems details-->
-            <set field="hasNextPage" type="Boolean" value="true"/>
-            <set field="fulfillmentLineItems" from="[]"/>
-            <while condition="hasNextPage">
-                <script>
-                    StringWriter sw1 = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", sw1)
-                    queryText = sw1.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw1.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
-                </script>
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
-                <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
-                    <script>fulfillmentLineItems.addAll(fulfillmentLineItemResponse.response.node.lineItems.edges.node)</script>
-                </if>
-                <set field="hasNextPage" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
-                <set field="cursor" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
-            </while>
-            <set field="fulfillmentOrderDetail.lineItems" from="fulfillmentLineItems"/>
+            <if condition="includeFulfillmentLineItems">
+                <set field="hasNextPage" type="Boolean" value="true"/>
+                <set field="fulfillmentLineItems" from="[]"/>
+                <while condition="hasNextPage">
+                    <script>
+                        queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrderLineItemsByIdQuery.ftl", "")
+                    </script>
+                    <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentLineItemResponse"/>
+                    <if condition="fulfillmentLineItemResponse.response.node.lineItems.edges">
+                        <script>fulfillmentLineItems.addAll(fulfillmentLineItemResponse.response.node.lineItems.edges.node)</script>
+                    </if>
+                    <set field="hasNextPage" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="fulfillmentLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+                </while>
+                <set field="fulfillmentOrderDetail.lineItems" from="fulfillmentLineItems"/>
+            </if>
         </actions>
     </service>
     <service verb="get" noun="FulfillmentOrdersByOrderId">
@@ -273,6 +258,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="fulfillmentOrdersByOrderId"/>
@@ -283,15 +269,7 @@ under the License.
             <set field="fulfillmentOrders" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    StringWriter sw = new StringWriter()
-                    ec.resource.ftlTemplateRenderer.render("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", sw)
-                    queryText = sw.toString()
-                    ec.logger.info ("queryText" + queryText)
-                    try {
-                        sw.close()
-                    } catch (IOException e) {
-                        ec.logger.error("Error closing StringWriter")
-                    }
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderResponse"/>
                 <if condition="!fulfillmentOrderResponse.response.node">
@@ -304,7 +282,7 @@ under the License.
                 </if>
                 <!-- Getting fulfillment order details for each fulfillmentOrderId-->
                 <iterate list="fulfillmentOrderIdList" entry="fulfillmentOrderId">
-                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId]" out-map="fulfillmentOrderDetail"/>
+                    <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrderId, includeFulfillmentLineItems:includeFulfillmentLineItems]" out-map="fulfillmentOrderDetail"/>
                     <script>fulfillmentOrders.addAll(fulfillmentOrderDetail.fulfillmentOrderDetail)</script>
                 </iterate>
                 <set field="hasNextPage" from="fulfillmentOrderResponse.response.node.fulfillmentOrders.pageInfo.hasNextPage"/>

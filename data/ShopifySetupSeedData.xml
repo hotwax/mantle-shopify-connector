@@ -404,8 +404,7 @@ under the License.
             description="Send Bulk Order Discount Code Application Query Result"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
+            sendPath=""/>
 
     <!-- Enumeration to create relation between BulkOrderDiscountCodeApplQuery and SendBulkOrderDiscountCodeApplQueryResult SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Bulk Order Discount Code Application Query Result" enumId="SendBulkOrderDiscountCodeApplQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
@@ -416,8 +415,7 @@ under the License.
             description="Generate Returned Order Ids Feed"
             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
-            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json">
-    </moqui.service.message.SystemMessageType>
+            receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
 
     <!-- SystemMessageType record for generating Returns and Exchange Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
@@ -432,43 +430,41 @@ under the License.
             description="Send Returns and Exchange Feed"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
+            sendPath=""/>
 
     <!-- Enumeration to create relation between GenerateReturnedOrderIdsFeed, GenerateReturnsAndExchangeFeed and SendReturnsAndExchangeFeed SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Returns And Exchange Feed" enumId="SendReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
-    <!-- SystemMessageType record for bulk canceled orders and items query to Shopify -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
-            description="Bulk Canceled Orders and Items Query System Message"
+    <!-- SystemMessageType record for bulk canceled order items query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrderItemsQuery"
+            description="Bulk Canceled Order Items Query System Message"
             parentTypeId="ShopifyBulkQuery"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
-            sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrdersAndItemsQuery.ftl"
+            sendPath="dbresource://shopify/template/graphQL/BulkCanceledOrderItemsQuery.ftl"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
-            receivePath="${contentRoot}/shopify/BulkCanceledOrdersAndItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+            receivePath="${contentRoot}/shopify/BulkCanceledOrderItemsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
         <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
-    <!-- SystemMessageType record for sending bulk canceled orders and items query result to SFTP -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrdersAndItemsQueryResult"
-            description="Send Bulk Canceled Orders and Items Query Result"
+    <!-- SystemMessageType record for sending bulk canceled order items query result to SFTP -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkCanceledOrderItemsQueryResult"
+            description="Send Bulk Order Items Query Result"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath=""/>
 
-    <!-- Enumeration to create relation between BulkCanceledOrdersAndItemsQuery and SendBulkCanceledOrdersAndItemsQueryResult SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Bulk Canceled Orders and Items Query Result" enumId="SendBulkCanceledOrdersAndItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Bulk Canceled Orders and Items Query" enumId="BulkCanceledOrdersAndItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrdersAndItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <!-- Enumeration to create relation between BulkCanceledOrderItemsQuery and SendBulkCanceledOrderItemsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Canceled Order Items Query Result" enumId="SendBulkCanceledOrderItemsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Canceled Order Items Query" enumId="BulkCanceledOrderItemsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkCanceledOrderItemsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- SystemMessageType record for generating Order Ids By Tag Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderIdsByTagFeed"
             description="Generate Order Ids By Tag Feed"
             sendPath="dbresource://shopify/template/graphQL/OrderIdsByTagQuery.ftl"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderIdsByTagFeed"
-            receivePath="${contentRoot}/shopify/OrderIdsByTagFeed/OrderIdsByTagFeed-${dateTime}-${systemMessageId}.json">
-    </moqui.service.message.SystemMessageType>
+            receivePath="${contentRoot}/shopify/OrderIdsByTagFeed/OrderIdsByTagFeed-${dateTime}-${systemMessageId}.json"/>
 
     <!-- SystemMessageType record for generating Order Rest Json Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderRestJsonFeed"
@@ -484,13 +480,39 @@ under the License.
             description="Send Order Json Rest Feed"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
+            sendPath=""/>
 
     <!-- Enumeration to create relation between GenerateOrderIdsByTagFeed, GenerateOrderRestJsonFeed and SendOrderRestJsonFeed SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Order Json Rest Feed" enumId="SendOrderRestJsonFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Order Rest Json Feed" enumId="GenerateOrderRestJsonFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderRestJsonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Order Ids By Tag Feed" enumId="GenerateOrderIdsByTagFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderRestJsonFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for generating New Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateNewOrderIdsFeed"
+            description="Generate New Order Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/NewOrderIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#NewOrderIdsFeed"
+            receivePath="${contentRoot}/shopify/NewOrderIdsFeed/NewOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating New Orders Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateNewOrdersFeed"
+            description="Generate New Orders Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/NewOrdersFeed/NewOrdersFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#NewOrdersFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendNewOrdersFeed"
+            description="Send New Orders Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between GenerateNewOrderIdsFeed, GenerateNewOrdersFeed and SendNewOrdersFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send New Orders Feed" enumId="SendNewOrdersFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate New Orders Feed" enumId="GenerateNewOrdersFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendNewOrdersFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate New Order Ids Feed" enumId="GenerateNewOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateNewOrdersFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
     <!-- SystemMessageType record for generating Updated Order Ids Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateUpdatedOrderIdsFeed"
@@ -512,12 +534,106 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderUpdatesFeed"
             description="Send Order Updates Feed"
             parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
 
-    <!-- Enumeration to create relation between GenerateUpdatedOrderIdsFeed, GenerateUpdatedOrderIdsFeed and SendOrderUpdatesFeed SystemMessageType(s) -->
+    <!-- Enumeration to create relation between GenerateUpdatedOrderIdsFeed, GenerateOrderUpdatesFeed and SendOrderUpdatesFeed SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Order Updates Feed" enumId="SendOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Order Updates Feed" enumId="GenerateOrderUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Updated Order Ids Feed" enumId="GenerateUpdatedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOrderUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk fulfillment order query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkFulfillmentOrderQuery"
+            description="Bulk Fulfillment Order Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkFulfillmentOrderQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkFulfillmentOrderQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for processing bulk fulfillment order query result -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+        description="Send Bulk Fulfillment Order Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+        sendPath=""/>
+
+    <!-- Enumeration to create relation between BulkFulfillmentOrderQuery and SendBulkFulfillmentOrderQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Fulfillment Order Query Result" enumId="SendBulkFulfillmentOrderQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Fulfillment Order Query" enumId="BulkFulfillmentOrderQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkFulfillmentOrderQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for bulk product metafield by tags query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkProductMetaFieldByTagsQuery"
+            description="Bulk Product Metafields By Tags Query System Message"
+            parentTypeId="ShopifyBulkQuery"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+            sendPath="dbresource://shopify/template/graphQL/BulkProductMetaFieldByTagsQuery.ftl"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+            receivePath="${contentRoot}/shopify/BulkProductMetaFieldByTagsQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
+        description="Send Bulk Product Metafields by Tags Query Result"
+        parentTypeId="LocalFeedFile"
+        sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+
+    <!-- Enumeration to create relation between BulkProductMetaFieldByTagsQuery and SendBulkProductMetaFieldsQueryResult SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Bulk Product Metafields by Tags Query Result" enumId="SendBulkProductMetaFieldsQueryResult" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Bulk Product Metafields Query" enumId="BulkProductMetaFieldByTagsQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkProductMetaFieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for generating Created Product Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateCreatedProductIdsFeed"
+            description="Generate Created Product Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/NewProductIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductIdsFeed"
+            receivePath="${contentRoot}/shopify/CreatedProductIdsFeed/CreatedProductIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating Created Products Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateCreatedProductsFeed"
+            description="Generate Created Products Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/CreatedProductsFeed/CreatedProductsFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#CreatedProductsFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendCreatedProductsFeed"
+            description="Send Created Products Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between GenerateCreatedProductIdsFeed, GenerateCreatedProductsFeed and SendCreatedProductsFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Created Products Feed" enumId="SendCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate CreatedProducts Feed" enumId="GenerateCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Created Product Ids Feed" enumId="GenerateCreatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for generating Updated Product Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateUpdatedProductIdsFeed"
+            description="Generate Updated Product Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/UpdatedProductIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#UpdatedProductIdsFeed"
+            receivePath="${contentRoot}/shopify/UpdatedProductIdsFeed/UpdatedProductIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating Product Updates Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateProductUpdatesFeed"
+            description="Generate Product Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/ProductUpdatesFeed/ProductUpdatesFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductUpdatesFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendProductUpdatesFeed"
+            description="Send Product Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between GenerateUpdatedProductIdsFeed, GenerateProductUpdatesFeed and SendProductUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Product Updates Feed" enumId="SendProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Product Updates Feed" enumId="GenerateProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Product Ids Feed" enumId="GenerateUpdatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>

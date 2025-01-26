@@ -108,12 +108,6 @@
             parameterValue="BULK_OPERATIONS_FINISH"
             systemMessageRemoteId=""/>
 
-    <!-- Configure remote SFTP server against your shopify config for consuming bulk operation result -->
-    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkCanceledOrdersAndItemsQuery"
-            parameterName="consumeSmrId"
-            parameterValue=""
-            systemMessageRemoteId=""/>
-
     <!-- Configure remote SFTP server against your shopify config for sending the feed -->
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderRestJsonFeed"
             parameterName="sendSmrId"
@@ -131,6 +125,96 @@
             description="Send Order Json Rest Feed"
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath="">
-    </moqui.service.message.SystemMessageType>
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateReturnsAndExchangeFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendReturnsAndExchangeFeed"
+            description="Send Returns and Exchange Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateNewOrdersFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendNewOrdersFeed"
+            description="Send New Orders Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateOrderUpdatesFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderUpdatesFeed"
+            description="Send Order Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkFulfillmentOrderQuery"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkFulfillmentOrderQueryResult"
+            description="Send Bulk Fulfillment Order Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="BulkProductMetaFieldByTagsQuery"
+            parameterName="consumeSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendBulkProductMetaFieldsQueryResult"
+            description="Send Bulk Product Metafields by Tags Query Result"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateCreatedProductsFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendCreatedProductsFeed"
+            description="Send Created Products Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateProductUpdatesFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendProductUpdatesFeed"
+            description="Send Product Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
 </entity-facade-xml>
