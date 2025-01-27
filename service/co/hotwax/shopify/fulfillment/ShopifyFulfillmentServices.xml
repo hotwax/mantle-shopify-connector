@@ -184,12 +184,14 @@ under the License.
 
             <iterate list="systemMessageList" entry="systemMessage">
                 <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
-                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipment.shipmentId, primaryOrderId:shipment.orderId, externalId: systemMessage.remoteMessageId]"/>
+                <iterate list="shipment.shipmentItems" entry="shipmentItem">
+                    <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipmentItem.shipmentId, orderId:shipmentItem.orderId, orderItemSeqId: shipmentItem.orderItemSeqId, externalFulfillmentId: systemMessage.remoteMessageId]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
                         .writerWithDefaultPrettyPrinter().writeValue(jGenerator, shopifyFulfillmentAckMap)
                     </script>
+                </iterate>
             </iterate>
             <script>
                         jGenerator.writeEndArray()
@@ -214,6 +216,112 @@ under the License.
                 remote ${systemMessageRemoteId}, saved response in messages ${shopifyFulfillmentAckOut.systemMessageId}"/>
         </actions>
     </service>
+
+    <service verb="generate" noun="ShopifyFulfillmentAckFeedV2" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>
+            Service to generate shopify fulfillment acknowledgement from successfully sent System Messages
+            of type "CreateShopifyFulfillment".
+        </description>
+        <in-parameters>
+            <parameter name="sinceDate">
+                <description>Parameter to fetch system messages updated after the specified date.</description>
+            </parameter>
+            <parameter name="jobName">
+                <description>The name of the scheduled job to fetch the last run time for preparing the Feed.</description>
+            </parameter>
+            <parameter name="skipLastRunTimeUpdate" type="Boolean" default="false">
+                <description>skip the LastRunTime update,mainly used while debugging</description>
+            </parameter>
+            <parameter name="systemMessageRemoteId" required="true">
+                <description>The System Message Remote ID to send the feed.</description>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <if condition="jobName &amp;&amp; !sinceDate">
+                <entity-find-one entity-name="moqui.service.job.ServiceJobParameter" value-field="lastRunParam">
+                    <field-map field-name="jobName"/>
+                    <field-map field-name="parameterName" value="lastRunTime"/>
+                </entity-find-one>
+                <set field="sinceDate" from="lastRunParam?.parameterValue"/>
+            </if>
+            <log message="Generating Shopify Fulfillment Ack Feed file since ${sinceDate}"/>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList">
+                <econdition field-name="systemMessageTypeId" operator="equals" value="CreateShopifyFulfillment"/>
+                <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
+                <econdition field-name="processedDate" operator="greater" from="sinceDate" ignore-if-empty="true"/>
+            </entity-find>
+
+            <if condition="systemMessageList.isEmpty()">
+                <return message="No eligible records for Shopify Fulfillment Ack Feed at ${nowDate}, not generating the Shopify Fulfillment Ack file."/>
+            </if>
+
+            <!-- Fetch the receivePath from SystemMessageType to prepare the path for creating the file in the receiving system. Ex: Moqui's datamanager directory in runtime for creating feeds.-->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" value="SendShopifyFulfillmentAck"/>
+            </entity-find-one>
+            <if condition="systemMessageType == null"><return error="true" message="Could not find SystemMessageType with ID ${systemMessageTypeId}"/></if>
+
+            <!-- Prepare Shopify Fulfillment Ack Feed File Path -->
+            <!-- Using receivePath from SystemMessageType to prepare the jsonFilePathRef.-->
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessageType.receivePath, null,
+            [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+            dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                        JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="systemMessageList" entry="systemMessage">
+                <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+                <set field="shopifyFulfillmentAckMap" from="[shipmentId:shipment.shipmentId, primaryOrderId:shipment.orderId, externalId: systemMessage.remoteMessageId]"/>
+                <script>
+                    new ObjectMapper()
+                    .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                    .writerWithDefaultPrettyPrinter().writeValue(jGenerator, shopifyFulfillmentAckMap)
+                </script>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Shopify Fulfillment Ack Feed file", e)
+                }
+            </script>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                    in-map="[systemMessageTypeId:'SendShopifyFulfillmentAck',
+                    systemMessageRemoteId:systemMessageRemoteId, messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                    out-map="shopifyFulfillmentAckOut"/>
+
+            <if condition="jobName &amp;&amp; !skipLastRunTimeUpdate">
+                <!-- Set the current timestamp as the last run time for next run -->
+                <service-call name="update#moqui.service.job.ServiceJobParameter"
+                        in-map="[jobName:lastRunParam.jobName, parameterName:lastRunParam.parameterName,
+                        parameterValue:nowDate]"/>
+            </if>
+            <return message="Created the Shopify Fulfillment Ack Feed file at time ${nowDate} with type SendShopifyFulfillmentAck and
+                remote ${systemMessageRemoteId}, saved response in messages ${shopifyFulfillmentAckOut.systemMessageId}"/>
+        </actions>
+    </service>
+
     <service verb="get" noun="FulfillmentOrderDetails">
         <description>Get fulfillment details for the given fulfillmentOrderId</description>
         <in-parameters>
