@@ -65,7 +65,39 @@ under the License.
             </entity-find-one>
 
             <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="lineItems" from="[]"/>
+            <iterate list="shipment.shipmentItems" entry="shipmentItem">
+                <set field="lineItem" from="[:]"/>
+                <set field="lineItem.shopifyLineItemId" from="shipmentItem.shopifyOrderLineId"/>
+                <set field="lineItem.quantity" from="shipmentItem.quantity"/>
+                <script>lineItems.add(lineItem)</script>
+            </iterate>
 
+            <set field="fulfillmentContext" from="[:]"/>
+            <set field="fulfillmentContext.lineItems" from="lineItems"/>
+            <set field="fulfillmentContext.shopifyOrderId" from="shipment.shopifyOrderId"/>
+            <set field="fulfillmentContext.trackingNumber" from="shipment.trackingNumber"/>
+            <set field="fulfillmentContext.trackingUrl" from="shipment.trackingUrl"/>
+            <set field="fulfillmentContext.carrier" from="shipment.carrierPartyId"/>
+            <set field="fulfillmentContext.notifyCustomer" from="shipment.notifyCustomer"/>
+            <set field="fulfillmentContext.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="fulfillmentContext" out-map="outMap"/>
+
+            <set field="remoteMessageId" from="outMap.shopifyFulfillmentId"/>
+        </actions>
+    </service>
+
+    <service verb="send" noun="ShopifyFulfillmentSystemMessageV2" authenticate="anonymous-all">
+        <description>
+            Send service to invoke Create Shopify Fulfillment API for the System Message.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <set field="shipment" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
             <set field="shipment.systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
 
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.create#Fulfillment" in-map="shipment" out-map="outMap"/>
@@ -73,6 +105,7 @@ under the License.
             <set field="remoteMessageId" from="outMap.shopifyFulfillmentId"/>
         </actions>
     </service>
+
     <service verb="consume" noun="GraphQLBulkImportFeed" authenticate="anonymous-all">
         <description>
             Consume Bulk Import Feed System Message, upload bulk import feed to Shopify's staged upload url
