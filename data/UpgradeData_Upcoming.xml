@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-facade-xml type="seed">
+<entity-facade-xml type="ext-upgrade">
     <moqui.resource.DbResource filename="OrderHeaderByIdQuery.ftl" isFile="Y" resourceId="OrderHeaderByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
