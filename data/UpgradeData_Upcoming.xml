@@ -1203,6 +1203,7 @@
                                 handle
                                 title
                                 productType
+                                hasVariantsThatRequiresComponents
                                 featuredMedia {
                                     mediaContentType
                                     preview {
@@ -1255,6 +1256,7 @@
                                             price
                                             compareAtPrice
                                             position
+                                            requiresComponents
                                             image {
                                                 url
                                             }
@@ -1264,6 +1266,7 @@
                                             }
                                             inventoryItem {
                                                 id
+                                                requiresShipping
                                                 measurement {
                                                     weight {
                                                         unit

@@ -1235,6 +1235,7 @@
                                 handle
                                 title
                                 productType
+                                hasVariantsThatRequiresComponents
                                 featuredMedia {
                                     mediaContentType
                                     preview {
@@ -1287,6 +1288,7 @@
                                             price
                                             compareAtPrice
                                             position
+                                            requiresComponents
                                             image {
                                                 url
                                             }
