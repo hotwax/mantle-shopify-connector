@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<entity-facade-xml type="ext-upgrade">
+<entity-facade-xml type="ext-upgrade-v1.3.3">
     <!-- SystemMessageType record for bulk order discount code application query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkOrderDiscountCodeApplQuery"
             description="Bulk Order Discount Code Application Query System Message"

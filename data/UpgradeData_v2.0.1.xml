@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade-v2.0.1">
+    <moqui.basic.EnumerationType enumTypeId="PRODUCT_SYS_JOB" description="Product Jobs"/>
+    <moqui.basic.Enumeration enumId="QueueCreatedProductsFeed" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" jobTypeEnumId="QueueCreatedProductsFeed"/>
+    <moqui.basic.Enumeration enumId="QueueUpdatedProductsFeed" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" jobTypeEnumId="QueueUpdatedProductsFeed"/>
+</entity-facade-xml>

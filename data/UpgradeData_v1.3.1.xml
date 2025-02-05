@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-facade-xml type="ext-upgrade">
+<entity-facade-xml type="ext-upgrade-v1.3.1">
     <!-- SystemMessageType record for importing Gift Card Activation Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GiftCardActivationFeed"
             description="Create Gift Card Activation Feed System Message"

@@ -21,6 +21,7 @@ under the License.
     <!-- Enumeration Types for Service Jobs -->
     <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
     <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="PRODUCT_SYS_JOB" description="Product Jobs"/>
 
     <!-- ServiceJob data to purge old SystemMessage records -->
     <moqui.service.job.ServiceJob jobName="purge_OldSystemMessages" description="Purge Old System Messages"
@@ -232,7 +233,8 @@ under the License.
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing Created productIds feed -->
-    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed"
+    <moqui.basic.Enumeration enumId="QueueCreatedProductsFeed" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed" jobTypeEnumId="QueueCreatedProductsFeed"
           serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateCreatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
@@ -240,7 +242,8 @@ under the License.
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing Updated productIds feed -->
-    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed"
+    <moqui.basic.Enumeration enumId="QueueUpdatedProductsFeed" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed" jobTypeEnumId="QueueUpdatedProductsFeed"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>

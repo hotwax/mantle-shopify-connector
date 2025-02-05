@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-facade-xml type="seed">
+<entity-facade-xml type="ext-upgrade-v1.3.4">
     <!-- DbResource of Shopify GraphQL Templates-->
     <moqui.resource.DbResource filename="shopify" isFile="N" resourceId="Shopify" parentResourceId=""/>
     <moqui.resource.DbResource filename="template" isFile="N" resourceId="Template" parentResourceId="Shopify"/>
