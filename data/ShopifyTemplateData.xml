@@ -1234,6 +1234,7 @@
                                 id
                                 handle
                                 title
+                                isGiftCard
                                 productType
                                 hasVariantsThatRequiresComponents
                                 featuredMedia {
@@ -1284,6 +1285,7 @@
                                                 id
                                                 handle
                                                 title
+                                                isGiftCard
                                             }
                                             price
                                             compareAtPrice
