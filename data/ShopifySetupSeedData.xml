@@ -599,16 +599,12 @@ under the License.
         <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendCreatedProductsFeed"
-            description="Send Created Products Feed"
+    <!-- SystemMessageType record for Shopify New Products Feed, make sure to override in your component and specify consumeService -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyNewProductsFeed"
+            description="Shopify New Products Feed"
             parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""/>
-
-    <!-- Enumeration to create relation between GenerateCreatedProductIdsFeed, GenerateCreatedProductsFeed and SendCreatedProductsFeed SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Created Products Feed" enumId="SendCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate CreatedProducts Feed" enumId="GenerateCreatedProductsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Created Product Ids Feed" enumId="GenerateCreatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateCreatedProductsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+            consumeServiceName="">
+    </moqui.service.message.SystemMessageType>
 
     <!-- SystemMessageType record for generating Updated Product Ids Feed -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateUpdatedProductIdsFeed"
@@ -623,17 +619,12 @@ under the License.
             parentTypeId="LocalFeedFile"
             sendPath="${contentRoot}/shopify/ProductUpdatesFeed/ProductUpdatesFeed-${dateTime}-${systemMessageId}.json"
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductUpdatesFeed">
-        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendProductUpdatesFeed"
-            description="Send Product Updates Feed"
+    <!-- SystemMessageType record for Shopify Product Updates Feed, make sure to override in your component and specify consumeService -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyProductUpdatesFeed"
+            description="Shopify Product Updates Feed"
             parentTypeId="LocalFeedFile"
-            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-            sendPath=""/>
-
-    <!-- Enumeration to create relation between GenerateUpdatedProductIdsFeed, GenerateProductUpdatesFeed and SendProductUpdatesFeed SystemMessageType(s) -->
-    <moqui.basic.Enumeration description="Send Product Updates Feed" enumId="SendProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Product Updates Feed" enumId="GenerateProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Updated Product Ids Feed" enumId="GenerateUpdatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+            consumeServiceName="">
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
