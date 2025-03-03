@@ -96,7 +96,7 @@ under the License.
             </while>
         </actions>
     </service>
-    <service verb="get" noun="OrderDetails">
+    <service verb="get" noun="OrderDetails" authenticate="anonymous-all">
         <description>Get order details for a given shopify orderId</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
@@ -154,6 +154,40 @@ under the License.
                               out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
                 <set field="orderDetail.fulfillmentOrders" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId.fulfillmentOrders"/>
             </if>
+        </actions>
+    </service>
+    <service verb="get" noun="OrderAgreements" authenticate="anonymous-all">
+        <in-parameters>
+            <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="agreements"/>
+        </out-parameters>
+        <actions>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="agreements" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/AgreementsByOrderIdQuery.ftl", "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="agreementsResponse"/>
+                <set field="agreementList" from="[]"/>
+                <if condition="agreementsResponse.response.node.agreements.edges">
+                    <set field="agreementList" from="agreementsResponse.response.node.agreements.edges.node"/>
+                    <iterate list="agreementList" entry="agreement">
+                        <set field="sales" from="agreement.remove('sales')"/>
+                        <log level="info" message="sales size: ${sales.edges.size()}"/>
+                        <if condition="sales.edges">
+                            <set field="agreement.sales" from="sales.edges.node"/>
+                        </if>
+                        <set field="agreements" from="agreements + agreement"/>
+                    </iterate>
+                </if>
+                <set field="hasNextPage" from="agreementsResponse.response.node.agreements.pageInfo.hasNextPage"/>
+                <set field="cursor" from="agreementsResponse.response.node.agreements.pageInfo.endCursor"/>
+            </while>
         </actions>
     </service>
 </services>
