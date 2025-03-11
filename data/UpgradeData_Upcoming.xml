@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade-upcoming">
+    <moqui.resource.DbResource filename="ProductMetaFieldsByNameSpaceQuery.ftl" isFile="Y" resourceId="ProductMetaFieldsByNameSpaceQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query
+                    {
+                        node(id: "${shopifyProductId}") {
+                            id
+                                ... on
+                                Product {
+                                    id
+                                    metafields(namespace: "${namespace}", first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges{
+                                            node{
+                                                id
+                                                key
+                                                namespace
+                                                value
+                                                type
+                                                reference {
+                                                    ... on Metaobject {
+                                                        id
+                                                        handle
+                                                        type
+                                                        fields {
+                                                            key
+                                                            value
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo{
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+</entity-facade-xml>
