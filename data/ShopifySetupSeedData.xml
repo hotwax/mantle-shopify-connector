@@ -627,4 +627,37 @@ under the License.
             parentTypeId="LocalFeedFile"
             consumeServiceName="">
     </moqui.service.message.SystemMessageType>
+
+    <!-- Enumeration to create relation between GenerateUpdatedProductIdsFeed, GenerateProductUpdatesFeed and SendProductUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Product Updates Feed" enumId="SendProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Product Updates Feed" enumId="GenerateProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Product Ids Feed" enumId="GenerateUpdatedProductIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for generating Updated Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="UpdatedAgreementOrderIdsFeed"
+            description="Generate Updated Agreement Order Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/UpdatedAgreementOrderIdsFeed.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#UpdatedAgreementOrderIdsFeed"
+            receivePath="${contentRoot}/shopify/UpdatedAgreementOrderIdsFeed/UpdatedAgreementOrderIdsFeed-${dateTime}-${systemMessageId}.json">
+    </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for generating Order Agreement Updates Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrderAgreementUpdatesFeed"
+            description="Generate Order Agreement Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/OrderAgreementUpdatesFeed/OrderAgreementUpdatesFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderAgreementUpdatesFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderAgreementUpdatesFeed"
+            description="Send Order Agreement Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between UpdatedAgreementOrderIdsFeed, OrderAgreementUpdatesFeed and SendOrderAgreementUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Order Agreement Updates Feed" enumId="SendOrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Agreement Updates Feed" enumId="OrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"  relatedEnumId="SendOrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Agreement Order Ids Feed" enumId="UpdatedAgreementOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="OrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 </entity-facade-xml>

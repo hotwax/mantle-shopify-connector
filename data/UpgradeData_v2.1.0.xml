@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade-v2.1.0">
+    <moqui.resource.DbResourceFile resourceId="ProductByIdQuery" mimeType="text/html" versionName="01" rootVersionName="01">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node(id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                handle
+                                title
+                                isGiftCard
+                                productType
+                                hasVariantsThatRequiresComponents
+                                featuredMedia {
+                                    mediaContentType
+                                    preview {
+                                        image {
+                                            url
+                                        }
+                                    }
+                                }
+                                options {
+                                    id
+                                    name
+                                    position
+                                    optionValues {
+                                        id
+                                        name
+                                    }
+                                }
+                                tags
+                            }
+                        }
+                    }
+                </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="ProductVariantsByProductIdQuery" mimeType="text/html" versionName="01" rootVersionName="01">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query {
+                        node (id: "${shopifyProductId}") {
+                            id
+                            ... on
+                            Product {
+                                id
+                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    edges {
+                                        node {
+                                            id
+                                            title
+                                            sku
+                                            barcode
+                                            product {
+                                                id
+                                                handle
+                                                title
+                                                isGiftCard
+                                                productType
+                                            }
+                                            price
+                                            compareAtPrice
+                                            position
+                                            requiresComponents
+                                            image {
+                                                url
+                                            }
+                                            selectedOptions {
+                                                name
+                                                value
+                                            }
+                                            inventoryItem {
+                                                id
+                                                requiresShipping
+                                                measurement {
+                                                    weight {
+                                                        unit
+                                                        value
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    pageInfo {
+                                        hasNextPage
+                                        endCursor
+                                    }
+                                }
+                            }
+                        }
+                    }
+                </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResource filename="UpdatedAgreementOrderIdsFeed.ftl" isFile="Y" resourceId="UpdatedAgreementOrderIdsFeed" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="AgreementsByOrderIdQuery.ftl" isFile="Y" resourceId="AgreementsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "happened_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "happened_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "happened_at:>'${queryParams.fromDate}' AND happened_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            node(id: "${shopifyOrderId}") {
+                                id
+                                ... on
+                                Order {
+                                    agreements (first: 250<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                reason
+                                                happenedAt
+                                                app {
+                                                    handle
+                                                    title
+                                                    shopifyDeveloped
+                                                }
+                                                user {
+                                                    id
+                                                    firstName
+                                                    lastName
+                                                }
+                                                sales (first: 250) {
+                                                    edges {
+                                                        node {
+                                                            actionType
+                                                            lineType
+                                                            quantity
+                                                            totalAmount {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <!-- SystemMessageType record for generating Updated Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="UpdatedAgreementOrderIdsFeed"
+            description="Generate Updated Agreement Order Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/UpdatedAgreementOrderIdsFeed.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#UpdatedAgreementOrderIdsFeed"
+            receivePath="${contentRoot}/shopify/UpdatedAgreementOrderIdsFeed/UpdatedAgreementOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating Order Agreement Updates Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="OrderAgreementUpdatesFeed"
+            description="Generate Order Agreement Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/OrderAgreementUpdatesFeed/OrderAgreementUpdatesFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#OrderAgreementUpdatesFeed"/>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendOrderAgreementUpdatesFeed"
+            description="Send Order Agreement Updates Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Enumeration to create relation between UpdatedAgreementOrderIdsFeed, OrderAgreementUpdatesFeed and SendOrderAgreementUpdatesFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Order Agreement Updates Feed" enumId="SendOrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Order Agreement Updates Feed" enumId="OrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"  relatedEnumId="SendOrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Updated Agreement Order Ids Feed" enumId="UpdatedAgreementOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="OrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- ServiceJob data for queuing Updated Agreement OrderIds Feed -->
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedAgreementOrderIdsFeed" description="Queue Updated Agreement OrderIds Feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="UpdatedAgreementOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+</entity-facade-xml>

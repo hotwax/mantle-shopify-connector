@@ -519,7 +519,7 @@
                             <#assign filterQuery = "return_status:'RETURNED'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -763,7 +763,7 @@
                             <#assign filterQuery = filterQuery + "AND tag_not:'${queryParams.tagNot}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -901,7 +901,7 @@
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1169,7 +1169,7 @@
                             <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1203,7 +1203,7 @@
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1404,7 +1404,7 @@
                             <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1414,6 +1414,107 @@
                                 pageInfo {
                                     endCursor
                                     hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="UpdatedAgreementOrderIdsFeed.ftl" isFile="Y" resourceId="UpdatedAgreementOrderIdsFeed" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="AgreementsByOrderIdQuery.ftl" isFile="Y" resourceId="AgreementsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "happened_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "happened_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "happened_at:>'${queryParams.fromDate}' AND happened_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            node(id: "${shopifyOrderId}") {
+                                id
+                                ... on
+                                Order {
+                                    agreements (first: 250<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                reason
+                                                happenedAt
+                                                app {
+                                                    handle
+                                                    title
+                                                    shopifyDeveloped
+                                                }
+                                                user {
+                                                    id
+                                                    firstName
+                                                    lastName
+                                                }
+                                                sales (first: 250) {
+                                                    edges {
+                                                        node {
+                                                            actionType
+                                                            lineType
+                                                            quantity
+                                                            totalAmount {
+                                                                presentmentMoney {
+                                                                    amount
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
                                 }
                             }
                         }

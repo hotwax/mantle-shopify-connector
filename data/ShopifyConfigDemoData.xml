@@ -217,4 +217,10 @@
             parentTypeId="LocalFeedFile"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
             sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="OrderAgreementUpdatesFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
 </entity-facade-xml>
