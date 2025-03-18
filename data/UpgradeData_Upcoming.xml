@@ -201,8 +201,7 @@
                 ]]>
         </fileData>
     </moqui.resource.DbResourceFile>
-    <moqui.resource.DbResource filename="ProductByIdQuery.ftl" isFile="Y" resourceId="ProductByIdQuery" parentResourceId="GraphQL">
-        <file mimeType="text/html" versionName="01" rootVersionName="01">
+    <moqui.resource.DbResource resourceId="ProductByIdQuery">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
@@ -241,11 +240,8 @@
                     }
                 </@compress>]]>
             </fileData>
-            <histories versionName="01" previousVersionName="01"/>
-        </file>
     </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="ProductVariantsByProductIdQuery.ftl" isFile="Y" resourceId="ProductVariantsByProductIdQuery" parentResourceId="GraphQL">
-        <file mimeType="text/html" versionName="01" rootVersionName="01">
+    <moqui.resource.DbResource resourceId="ProductVariantsByProductIdQuery">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
@@ -303,7 +299,5 @@
                     }
                 </@compress>]]>
             </fileData>
-            <histories versionName="01" previousVersionName="01"/>
-        </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>
