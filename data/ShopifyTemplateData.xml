@@ -519,7 +519,7 @@
                             <#assign filterQuery = "return_status:'RETURNED'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -763,7 +763,7 @@
                             <#assign filterQuery = filterQuery + "AND tag_not:'${queryParams.tagNot}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -901,7 +901,7 @@
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1169,7 +1169,7 @@
                             <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1203,7 +1203,7 @@
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            products (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
@@ -1236,6 +1236,7 @@
                                 title
                                 isGiftCard
                                 productType
+                                vendor
                                 hasVariantsThatRequiresComponents
                                 featuredMedia {
                                     mediaContentType
@@ -1287,6 +1288,7 @@
                                                 title
                                                 isGiftCard
                                                 productType
+                                                vendor
                                             }
                                             price
                                             compareAtPrice
@@ -1404,7 +1406,7 @@
                             <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}")</#if> {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
