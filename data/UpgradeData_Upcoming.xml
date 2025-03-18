@@ -201,9 +201,9 @@
                 ]]>
         </fileData>
     </moqui.resource.DbResourceFile>
-    <moqui.resource.DbResource resourceId="ProductByIdQuery">
-            <fileData>
-                <![CDATA[<#ftl output_format="HTML">
+    <moqui.resource.DbResourceFile resourceId="ProductByIdQuery">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
                     query {
                         node(id: "${shopifyProductId}") {
@@ -239,11 +239,11 @@
                         }
                     }
                 </@compress>]]>
-            </fileData>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource resourceId="ProductVariantsByProductIdQuery">
-            <fileData>
-                <![CDATA[<#ftl output_format="HTML">
+        </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="ProductVariantsByProductIdQuery">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
                     query {
                         node (id: "${shopifyProductId}") {
@@ -298,6 +298,52 @@
                         }
                     }
                 </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResource filename="ProductMetaFieldsByNameSpaceQuery.ftl" isFile="Y" resourceId="ProductMetaFieldsByNameSpaceQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                    query
+                    {
+                        node(id: "${shopifyProductId}") {
+                            id
+                                ... on
+                                Product {
+                                    id
+                                    metafields(namespace: "${namespace}", first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges{
+                                            node{
+                                                id
+                                                key
+                                                namespace
+                                                value
+                                                type
+                                                reference {
+                                                    ... on Metaobject {
+                                                        id
+                                                        handle
+                                                        type
+                                                        fields {
+                                                            key
+                                                            value
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo{
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                </@compress>]]>
             </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
     </moqui.resource.DbResource>
 </entity-facade-xml>

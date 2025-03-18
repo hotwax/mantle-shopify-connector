@@ -22,6 +22,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyProductId" required="true"/>
+            <parameter name="namespaces" type="List"/>
         </in-parameters>
         <out-parameters>
             <parameter name="productDetail"/>
@@ -34,6 +35,18 @@ under the License.
             <if condition="!productResponse.response.node">
                 <return type="warning" message="No Shopify product found for id: ${shopifyProductId}"/>
             </if>
+
+            <if condition="namespaces">
+                <set field="metafields" from="[]"/>
+                <iterate list="namespaces" entry="namespace">
+                    <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductMetafields" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyProductId:shopifyProductId, namespace:namespace]"
+                                  out-map="productMetafieldsOut"/>
+                    <script>
+                        metafields.addAll(productMetafieldsOut.productMetafields)
+                    </script>
+                </iterate>
+            </if>
+
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="productVariants" from="[]"/>
             <while condition="hasNextPage">
@@ -49,6 +62,45 @@ under the License.
             </while>
             <set field="productDetail" from="productResponse.response.node"/>
             <set field="productDetail.variants" from="productVariants"/>
+            <set field="productDetail.metafields" from="metafields"/>
+        </actions>
+    </service>
+
+    <service verb="get" noun="ProductMetafields">
+        <description>Service to get Product Metafields for a productId and namespace.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true">
+                <description>The System Message Remote Id to sned shopify request.</description>
+            </parameter>
+            <parameter name="shopifyProductId" required="true">
+                <description>Product Id to get metafields.</description>
+            </parameter>
+            <parameter name="namespace">
+                <description>Parameter to get metafields for specific namespace.</description>
+            </parameter>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="productMetafields"/>
+        </out-parameters>
+        <actions>
+            <!-- Set the hasNextPage to true -->
+            <set field="hasNextPage" type="Boolean" value="true"/>
+
+            <!-- Initialize productMetafields list -->
+            <set field="productMetafields" from="[]"/>
+
+            <!-- If hasNextPage is true then send shopify graphql request to get the product metafields -->
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductMetaFieldsByNameSpaceQuery.ftl", "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productMetafieldResponse"/>
+                <if condition="productMetafieldResponse.response.node.metafields.edges">
+                    <script>productMetafields.addAll(productMetafieldResponse.response.node.metafields.edges.node)</script>
+                </if>
+                <set field="hasNextPage" from="productMetafieldResponse.response.node.metafields.pageInfo.hasNextPage"/>
+                <set field="cursor" from="productMetafieldResponse.response.node.metafields.pageInfo.endCursor"/>
+            </while>
         </actions>
     </service>
 </services>

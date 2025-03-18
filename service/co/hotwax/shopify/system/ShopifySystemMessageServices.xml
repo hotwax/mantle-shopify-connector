@@ -1413,6 +1413,7 @@ under the License.
                 </script>
                 <set field="createdProductIds" from="createdProductIdsResponse.response.products.edges.node"/>
                 <iterate list="createdProductIds" entry="productMap">
+                    <set field="productMap" from="productMap + [namespaces:queryParams.namespaces]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
@@ -1471,7 +1472,7 @@ under the License.
             </script>
 
             <iterate list="products" entry="product">
-                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id]"
+                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id, namespaces:product.namespaces]"
                               out-map="productDetailsResponse" ignore-error="true" transaction="force-new"/>
 
                 <if condition="productDetailsResponse.productDetail">
@@ -1536,6 +1537,7 @@ under the License.
                 </script>
                 <set field="updatedProductIds" from="updatedProductIdsResponse.response.products.edges.node"/>
                 <iterate list="updatedProductIds" entry="productMap">
+                    <set field="productMap" from="productMap + [namespaces:queryParams.namespaces]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
@@ -1595,7 +1597,7 @@ under the License.
             </script>
 
             <iterate list="products" entry="product">
-                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id]"
+                <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyProductId:product.id, namespaces:product.namespaces]"
                               out-map="productDetailsResponse" ignore-error="true" transaction="force-new"/>
 
                 <if condition="productDetailsResponse.productDetail">
