@@ -201,7 +201,7 @@
                 ]]>
         </fileData>
     </moqui.resource.DbResourceFile>
-    <moqui.resource.DbResource resourceId="ProductByIdQuery">
+    <moqui.resource.DbResourceFile resourceId="ProductByIdQuery">
         <fileData>
             <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
@@ -240,8 +240,8 @@
                     }
                 </@compress>]]>
         </fileData>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource resourceId="ProductVariantsByProductIdQuery">
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="ProductVariantsByProductIdQuery">
         <fileData>
             <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
@@ -299,8 +299,8 @@
                     }
                 </@compress>]]>
         </fileData>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource resourceId="ProductMetaFieldsByNameSpaceQuery">
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="ProductMetaFieldsByNameSpaceQuery">
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
@@ -342,5 +342,5 @@
                     }
                 </@compress>]]>
             </fileData>
-    </moqui.resource.DbResource>
+    </moqui.resource.DbResourceFile>
 </entity-facade-xml>
