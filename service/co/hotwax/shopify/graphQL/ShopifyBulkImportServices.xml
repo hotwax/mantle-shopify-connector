@@ -186,8 +186,10 @@ under the License.
             <script>
                 queryText = ec.resourceFacade.template(queryTemplateLocation, "")
             </script>
+            <log level="info" message="================================= BulkOperationQuery, systemMessageRemoteId: ${systemMessageRemoteId} ======= queryText: ${queryText}"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="bulkQueryResponse"/>
 
+            <log level="info" message="================================= bulkQueryResponse: ${bulkQueryResponse}"/>
             <if condition="bulkQueryResponse.response.bulkOperationRunQuery.userErrors">
                 <return error="true" message="${bulkQueryResponse.response.bulkOperationRunQuery.userErrors}"/>
             </if>

@@ -228,6 +228,7 @@ under the License.
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#BulkOperationResult" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyBulkOperationId:systemMessage.remoteMessageId]"
                           out-map="bulkOperationResult"/>
 
+            <log level="info" message="================================= bulkOperationResult: ${bulkOperationResult}"/>
             <set field="status" from="bulkOperationResult.response.status"/>
             <if condition="!status">
                 <set field="status" value="failed"/>
