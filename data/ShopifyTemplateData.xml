@@ -1237,6 +1237,11 @@
                                 isGiftCard
                                 productType
                                 vendor
+                                category {
+                                    id
+                                    name
+                                    fullName
+                                }
                                 hasVariantsThatRequiresComponents
                                 featuredMedia {
                                     mediaContentType
