@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResourceFile resourceId="BulkFulfillmentOrderQuery">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
+            <@compress single_line=true>
+                <#if queryParams?has_content>
+                    <#if queryParams.filterQuery?has_content>
+                        <#assign filterQuery = queryParams.filterQuery/>
+                    <#else>
+                        <#if queryParams.fromDateLabel?has_content>
+                            <#assign fromDateLabel = queryParams.fromDateLabel/>
+                        <#else>
+                            <#assign fromDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.thruDateLabel?has_content>
+                            <#assign thruDateLabel = queryParams.thruDateLabel/>
+                        <#else>
+                            <#assign thruDateLabel = "created_at"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "${fromDateLabel}:>'${queryParams.fromDate}' AND ${thruDateLabel}:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                </#if>
+                mutation {
+                    bulkOperationRunQuery(
+                        query: """ {
+                            orders <#if filterQuery?has_content>(query:"${filterQuery}")</#if> {
+                                edges {
+                                    node {
+                                        id
+                                        fulfillmentOrders {
+                                            edges{
+                                                node{
+                                                    id
+                                                    status
+                                                    assignedLocation{
+                                                        location{
+                                                            id
+                                                        }
+                                                    }
+                                                    lineItems {
+                                                        edges{
+                                                            node{
+                                                                id
+                                                                remainingQuantity
+                                                                lineItem{
+                                                                    id
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    """ ) {
+                        bulkOperation {
+                            id
+                            status
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+            </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+</entity-facade-xml>
