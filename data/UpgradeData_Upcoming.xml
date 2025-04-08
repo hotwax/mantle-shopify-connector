@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
-    <moqui.resource.DbResource resourceId="BulkFulfillmentOrderQuery">
+    <moqui.resource.DbResourceFile resourceId="BulkFulfillmentOrderQuery">
         <fileData>
             <![CDATA[<#ftl output_format="HTML">
             <@compress single_line=true>
@@ -77,5 +77,5 @@
                 }
             </@compress>]]>
         </fileData>
-    </moqui.resource.DbResource>
+    </moqui.resource.DbResourceFile>
 </entity-facade-xml>
