@@ -1986,8 +1986,9 @@ under the License.
                 import java.nio.charset.StandardCharsets
             </script>
             <set field="hasNextPage" type="Boolean" value="true"/>
+            <!-- TODO: Removing the iterationCount additional logic" -->
             <set field="iterationCount" value="0" type="Integer"/>
-            <while condition="hasNextPage &amp;&amp; (iterationCount &lt; 2)">
+            <while condition="hasNextPage &amp;&amp; (iterationCount &lt; 1)">
                 <script>queryText = ec.resourceFacade.template(systemMessage.sendPath, "")</script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderIdsResponse"/>
                 <if condition="!fulfillmentOrderIdsResponse.response.fulfillmentOrders.edges">
@@ -2027,12 +2028,68 @@ under the License.
                         logger.error("Error preparing CreatedProductIds Feed file", e)
                     }
                 </script>
-                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateCreatedProductsFeed', messageText:jsonFilePathRef,
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateFulfillmentOrdersFeed', messageText:jsonFilePathRef,
                               systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
                 <set field="hasNextPage" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.pageInfo.endCursor"/>
                 <script>iterationCount+=1</script>
             </while>
+        </actions>
+    </service>
+    <service verb="generate" noun="FulfillmentOrdersFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="fulfillmentOrdersList" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!fulfillmentOrdersList">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+            </if>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                         JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+            <iterate list="fulfillmentOrdersList" entry="fulfillmentOrder">
+                <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrder.id]"
+                              out-map="fufillmentOrderDetailsResponse" ignore-error="true" transaction="force-new"/>
+                <if condition="fufillmentOrderDetailsResponse.fulfillmentOrderDetail">
+                    <script>
+                        new ObjectMapper()
+                                .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                                .writerWithDefaultPrettyPrinter().writeValue(jGenerator, fufillmentOrderDetailsResponse.fulfillmentOrderDetail)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                jGenerator.writeEndArray()
+                }
+                } catch (IOException e) {
+                    logger.error("Error preparing Created Products Feed file", e)
+                }
+            </script>
         </actions>
     </service>
 </services>
