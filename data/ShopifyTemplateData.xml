@@ -397,6 +397,7 @@
                         ... on
                         FulfillmentOrder {
                             id
+                            orderId
                             status
                             createdAt
                             updatedAt
