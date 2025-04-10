@@ -2090,6 +2090,9 @@ under the License.
                     logger.error("Error preparing Created Products Feed file", e)
                 }
             </script>
+
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'ShopifyFulfillmentOrdersFeed', messageText:jsonFilePathRef,
+                      systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessageId, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
         </actions>
     </service>
 </services>
