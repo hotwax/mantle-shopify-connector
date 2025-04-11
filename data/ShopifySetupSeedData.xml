@@ -628,6 +628,22 @@ under the License.
             consumeServiceName="">
     </moqui.service.message.SystemMessageType>
 
+    <!-- SystemMessageType record for generating Fulfillment Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateFulfillmentOrderIdsFeed"
+             description="Shopify Fulfillment Order Ids Feed"
+             sendPath="dbresource://shopify/template/graphQL/FulfillmentOrderIdsQuery.ftl"
+             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#FulfillmentOrderIdsFeed"
+             receivePath="${contentRoot}/shopify/FulfillmentOrderIdsFeed/FulfillmentOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating the Fulfillment Orders Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateFulfillmentOrdersFeed"
+             description="Shopify Fulfillment Orders Detail Feed"
+             parentTypeId="LocalFeedFile"
+             sendPath="${contentRoot}/shopify/FulfillmentOrdersFeed/FulfillmentOrdersFeed-${dateTime}-${systemMessageId}.json"
+             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#FulfillmentOrdersFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
     <!-- Enumeration to create relation between GenerateUpdatedProductIdsFeed, GenerateProductUpdatesFeed and SendProductUpdatesFeed SystemMessageType(s) -->
     <moqui.basic.Enumeration description="Send Product Updates Feed" enumId="SendProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Product Updates Feed" enumId="GenerateProductUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendProductUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
