@@ -1798,7 +1798,7 @@ under the License.
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-
+ProductVariantUpdatesFeed
             <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
             <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
                 <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
@@ -1968,6 +1968,71 @@ under the License.
                                        messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
                               out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
             </if>
+        </actions>
+    </service>
+
+    <service verb="generate" noun="ProductVariantUpdatesFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate Product Variant Updates Feed.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="updatedProductVariantsResponse"/>
+                <if condition="!updatedProductVariantsResponse.response.productVariants.edges">
+                    <return message="No productIds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <script>
+                    try {
+                        //json file
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
+
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                            JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                                jGenerator.writeStartArray()
+                </script>
+                <set field="updatedProductVariants" from="updatedProductVariantsResponse.response.productVariants.edges.node"/>
+                <iterate list="updatedProductVariants" entry="productMap">
+                    <set field="productMap" from="productMap"/>
+                    <script>
+                            new ObjectMapper()
+                            .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                            .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
+                    </script>
+                </iterate>
+                <script>
+                                jGenerator.writeEndArray()
+                            }
+                    } catch (IOException e) {
+                        logger.error("Error preparing Product Variant Updates Feed file", e)
+                    }
+                </script>
+
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'ShopifyVariantUpdatesFeed', messageText:jsonFilePathRef,
+                        systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessage.systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
+                <set field="hasNextPage" from="updatedProductVariantsResponse.response.productVariants.pageInfo.hasNextPage"/>
+                <set field="cursor" from="updatedProductVariantsResponse.response.productVariants.pageInfo.endCursor"/>
+            </while>
         </actions>
     </service>
 </services>
