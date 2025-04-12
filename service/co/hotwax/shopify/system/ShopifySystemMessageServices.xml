@@ -2010,7 +2010,6 @@ under the License.
                 </script>
                 <set field="fulfillmentOrderIds" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.edges.node"/>
                 <iterate list="fulfillmentOrderIds" entry="fulfillmentOrderMap">
-                    <set field="fulfillmentOrderMap" from="fulfillmentOrderMap"/>
                     <script>
                         new ObjectMapper()
                                 .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
