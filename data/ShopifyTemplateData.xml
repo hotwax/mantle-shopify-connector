@@ -1594,7 +1594,7 @@
                             <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
                         query {
-                            fulfillmentOrders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                            fulfillmentOrders (first: 100, includeClosed: true<#if cursor?has_content>, after: "${cursor}"</#if>, query: "status:'CLOSED'<#if filterQuery?has_content> AND ${filterQuery}"</#if>) {
                                 edges {
                                     node {
                                         id
