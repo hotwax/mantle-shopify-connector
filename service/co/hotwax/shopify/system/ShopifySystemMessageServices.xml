@@ -1158,7 +1158,6 @@ under the License.
             <parameter name="runAsBatch" type="Boolean" default-value="false"/>
         </in-parameters>
         <actions>
-            <log message="1. ========================= ==============================="/>
             <set field="queryParams" from="[:]"/>
             <if condition="additionalParameters">
                 <set field="queryParams" from="additionalParameters"/>
@@ -1194,9 +1193,9 @@ under the License.
                                        messageText:org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams),  sendNow:true]"
                           out-map="queueSystemMessageOut"/>
 
-<!--            <if condition="runAsBatch">-->
-<!--                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:queueSystemMessageOut.systemMessageId, messageDate:thruDate]"/>-->
-<!--            </if>-->
+            <if condition="runAsBatch">
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:queueSystemMessageOut.systemMessageId, messageDate:thruDate]"/>
+            </if>
         </actions>
     </service>
     <service verb="generate" noun="UpdatedOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
@@ -1986,9 +1985,7 @@ under the License.
                 import java.nio.charset.StandardCharsets
             </script>
             <set field="hasNextPage" type="Boolean" value="true"/>
-            <!-- TODO: Removing the iterationCount additional logic" -->
-            <set field="iterationCount" value="0" type="Integer"/>
-            <while condition="hasNextPage &amp;&amp; (iterationCount &lt; 1)">
+            <while condition="hasNextPage">
                 <script>queryText = ec.resourceFacade.template(systemMessage.sendPath, "")</script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="fulfillmentOrderIdsResponse"/>
                 <if condition="!fulfillmentOrderIdsResponse.response.fulfillmentOrders.edges">
@@ -2032,7 +2029,6 @@ under the License.
                               systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
                 <set field="hasNextPage" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.pageInfo.endCursor"/>
-                <script>iterationCount+=1</script>
             </while>
         </actions>
     </service>
