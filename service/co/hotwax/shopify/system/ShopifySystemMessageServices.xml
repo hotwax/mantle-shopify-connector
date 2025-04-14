@@ -1996,31 +1996,31 @@ under the License.
                 <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
                 <script>
                     try {
-                    //json file
-                    File feedFile = new File(jsonFilePath)
-                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
-                    JsonFactory jfactory = new JsonFactory()
+                        //json file
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
 
-                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
-                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
-                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
-                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
-                    jGenerator.writeStartArray()
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                            JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                            jGenerator.writeStartArray()
                 </script>
                 <set field="fulfillmentOrderIds" from="fulfillmentOrderIdsResponse.response.fulfillmentOrders.edges.node"/>
                 <iterate list="fulfillmentOrderIds" entry="fulfillmentOrderMap">
                     <script>
                         new ObjectMapper()
-                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                        .writerWithDefaultPrettyPrinter()
-                        .writeValue(jGenerator, fulfillmentOrderMap)
+                            .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                            .writerWithDefaultPrettyPrinter()
+                            .writeValue(jGenerator, fulfillmentOrderMap)
                     </script>
                 </iterate>
                 <script>
                     jGenerator.writeEndArray()
                     }
                     } catch (IOException e) {
-                    logger.error("Error preparing CreatedProductIds Feed file", e)
+                        logger.error("Error preparing CreatedProductIds Feed file", e)
                     }
                 </script>
                 <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateFulfillmentOrdersFeed', messageText:jsonFilePathRef,
@@ -2055,16 +2055,16 @@ under the License.
                 import java.nio.charset.StandardCharsets
 
                 try {
-                //json file
-                File feedFile = new File(jsonFilePath)
-                if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
-                JsonFactory jfactory = new JsonFactory()
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
 
-                /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
-                so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
-                try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
-                JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
-                jGenerator.writeStartArray()
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                        JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
             </script>
             <iterate list="fulfillmentOrdersList" entry="fulfillmentOrder">
                 <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, fulfillmentOrderId:fulfillmentOrder.id]"
@@ -2072,8 +2072,9 @@ under the License.
                 <if condition="fufillmentOrderDetailsResponse.fulfillmentOrderDetail">
                     <script>
                         new ObjectMapper()
-                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, fufillmentOrderDetailsResponse.fulfillmentOrderDetail)
+                            .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                            .writerWithDefaultPrettyPrinter()
+                            .writeValue(jGenerator, fufillmentOrderDetailsResponse.fulfillmentOrderDetail)
                     </script>
                 </if>
             </iterate>
@@ -2081,7 +2082,7 @@ under the License.
                 jGenerator.writeEndArray()
                 }
                 } catch (IOException e) {
-                logger.error("Error preparing Created Products Feed file", e)
+                    logger.error("Error preparing Created Products Feed file", e)
                 }
             </script>
 
@@ -2118,31 +2119,31 @@ under the License.
                 <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
                 <script>
                     try {
-                    //json file
-                    File feedFile = new File(jsonFilePath)
-                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
-                    JsonFactory jfactory = new JsonFactory()
+                        //json file
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
 
-                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
-                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
-                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
-                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
-                    jGenerator.writeStartArray()
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                            JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                            jGenerator.writeStartArray()
                 </script>
                 <set field="updatedProductVariants" from="updatedProductVariantsResponse.response.productVariants.edges.node"/>
                 <iterate list="updatedProductVariants" entry="productMap">
                     <set field="productMap" from="productMap"/>
                     <script>
                         new ObjectMapper()
-                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
+                            .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                            .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
                     </script>
                 </iterate>
                 <script>
                     jGenerator.writeEndArray()
                     }
                     } catch (IOException e) {
-                    logger.error("Error preparing Product Variant Updates Feed file", e)
+                        logger.error("Error preparing Product Variant Updates Feed file", e)
                     }
                 </script>
 
