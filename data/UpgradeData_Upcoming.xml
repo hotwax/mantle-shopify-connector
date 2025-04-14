@@ -78,4 +78,97 @@
             </@compress>]]>
         </fileData>
     </moqui.resource.DbResourceFile>
+
+    <moqui.service.job.ServiceJob jobName="queue_FulfillmentOrderIdsFeed" description="Queue Fufillment Orders feed" serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateFulfillmentOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue="SHOP_CONFIG"/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for generating Fulfillment Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateFulfillmentOrderIdsFeed"
+         description="Shopify Fulfillment Order Ids Feed"
+         sendPath="dbresource://shopify/template/graphQL/FulfillmentOrderIdsQuery.ftl"
+         sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#FulfillmentOrderIdsFeed"
+         receivePath="${contentRoot}/shopify/FulfillmentOrderIdsFeed/FulfillmentOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating the Fulfillment Orders Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateFulfillmentOrdersFeed"
+         description="Shopify Fulfillment Orders Detail Feed"
+         parentTypeId="LocalFeedFile"
+         sendPath="${contentRoot}/shopify/FulfillmentOrdersFeed/FulfillmentOrdersFeed-${dateTime}-${systemMessageId}.json"
+         consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#FulfillmentOrdersFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.resource.DbResource filename="FulfillmentOrderIdsQuery.ftl" isFile="Y" resourceId="FulfillmentOrderIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query {
+                            fulfillmentOrders (first: 100, includeClosed: true<#if cursor?has_content>, after: "${cursor}"</#if>, query: "status:'CLOSED'<#if filterQuery?has_content> AND ${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
+    <moqui.resource.DbResource filename="FulfillmentOrderHeaderByIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrderHeaderByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${fulfillmentOrderId}") {
+                        id
+                        ... on
+                        FulfillmentOrder {
+                            id
+                            orderId
+                            status
+                            createdAt
+                            updatedAt
+                            fulfillAt
+                            channelId
+                            assignedLocation {
+                                location {
+                                    id
+                                }
+                            }
+                            deliveryMethod {
+                                methodType
+                                serviceCode
+                            }
+                            createdAt
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>
