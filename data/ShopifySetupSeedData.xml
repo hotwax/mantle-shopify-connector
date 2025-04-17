@@ -684,11 +684,11 @@ under the License.
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductVariantUpdatesFeed"
             receivePath="${contentRoot}/shopify/ProductVariantUpdatesFeed/ProductVariantUpdatesFeed-${dateTime}-${systemMessageId}.json"/>
 
-    <!-- SystemMessageType record for Shopify Product Variant Updates Feed, make sure to override in your component and specify consumeService -->
+    <!-- SystemMessageType record for Shopify Product Variant Updates Feed, make sure to override in your component and specify consumeServiceName -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyVariantUpdatesFeed"
             description="Shopify Product Variant Updates Feed"
             parentTypeId="LocalFeedFile"
-            consumeServiceName="co.hotwax.sob.system.FeedServices.consume#ShopifyChildCatalogUpdatesFeed">
+            consumeServiceName="">
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
