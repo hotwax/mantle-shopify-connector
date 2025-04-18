@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-facade-xml type="ext-upgrade">
+<entity-facade-xml type="ext-upgrade-v2.3.0">
     <moqui.resource.DbResourceFile resourceId="BulkFulfillmentOrderQuery">
         <fileData>
             <![CDATA[<#ftl output_format="HTML">

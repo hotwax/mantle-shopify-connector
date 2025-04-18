@@ -676,4 +676,19 @@ under the License.
     <moqui.basic.Enumeration description="Send Order Agreement Updates Feed" enumId="SendOrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Order Agreement Updates Feed" enumId="OrderAgreementUpdatesFeed" enumTypeId="ShopifyMessageTypeEnum"  relatedEnumId="SendOrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Updated Agreement Order Ids Feed" enumId="UpdatedAgreementOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="OrderAgreementUpdatesFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <!-- SystemMessageType record for generating Product Variant Updates Feed (includes only header level details, no connections) -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateVariantUpdatesFeed"
+            description="Generate Product Variant Updates Feed"
+            sendPath="dbresource://shopify/template/graphQL/ProductVariantUpdatesQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductVariantUpdatesFeed"
+            receivePath="${contentRoot}/shopify/ProductVariantUpdatesFeed/ProductVariantUpdatesFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for Shopify Product Variant Updates Feed, make sure to override in your component and specify consumeServiceName -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyVariantUpdatesFeed"
+            description="Shopify Product Variant Updates Feed"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="">
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
