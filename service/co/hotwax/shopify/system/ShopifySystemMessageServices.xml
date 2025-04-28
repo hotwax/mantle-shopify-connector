@@ -1413,7 +1413,7 @@ under the License.
                 </script>
                 <set field="createdProductIds" from="createdProductIdsResponse.response.products.edges.node"/>
                 <iterate list="createdProductIds" entry="productMap">
-                    <set field="productMap" from="productMap + [namespaces:queryParams.namespaces]"/>
+                    <set field="productMap" from="productMap + [queryParams:[namespaces:queryParams.namespaces]]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
@@ -1537,7 +1537,7 @@ under the License.
                 </script>
                 <set field="updatedProductIds" from="updatedProductIdsResponse.response.products.edges.node"/>
                 <iterate list="updatedProductIds" entry="productMap">
-                    <set field="productMap" from="productMap + [namespaces:queryParams.namespaces]"/>
+                    <set field="productMap" from="productMap + [queryParams:queryParams]"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
