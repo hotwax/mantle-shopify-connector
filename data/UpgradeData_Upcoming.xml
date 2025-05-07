@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResourceFile resourceId="ProductVariantsByProductIdQuery">
+        <fileData>
+            <![CDATA[
+                <#ftl output_format="HTML">
+                <@compress single_line=true>
+                    <#if queryParams?has_content>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                    </#if>
+                    query {
+                        productVariants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query: "product_id:${product_id}<#if filterQuery?has_content> AND ${filterQuery}</#if>") {
+                            edges {
+                                node {
+                                    id
+                                    title
+                                    sku
+                                    barcode
+                                    product {
+                                        id
+                                        handle
+                                        title
+                                        isGiftCard
+                                        productType
+                                        vendor
+                                    }
+                                    price
+                                    compareAtPrice
+                                    position
+                                    requiresComponents
+                                    image {
+                                        url
+                                    }
+                                    selectedOptions {
+                                        name
+                                        value
+                                    }
+                                    inventoryItem {
+                                        id
+                                        requiresShipping
+                                        measurement {
+                                            weight {
+                                                unit
+                                                value
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            pageInfo {
+                                hasNextPage
+                                endCursor
+                            }
+                        }
+                    }
+            </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+</entity-facade-xml>
