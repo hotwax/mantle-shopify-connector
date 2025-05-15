@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+
+    <!-- SystemMessageType record for generating Product Variant Updates Feed (includes only header level details, no connections) -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateVariantUpdatesFeed"
+            description="Generate Product Variant Updates Feed"
+            sendPath="dbresource://shopify/template/graphQL/ProductVariantUpdatesQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ProductVariantUpdatesFeed"
+            receivePath="${contentRoot}/shopify/ProductVariantUpdatesFeed/ProductVariantUpdatesFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for Shopify Product Variant Updates Feed, make sure to override in your component and specify consumeServiceName -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyVariantUpdatesFeed"
+            description="Shopify Product Variant Updates Feed"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="">
+        <parameters parameterName="consumeSmrId" parameterValue=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.resource.DbResource filename="ProductVariantUpdatesQuery.ftl" isFile="Y" resourceId="ProductVariantUpdatesQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                        </#if>
+                        query
+                        {
+                            productVariants(first: 250<#if cursor?has_content>, after: "${cursor}"</#if>, <#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        sku
+                                        barcode
+                                        updatedAt
+                                        product {
+                                            id
+                                            handle
+                                        }
+                                        inventoryItem {
+                                            id
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    hasNextPage
+                                    endCursor
+                                }
+                            }
+                        }
+                    </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+</entity-facade-xml>
