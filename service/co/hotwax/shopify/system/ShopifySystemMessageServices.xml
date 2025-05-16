@@ -1739,7 +1739,7 @@ under the License.
                 }
             </script>
 
-            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateOMSNewOrdersFeed', messageText:jsonFilePathRef,
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'ShopifyNewOrdersFeed', messageText:jsonFilePathRef,
                 systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessage.systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
 
         </actions>
