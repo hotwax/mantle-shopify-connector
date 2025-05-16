@@ -153,11 +153,6 @@
                                         fulfillableQuantity
                                         fulfillmentStatus
                                         nonFulfillableQuantity
-                                        originalUnitPriceSet {
-                                            presentmentMoney {
-                                                amount
-                                            }
-                                        }
                                     }
                                 }
                                 pageInfo {
