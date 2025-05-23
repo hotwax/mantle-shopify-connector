@@ -17,12 +17,7 @@ under the License.
 -->
 
 <entity-facade-xml type="ext">
-
-    <!-- Enumeration Types for Service Jobs -->
-    <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
-    <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
-    <moqui.basic.EnumerationType enumTypeId="PRODUCT_SYS_JOB" description="Product Jobs"/>
-
+    
     <!-- ServiceJob data to purge old SystemMessage records -->
     <moqui.service.job.ServiceJob jobName="purge_OldSystemMessages" description="Purge Old System Messages"
             serviceName="co.hotwax.impl.SystemMessageServices.purge#OldSystemMessages" cronExpression="0 0 * * *" paused="Y">
