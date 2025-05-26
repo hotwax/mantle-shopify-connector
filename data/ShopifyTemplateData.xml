@@ -354,6 +354,79 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundsByIDQuery.ftl" isFile="Y" resourceId="RefundsByIDQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Refund {
+                            id
+                            order {
+                                id
+                            }
+                            createdAt
+                            note
+                            transactions (first: 10) {
+                                edges{
+                                    node{
+                                        status
+                                        amountSet{
+                                            shopMoney{
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
+                                        reason
+                                    }
+                                }
+                            }
+                            refundLineItems (first: 10) {
+                                edges{
+                                    node{
+                                        id
+                                        restockType
+                                        lineItem {
+                                            id
+                                            quantity
+                                            variant {
+                                                id
+                                            }
+                                            fulfillableQuantity
+                                        }
+                                    }
+                                }
+                            }
+                            orderAdjustment (first: 10) {
+                                edges{
+                                    node{
+                                        reason
+                                        taxAmountSet{
+                                            shopMoney{
+                                                currencyCode
+                                                amount
+                                            }
+                                        }
+                                        amountSet{
+                                            shopMoney{
+                                                currencyCode
+                                                amount
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="FulfillmentOrdersByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrdersByOrderIdQuery"
                                parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
@@ -526,6 +599,47 @@
                                         id
                                         name
                                         returnStatus
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="AppeasementIdsQuery.ftl" isFile="Y" resourceId="AppeasementIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if !filterQuery?has_content>
+                            <#assign filterQuery = "financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        refunds (first: 10) {
+                                            id
+                                        }
                                     }
                                 }
                                 pageInfo {

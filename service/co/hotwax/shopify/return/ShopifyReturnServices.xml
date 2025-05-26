@@ -349,6 +349,29 @@ under the License.
         </actions>
     </service>
 
+    <service verb="get" noun="AppeasementDetails">
+        <description>Get all returns detail for a given shopify orderId</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="appeasementId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="appeasementResponse"/>
+        </out-parameters>
+        <actions>
+            <set field="appeasementDetails" from="[:]"/>
+            <script>
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundsByIDQuery.ftl", "")
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="appeasementDetailsResponse"/>
+            <if condition="appeasementDetailsResponse">
+                <log level="warn" message="get#AppeasementDetails ===================  appeasementDetailsResponse : ${appeasementDetailsResponse}"/>
+                <set field="appeasementDetails" from="appeasementDetailsResponse.response.node"/>
+            </if>
+            <log level="warn" message="get#AppeasementDetails ===================  appeasementDetails : ${AppeasementDetails}"/>
+        </actions>
+    </service>
+
     <service verb="get" noun="ExchangesByOrderId">
         <description>Get all exchanges detail for a given shopify orderId</description>
         <in-parameters>
