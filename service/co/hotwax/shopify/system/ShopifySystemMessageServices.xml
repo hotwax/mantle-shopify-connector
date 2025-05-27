@@ -884,14 +884,14 @@ under the License.
                     queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="appeasementIdsResponse"/>
-                <log level="warn" message="GENERATE APPEASEMENT SERVICE =================== ShopifyGraphqlRequest: ${appeasementIdsResponse}"/>
+                <log level="warn" message="GENERATE APPEASEMENT IDs SERVICE =================== ShopifyGraphqlRequest: ${appeasementIdsResponse}"/>
                 <if condition="!appeasementIdsResponse.response.orders.edges">
                     <return message="No Order with refunds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
                 </if>
                 <set field="nowDate" from="ec.user.nowTimestamp"/>
                 <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null, [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
                 <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-                <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== jsonFilePath: ${jsonFilePath}"/>
+                <log level="warn" message="GENERATE APPEASEMENT IDs SERVICE =================== jsonFilePath: ${jsonFilePath}"/>
                 <script>
                     try{
                     File feedFile = new File(jsonFilePath)
@@ -906,6 +906,7 @@ under the License.
 <!--                    <script>appeasementIds.addAll(order.refunds.id)</script>-->
 <!--                </iterate>-->
 
+                <log level="warn" message="appeasementIdsResponse.response.orders.edges=============================== ${appeasementIdsResponse.response.orders.edges}"/>
                 <set field="appeasementOrderIds" from="appeasementIdsResponse.response.orders.edges"/>
                 <iterate list="appeasementOrderIds" entry="appeasementOrderMap">
                     <iterate list="appeasementOrderMap.node.refunds" entry="refund">
@@ -925,10 +926,10 @@ under the License.
                 </script>
                 <log level="warn" message="appeasementOrderIds ==================== ${appeasementOrderIds}"/>
                 <if condition="relatedSystemMessageType">
-                    <log level="warn" message="GENERATE Appeasement ORDER SERVICE =================== is exist relatedSystemMessageType : ${relatedSystemMessageType}"/>
+                    <log level="warn" message="GENERATE Appeasement Ids SERVICE =================== is exist relatedSystemMessageType : ${relatedSystemMessageType}"/>
                     <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
                               systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
-                    <log level="warn" message="GENERATE Appeasement ORDER SERVICE =================== serve call IncomingSystemMessage"/>
+                    <log level="warn" message="GENERATE Appeasement Ids SERVICE =================== serve call IncomingSystemMessage"/>
                 </if>
                 <set field="hasNextPage" from="appeasementIdsResponse.response.orders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="appeasementIdsResponse.response.orders.pageInfo.endCursor"/>
@@ -1006,15 +1007,15 @@ under the License.
             </script>
             
             <iterate list="appeasementIds" entry="appeasementId">
-                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#AppeasementDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, appeasementId:appeasementId]"
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#AppeasementDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyRefundId:appeasementId.id]"
                               out-map="appeasementResponse" ignore-error="true" transaction="force-new"/>
+                <log level="warn" message="generate#appeasementsFeed,============= appeasementResponse ${appeasementResponse}"/>
                 <if condition="appeasementResponse">
-                    <log level="warn" message="generate#appeasementsFeed,============= appeasementResponse ${appeasementResponse}"/>
-                    <set field="appeasementMap" from="appeasementResponse"/>
+                    <set field="appeasementMap" from="appeasementResponse.appeasementResponse"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, appeasementResponse)
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, appeasementMap)
                     </script>
                 </if>
             </iterate>
@@ -1027,13 +1028,15 @@ under the License.
             </script>
 
             <if condition="relatedSystemMessageType">
+                <log level="warn" message="FINAL CALL ================= org.moqui.impl.SystemMessageServices.queue#SystemMessage======= \nsystemMessageTypeId:${relatedSystemMessageType.systemMessageTypeId}, systemMessageRemoteId:\n ${sendSmrId},
+                                       \n messageText:${jsonFilePathRef}, \n remoteMessageId: ${jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)}"/>
                 <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                               in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
-                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                                       messageText:jsonFilePathRef, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
                               out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
             </if>
 
-            <log level="error" message="FINAL CALL ================= queueSystemMessageOut: ${queueSystemMessageOut}"/>
+            <log level="error" message="FINAL CALL RESP================= queueSystemMessageOut: ${queueSystemMessageOut}"/>
         </actions>
     </service>
 

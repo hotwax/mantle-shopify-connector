@@ -360,7 +360,7 @@
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
                 query{
-                    node(id: "${shopifyOrderId}") {
+                    node(id: "${shopifyRefundId}") {
                         id
                         ... on
                         Refund {
@@ -380,7 +380,7 @@
                                                 currencyCode
                                             }
                                         }
-                                        reason
+                                        kind
                                     }
                                 }
                             }
@@ -400,7 +400,7 @@
                                     }
                                 }
                             }
-                            orderAdjustment (first: 10) {
+                            orderAdjustments (first: 10) {
                                 edges{
                                     node{
                                         reason

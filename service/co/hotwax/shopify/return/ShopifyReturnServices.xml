@@ -353,22 +353,24 @@ under the License.
         <description>Get all returns detail for a given shopify orderId</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="appeasementId" required="true"/>
+            <parameter name="shopifyRefundId" required="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="appeasementResponse"/>
         </out-parameters>
         <actions>
-            <set field="appeasementDetails" from="[:]"/>
+<!--            <set field="appeasementDetails" from="[:]"/>-->
             <script>
                 queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundsByIDQuery.ftl", "")
             </script>
+
+            <log level="warn" message="get#AppeasementDetails ===================  shopifyRefundId : ${shopifyRefundId}"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="appeasementDetailsResponse"/>
-            <if condition="appeasementDetailsResponse">
+            <if condition="appeasementDetailsResponse.response.node">
                 <log level="warn" message="get#AppeasementDetails ===================  appeasementDetailsResponse : ${appeasementDetailsResponse}"/>
-                <set field="appeasementDetails" from="appeasementDetailsResponse.response.node"/>
+                <set field="appeasementResponse" from="appeasementDetailsResponse.response.node"/>
             </if>
-            <log level="warn" message="get#AppeasementDetails ===================  appeasementDetails : ${AppeasementDetails}"/>
+            <log level="warn" message="get#AppeasementDetails ===================  appeasementResponse : ${appeasementResponse}"/>
         </actions>
     </service>
 
