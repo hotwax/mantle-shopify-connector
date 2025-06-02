@@ -367,26 +367,36 @@
                             id
                             order {
                                 id
+                                name
                             }
                             createdAt
                             note
+                            return{
+                                id
+                            }
                             transactions (first: 10) {
                                 edges{
                                     node{
                                         status
+                                        kind
                                         amountSet{
-                                            shopMoney{
+                                            presentmentMoney{
                                                 amount
                                                 currencyCode
                                             }
                                         }
-                                        kind
                                     }
                                 }
                             }
                             refundLineItems (first: 10) {
                                 edges{
                                     node{
+                                        totalTaxSet{
+                                            presentmentMoney{
+                                                amount
+                                                currencyCode
+                                            }
+                                        }
                                         id
                                         restockType
                                         lineItem {
@@ -394,6 +404,10 @@
                                             quantity
                                             variant {
                                                 id
+                                            }
+                                            product {
+                                                id
+                                                title
                                             }
                                             fulfillableQuantity
                                         }
@@ -405,13 +419,13 @@
                                     node{
                                         reason
                                         taxAmountSet{
-                                            shopMoney{
+                                            presentmentMoney{
                                                 currencyCode
                                                 amount
                                             }
                                         }
                                         amountSet{
-                                            shopMoney{
+                                            presentmentMoney{
                                                 currencyCode
                                                 amount
                                             }
