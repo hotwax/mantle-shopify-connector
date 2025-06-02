@@ -208,6 +208,15 @@ under the License.
         <parameters parameterName="thruDate" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
+    <!-- ServiceJob data for queuing Appeasement Ids feed -->
+    <moqui.service.job.ServiceJob jobName="queue_AppeasementIdsFeed" description="Queue Appeasement Ids feed"
+            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#AppeasementIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateAppeasementIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
     <!-- ServiceJob data for queuing orderIds by tag feed -->
     <moqui.service.job.ServiceJob jobName="queue_OrderIdsByTagFeed" description="Queue orderIds by tag feed"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#OrderIdsByTagFeed" cronExpression="0 0 * * * ?" paused="Y">

@@ -705,27 +705,76 @@ under the License.
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
+            <log level="warn" message="SERVICE CALL STARTED FOR SYSTEM MESSAGE QUEUE [systemMessageTypeId:${systemMessageTypeId}, systemMessageRemoteId:${systemMessageRemoteId},
+                                       messageText:${org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)},  sendNow:true]"/>
+
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                           in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId,
                                        messageText:org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams),  sendNow:true]"
                           out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            <log level="warn" message="SERVICE CALL ENDED FOR SYSTEM MESSAGE QUEUE"/>
         </actions>
     </service>
+
+    <service verb="queue" noun="AppeasementIdsFeed" authenticate="anonymous-all">
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="fromDate"/>
+            <parameter name="thruDate"/>
+        </in-parameters>
+        <actions>
+            <set field="queryParams" from="[:]"/>
+            <log level="warn" message="SERVICE queue#AppeasementIdsFeed, queryParams ============================ ${queryParams}"/>
+            <if condition="!fromDate">
+                <entity-find entity-name="moqui.service.message.SystemMessage" list="SystemMessageList" limit="1">
+                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
+                    <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
+                    <order-by field-name="-processedDate"/>
+                </entity-find>
+                <if condition="systemMessageList">
+                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
+                </if>
+            </if>
+            <log level="warn" message="SERVICE queue#AppeasementIdsFeed,  fromDate============================ ${fromDate}"/>
+            <if condition="fromDate">
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
+            </if>
+            <log level="warn" message="SERVICE queue#AppeasementIdsFeed, thruDate ============================ ${thruDate}"/>
+            <if condition="thruDate">
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
+            </if>
+
+            <log level="warn" message="SERVICE called queue#AppeasementIdsFeed  ============================ ${systemMessageRemoteId}, ${systemMessageTypeId}"/>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, sendNow:true, messageText:org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)]"
+                          out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            <log level="warn" message="SERVICE result queue#AppeasementIdsFeed ============================ ${queueSystemMessageOut}"/>
+        </actions>
+    </service>
+
     <service verb="generate" noun="ReturnedOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>Generate returned orderIds feed.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE started =================== systemMessageId : ${systemMessageId}"/>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== moqui.service.message.SystemMessageAndType : ${systemMessage}"/>
 
             <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
             <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
                 <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
             </entity-find-one>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== Enum : ${enumValue}"/>
 
             <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
                 <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
                     <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
                 </entity-find-one>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== relatedSystemMessageType : ${relatedSystemMessageType}"/>
+
                 <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
                 <else>
                     <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
@@ -733,6 +782,7 @@ under the License.
             </if>
 
             <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== queryParams : ${queryParams}"/>
 
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
@@ -741,18 +791,22 @@ under the License.
                 import java.nio.charset.StandardCharsets
             </script>
             <set field="hasNextPage" type="Boolean" value="true"/>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== loop started : ${hasNextPage}"/>
             <while condition="hasNextPage">
                 <script>
                     queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== ShopifyGraphqlRequest"/>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="returnedOrderIdsResponse"/>
                 <if condition="!returnedOrderIdsResponse.response.orders.edges">
                     <return message="No returned orderIds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
                 </if>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== ShopifyGraphqlRequest: ${returnedOrderIdsResponse}"/>
                 <set field="nowDate" from="ec.user.nowTimestamp"/>
                 <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
                     [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
                 <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== jsonFilePath: ${jsonFilePath}"/>
                 <script>
                     try {
                     //json file
@@ -767,6 +821,7 @@ under the License.
                         jGenerator.writeStartArray()
                 </script>
                 <set field="returnedOrderIds" from="returnedOrderIdsResponse.response.orders.edges"/>
+            <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== returnedOrderIds: ${returnedOrderIds}"/>
                 <iterate list="returnedOrderIds" entry="returnedOrderIdMap">
                     <script>
                         new ObjectMapper()
@@ -782,14 +837,209 @@ under the License.
                     }
                 </script>
                 <if condition="relatedSystemMessageType">
+                    <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== is exist relatedSystemMessageType : ${relatedSystemMessageType}"/>
                     <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
                               systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+                    <log level="warn" message="GENERATE RETURN ORDER SERVICE =================== serve call IncomingSystemMessage"/>
                 </if>
                 <set field="hasNextPage" from="returnedOrderIdsResponse.response.orders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="returnedOrderIdsResponse.response.orders.pageInfo.endCursor"/>
             </while>
         </actions>
     </service>
+
+    <service verb="generate" noun="AppeasementIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate returned orderIds feed.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <log level="warn" message="generate#AppeasementIdsFeed ==================== Service started"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+            <log level="warn" message="generate#AppeasementIdsFeed ==================== systemMessage : ${systemMessage}"/>
+
+            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+            </entity-find-one>
+
+            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+                <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                <else>
+                    <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+            <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <log level="warn" message="generate#AppeasementIdsFeed ==================== loop started ,queryParams: ${queryParams}"/>
+
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="appeasementIdsResponse"/>
+                <log level="warn" message="GENERATE APPEASEMENT IDs SERVICE =================== ShopifyGraphqlRequest: ${appeasementIdsResponse}"/>
+                <if condition="!appeasementIdsResponse.response.orders.edges">
+                    <return message="No Order with refunds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null, [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <log level="warn" message="GENERATE APPEASEMENT IDs SERVICE =================== jsonFilePath: ${jsonFilePath}"/>
+                <script>
+                    try{
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)){
+                        jGenerator.writeStartArray()
+                </script>
+                <set field="appeasementIds" from="[]"/>
+<!--                <iterate list="appeasementIdsResponse.response.orders.edges.node" entry="order">-->
+<!--                    <script>appeasementIds.addAll(order.refunds.id)</script>-->
+<!--                </iterate>-->
+
+                <log level="warn" message="appeasementIdsResponse.response.orders.edges=============================== ${appeasementIdsResponse.response.orders.edges}"/>
+                <set field="appeasementOrderIds" from="appeasementIdsResponse.response.orders.edges"/>
+                <iterate list="appeasementOrderIds" entry="appeasementOrderMap">
+                    <iterate list="appeasementOrderMap.node.refunds" entry="refund">
+                        <script>
+                            new ObjectMapper()
+                            .setDateFormat(new java.text.SimpleDateFormat(System.getProperty("default_date_time_format")))
+                            .writerWithDefaultPrettyPrinter().writeValue(jGenerator, refund)
+                        </script>
+                    </iterate>
+                </iterate>
+                <script>
+                            jGenerator.writeEndArray()
+                        }
+                    } catch (IOException e) {
+                        logger.error("Error preparing Order Metafields Feed file", e)
+                    }
+                </script>
+                <log level="warn" message="appeasementOrderIds ==================== ${appeasementOrderIds}"/>
+                <if condition="relatedSystemMessageType">
+                    <log level="warn" message="GENERATE Appeasement Ids SERVICE =================== is exist relatedSystemMessageType : ${relatedSystemMessageType}"/>
+                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
+                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+                    <log level="warn" message="GENERATE Appeasement Ids SERVICE =================== serve call IncomingSystemMessage"/>
+                </if>
+                <set field="hasNextPage" from="appeasementIdsResponse.response.orders.pageInfo.hasNextPage"/>
+                <set field="cursor" from="appeasementIdsResponse.response.orders.pageInfo.endCursor"/>
+            </while>
+
+        </actions>
+    </service>
+
+    <service verb="generate" noun="AppeasementsFeed" authenticate="anonymous-all" transaction="force-new">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <log level="info" message="SUCCESSFULLY REACHED generate#AppeasementsFeed======================================"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
+                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
+                <field-map field-name="parameterName" value="sendSmrId"/>
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="sendSmrParam">
+                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
+            </if>
+
+            <if condition="sendSmrId">
+                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
+                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                    </entity-find-one>
+                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+                    <else>
+                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                    </else>
+                </if>
+                <else>
+                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
+                </else>
+            </if>
+
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="appeasementIds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!appeasementIds">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with AppeasementIdsFeed file having incorrect data and may contain null, not generating appeasements feed file."/>
+            </if>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
+                    dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <log message="jsonFilePath: ${jsonFilePath}"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                //json file
+                ec.logger.info("jsonFilePath:" +jsonFilePath)
+                File feedFile = new File(jsonFilePath)
+                if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                JsonFactory jfactory = new JsonFactory()
+
+                /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                jGenerator.writeStartArray()
+            </script>
+            
+            <iterate list="appeasementIds" entry="appeasementId">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#AppeasementDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyRefundId:appeasementId.id]"
+                              out-map="appeasementResponse" ignore-error="true" transaction="force-new"/>
+                <log level="warn" message="generate#appeasementsFeed,============= appeasementResponse ${appeasementResponse}"/>
+                <if condition="appeasementResponse">
+                    <set field="appeasementMap" from="appeasementResponse.appeasementResponse"/>
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, appeasementMap)
+                    </script>
+                </if>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Appeasements Feed file", e)
+                }
+            </script>
+
+            <if condition="relatedSystemMessageType">
+                <log level="warn" message="FINAL CALL ================= org.moqui.impl.SystemMessageServices.queue#SystemMessage======= \nsystemMessageTypeId:${relatedSystemMessageType.systemMessageTypeId}, systemMessageRemoteId:\n ${sendSmrId},
+                                       \n messageText:${jsonFilePathRef}, \n remoteMessageId: ${jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)}"/>
+                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
+                                       messageText:jsonFilePathRef, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
+                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
+            </if>
+
+            <log level="error" message="FINAL CALL RESP================= queueSystemMessageOut: ${queueSystemMessageOut}"/>
+        </actions>
+    </service>
+
     <service verb="generate" noun="ReturnsAndExchangeFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
