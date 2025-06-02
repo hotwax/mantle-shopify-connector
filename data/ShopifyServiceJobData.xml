@@ -251,14 +251,14 @@ under the License.
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
-    <!-- ServiceJob data for queuing Created productIds feed -->
-    <Product productId="POL_OMS_FLFLMNT_FD" productTypeId="SERVICE" internalName="POL_OMS_FLFLMNT_FD"
-             productName="Poll OMS Fulfilled Items Feed" description="Poll OMS Fulfilled Items Feed"
+<!-- ServiceJob data for queuing Created productIds feed -->
+    <Product productId="QUEUE_CRT_PRD_IDS_FD" productTypeId="SERVICE" internalName="QUEUE_CRT_PRD_IDS_FD"
+             productName="Queue Created Products Feed" description="Queue Created Products Feed"
              primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-    <ProductCategoryMember productId="QueueCreatedProductsFeed" productCategoryId="PRODUCT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-    <ProductCategoryMember productId="QueueCreatedProductsFeed" productCategoryId="UPLOAD_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/> 
-    <moqui.basic.Enumeration enumId="QueueCreatedProductsFeed" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed" jobTypeEnumId="QueueCreatedProductsFeed" instanceOfProductId="QueueCreatedProductsFeed"
+    <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="QUEUE_CRT_PRD_IDS_FD" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed" jobTypeEnumId="QUEUE_CRT_PRD_IDS_FD" instanceOfProductId="QUEUE_CRT_PRD_IDS_FD"
           serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateCreatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
@@ -272,13 +272,13 @@ under the License.
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing Updated productIds feed -->
-    <Product productId="QueueUpdatedProductsFeed" productTypeId="SERVICE" internalName="QueueUpdatedProductsFeed"
+    <Product productId="QUEUE_UPD_PRD_FEED" productTypeId="SERVICE" internalName="QUEUE_UPD_PRD_FEED"
              productName="Queue Product Updates Feed" description="Queue Product Updates Feed"
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>
-    <ProductCategoryMember productId="QueueUpdatedProductsFeed" productCategoryId="PRODUCT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-    <ProductCategoryMember productId="QueueUpdatedProductsFeed" productCategoryId="UPLOAD_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-    <moqui.basic.Enumeration enumId="QueueUpdatedProductsFeed" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed" jobTypeEnumId="QueueUpdatedProductsFeed" instanceOfProductId="QueueUpdatedProductsFeed"
+    <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="QUEUE_UPD_PRD_FEED" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed" jobTypeEnumId="QUEUE_UPD_PRD_FEED" instanceOfProductId="QUEUE_UPD_PRD_FEED"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
