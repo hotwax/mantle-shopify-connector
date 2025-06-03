@@ -166,4 +166,9 @@
     <parameters parameterName="thruDate" parameterValue=""/>
   </moqui.service.job.ServiceJob>
 
+  <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+  <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateAppeasementsFeed"
+                                                    parameterName="sendSmrId"
+                                                    parameterValue=""
+                                                    systemMessageRemoteId=""/>
 </entity-facade-xml>
