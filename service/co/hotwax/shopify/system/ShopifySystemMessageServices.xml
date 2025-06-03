@@ -2090,4 +2090,144 @@ under the License.
                       systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessageId, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
         </actions>
     </service>
+    <!--Fetch orders that are currently in the brokering queue-->
+    <service verb="queue" noun="FulfillmentOrdersFeedFromShopify">
+        <description>This service fetches orders that are currently in the brokering queue with the additional check of orderTags</description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="tag"/>
+            <parameter name="tagNot"/>
+            <parameter name="orderId"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <entity-find entity-name="co.hotwax.order.OrderHeaderItemAndShipGroup" list="ordersList" distinct="true">
+                <econdition field-name="oiStatusId" value="ITEM_APPROVED"/>
+                <econdition field-name="facilityId" value="_NA_"/>
+                <econdition field-name="orderId" from="orderId" ignore-if-empty="true"/>
+                <select-field field-name="externalId"/>
+            </entity-find>
+
+            <log message="============= ordersList: ${ordersList}"/>
+            <if condition="ordersList">
+                <iterate list="ordersList" entry="order">
+                    <log message="============= externalId: ${order.externalId}"/>
+                    <!-- Check whether the input tags are included in the system or not-->
+                    <if condition="tag">
+                        <log message="============= tag: ${tag}"/>
+                        <entity-find-one entity-name="OrderHeader" value-field="orderHeader">
+                            <field-map field-name="externalId" from="order.externalId"/>
+                            <select-field field-name="orderId"/>
+                        </entity-find-one>
+                        <log message="============= orderHeader: ${orderHeader.orderId}"/>
+                        <entity-find entity-name="co.hotwax.order.OrderHeaderNoteView" list="orderTag">
+                            <econdition field-name="orderId" from="orderHeader.orderId"/>
+                            <econdition field-name="noteInfo" operator="in" from="tag"/>
+                            <econdition field-name="noteInfo" operator="not-in" from="tagNot" ignore-if-empty="true"/>
+                        </entity-find>
+                        <log message="============= orderTag: ${orderTag}"/>
+                        <if condition="!orderTag">
+                            <log message="Order with orderId: ${order.externalId} does not have valid tag [${tag}]"/>
+                            <continue/>
+                        </if>
+                        <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.externalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
+                        <log message="============= serviceContext1: ${serviceContext}"/>
+                        <else>
+                            <log message="============= No tag required =============="/>
+                            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.externalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
+                            <log message="============= serviceContext2: ${serviceContext}"/>
+                        </else>
+                    </if>
+                </iterate>
+            </if>
+        </actions>
+    </service>
+    <service verb="generate" noun="FulfillmentOrdersFeedFromShopify" authenticate="anonymous-all" transaction-timeout="7200">
+        <description>This service fetches the fulfillment orders json for every single order</description>
+        <!--implemented send service-->
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <set field="queryParams" from="systemMessage.messageText"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+            </script>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <while condition="hasNextPage">
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="FulfillmentOrdersResponse"/>
+                <log message="====================== FulfillmentOrdersResponse: ${FulfillmentOrdersResponse}"/>
+
+                <if condition="!FulfillmentOrdersResponse.response.order">
+                    <!--Need to add proper error log here-->
+                    <return message="No fulfillment orders found for orderId: ${queryParams}"/>
+                </if>
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+                <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                    [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+                <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+                <script>
+                    try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                    jGenerator.writeStartArray()
+                </script>
+                <set field="order" from="FulfillmentOrdersResponse.response.order"/>
+                <set field="fulfillmentOrdersList" from="order.fulfillmentOrders.edges"/>
+                <set field="fulfillmentOrdersMap" from="[:]"/>
+                <set field="fulfillmentOrders" from="[]"/>
+                <iterate list="fulfillmentOrdersList" entry="fulfillmentOrderEntry">
+                    <set field="fulfillmentOrderLineItem" from="[]"/>
+                    <iterate list="fulfillmentOrderEntry.node.lineItems.edges" entry="fulfillmentOrderLineItemEntry">
+                        <set field="item" from="[:]"/>
+                        <set field="item" from="fulfillmentOrderLineItemEntry.node"/>
+                        <set field="fulfillmentOrderLineItem" from="fulfillmentOrderLineItem + item"/>
+                    </iterate>
+<!--                    <log message="&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45; fulfillmentOrderEntry: ${fulfillmentOrderEntry}"/>-->
+                    <set field="fulfillmentOrderMap" from="[:]"/>
+                    <set field="fulfillmentOrderMap.id" from="fulfillmentOrderEntry.node.id"/>
+                    <set field="fulfillmentOrderMap.status" from="fulfillmentOrderEntry.node.status"/>
+                    <set field="fulfillmentOrderMap.assignedLocation" from="fulfillmentOrderEntry.node.assignedLocation"/>
+                    <set field="fulfillmentOrderMap.FulfillmentOrderLineItem" from="fulfillmentOrderLineItem"/>
+                    <set field="fulfillmentOrders" from="fulfillmentOrders + fulfillmentOrderMap"/>
+<!--                    <log message="&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45; fulfillmentOrders: ${fulfillmentOrders}"/>-->
+                </iterate>
+                <set field="fulfillmentOrdersMap.id" from="order.id"/>
+                <set field="fulfillmentOrdersMap.FulfillmentOrder" from="fulfillmentOrders"/>
+
+                <log message="=================== fulfillmentOrdersMap: ${fulfillmentOrdersMap}"/>
+
+<!--                <iterate list="fulfillmentOrders" entry="fulfillmentOrder">-->
+                    <script>
+                        new ObjectMapper()
+                        .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, fulfillmentOrdersMap)
+                    </script>
+<!--                </iterate>-->
+                <script>
+                    jGenerator.writeEndArray()
+                    }
+                    } catch (IOException e) {
+                    logger.error("Error preparing FulfillmentOrders Feed file", e)
+                    }
+                </script>
+                <set field="hasNextPage" from="FulfillmentOrdersResponse.response.order.fulfillmentOrders.pageInfo.hasNextPage"/>
+                <set field="cursor" from="FulfillmentOrdersResponse.response.order.fulfillmentOrders.pageInfo.endCursor"/>
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:jsonFilePathRef, systemMessageRemoteId:systemMessage.systemMessageRemoteId]" transaction="force-new" ignore-error="true"/>
+            </while>
+            <log message="===================== FulfillmentOrdersFeedFromShopify : END ======================="/>
+        </actions>
+    </service>
 </services>
