@@ -2346,41 +2346,37 @@ under the License.
         </in-parameters>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-
-            <entity-find entity-name="co.hotwax.order.OrderHeaderItemAndShipGroup" list="ordersList" distinct="true">
-                <econdition field-name="oiStatusId" value="ITEM_APPROVED"/>
+            <!--Fetch the sales order that are currently in the brokering queue-->
+            <entity-find entity-name="co.hotwax.oms.order.OrderHeaderItemShipGroup" list="ordersList" distinct="true">
+                <econdition field-name="itemStatusId" value="ITEM_APPROVED"/>
+                <econdition field-name="orderTypeId" value="SALES_ORDER"/>
                 <econdition field-name="facilityId" value="_NA_"/>
                 <econdition field-name="orderId" from="orderId" ignore-if-empty="true"/>
-                <select-field field-name="externalId"/>
+                <select-field field-name="orderId,orderExternalId"/>
             </entity-find>
 
             <log message="============= ordersList: ${ordersList}"/>
             <if condition="ordersList">
                 <iterate list="ordersList" entry="order">
-                    <log message="============= externalId: ${order.externalId}"/>
+                    <log message="============= orderId: ${order.orderId}"/>
                     <!-- Check whether the input tags are included in the system or not-->
                     <if condition="tag">
                         <log message="============= tag: ${tag}"/>
-                        <entity-find-one entity-name="OrderHeader" value-field="orderHeader">
-                            <field-map field-name="externalId" from="order.externalId"/>
-                            <select-field field-name="orderId"/>
-                        </entity-find-one>
-                        <log message="============= orderHeader: ${orderHeader.orderId}"/>
                         <entity-find entity-name="co.hotwax.order.OrderHeaderNoteView" list="orderTag">
-                            <econdition field-name="orderId" from="orderHeader.orderId"/>
+                            <econdition field-name="orderId" from="order.orderId"/>
                             <econdition field-name="noteInfo" operator="in" from="tag"/>
                             <econdition field-name="noteInfo" operator="not-in" from="tagNot" ignore-if-empty="true"/>
                         </entity-find>
                         <log message="============= orderTag: ${orderTag}"/>
                         <if condition="!orderTag">
-                            <log message="Order with orderId: ${order.externalId} does not have valid tag [${tag}]"/>
+                            <log message="Order with orderId: ${order.orderExternalId} does not have valid tag [${tag}]"/>
                             <continue/>
                         </if>
-                        <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.externalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
+                        <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
                         <log message="============= serviceContext1: ${serviceContext}"/>
                         <else>
-                            <log message="============= No tag required =============="/>
-                            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.externalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
+                            <log message="============= No tag provided =============="/>
+                            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
                             <log message="============= serviceContext2: ${serviceContext}"/>
                         </else>
                     </if>
