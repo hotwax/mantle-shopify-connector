@@ -2335,23 +2335,25 @@ under the License.
         </actions>
     </service>
     <!--Fetch orders that are currently in the brokering queue-->
-    <service verb="queue" noun="FulfillmentOrdersFeedFromShopify">
+    <service verb="queue" noun="FulfillmentOrdersFeedFromShopify" authenticate="anonymous-all">
         <description>This service fetches orders that are currently in the brokering queue with the additional check of orderTags</description>
         <in-parameters>
             <parameter name="systemMessageTypeId" required="true"/>
             <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="tag"/>
-            <parameter name="tagNot"/>
-            <parameter name="orderId"/>
+            <parameter name="tag"><description>Comma separated tags</description></parameter>
+            <parameter name="tagNot"><description>Comma separated excluded tags</description></parameter>
+            <parameter name="orderId"><description>Comma separated orderIds to filter the orders</description></parameter>
+            <parameter name="orderDate"/>
         </in-parameters>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-            <!--Fetch the sales order that are currently in the brokering queue-->
+            <!--Fetch the approved sales order that are currently in the brokering queue-->
             <entity-find entity-name="co.hotwax.oms.order.OrderHeaderItemShipGroup" list="ordersList" distinct="true">
                 <econdition field-name="itemStatusId" value="ITEM_APPROVED"/>
                 <econdition field-name="orderTypeId" value="SALES_ORDER"/>
                 <econdition field-name="facilityId" value="_NA_"/>
-                <econdition field-name="orderId" from="orderId" ignore-if-empty="true"/>
+                <econdition field-name="orderDate" operator="greater-equals" from="orderDate" ignore-if-empty="true"/>
+                <econdition field-name="orderId" operator="in" from="orderId" ignore-if-empty="true"/>
                 <select-field field-name="orderId,orderExternalId"/>
             </entity-find>
 
