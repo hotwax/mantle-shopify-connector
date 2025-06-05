@@ -377,8 +377,21 @@
                             transactions (first: 10) {
                                 edges{
                                     node{
+                                        id
+                                        gateway
+                                        processedAt
                                         status
                                         kind
+                                        parentTransaction{
+                                            id
+                                        }
+                                        receiptJson
+                                        paymentDetails {
+                                            ... on CardPaymentDetails {
+                                                paymentMethodName
+                                                company
+                                            }
+                                        }
                                         amountSet{
                                             presentmentMoney{
                                                 amount
