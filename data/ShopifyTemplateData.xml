@@ -368,6 +368,9 @@
                             order {
                                 id
                                 name
+                                customer {
+                                    id
+                                }
                             }
                             createdAt
                             note
@@ -396,6 +399,10 @@
                                             presentmentMoney{
                                                 amount
                                                 currencyCode
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                     }
@@ -408,6 +415,10 @@
                                             presentmentMoney{
                                                 amount
                                                 currencyCode
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                         id
@@ -435,10 +446,18 @@
                                             presentmentMoney{
                                                 currencyCode
                                                 amount
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                         amountSet{
                                             presentmentMoney{
+                                                currencyCode
+                                                amount
+                                            },
+                                            shopMoney{
                                                 currencyCode
                                                 amount
                                             }

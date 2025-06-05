@@ -56,6 +56,9 @@
                             order {
                                 id
                                 name
+                                customer {
+                                    id
+                                }
                             }
                             createdAt
                             note
@@ -65,12 +68,29 @@
                             transactions (first: 10) {
                                 edges{
                                     node{
+                                        id
+                                        gateway
+                                        processedAt
                                         status
                                         kind
+                                        parentTransaction{
+                                            id
+                                        }
+                                        receiptJson
+                                        paymentDetails {
+                                            ... on CardPaymentDetails {
+                                                paymentMethodName
+                                                company
+                                            }
+                                        }
                                         amountSet{
                                             presentmentMoney{
                                                 amount
                                                 currencyCode
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                     }
@@ -83,6 +103,10 @@
                                             presentmentMoney{
                                                 amount
                                                 currencyCode
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                         id
@@ -110,10 +134,18 @@
                                             presentmentMoney{
                                                 currencyCode
                                                 amount
+                                            },
+                                            shopMoney{
+                                                currencyCode
+                                                amount
                                             }
                                         }
                                         amountSet{
                                             presentmentMoney{
+                                                currencyCode
+                                                amount
+                                            },
+                                            shopMoney{
                                                 currencyCode
                                                 amount
                                             }
