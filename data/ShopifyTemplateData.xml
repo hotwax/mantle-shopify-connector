@@ -423,6 +423,9 @@
                                         }
                                         id
                                         restockType
+                                        location{
+                                            id
+                                        }
                                         lineItem {
                                             id
                                             quantity
