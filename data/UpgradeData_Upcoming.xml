@@ -201,12 +201,6 @@
     <parameters parameterName="thruDate" parameterValue=""/>
   </moqui.service.job.ServiceJob>
 
-  <!-- Configure remote SFTP server against your shopify config for sending the feed -->
-  <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateAppeasementsFeed"
-                                                    parameterName="sendSmrId"
-                                                    parameterValue=""
-                                                    systemMessageRemoteId=""/>
-
   <ProductCategoryMember fromDate="2024-01-01 00:00:00.0" productCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT"/>
   <Product description="Create Appeasement from Shopify" internalName="JOB_CRT_APPEASEMENT" isVariant="N" isVirtual="N" primaryProductCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT" productName="Create Appeasement" productTypeId="SERVICE"/>
 </entity-facade-xml>
