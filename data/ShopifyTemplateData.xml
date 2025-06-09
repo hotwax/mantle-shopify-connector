@@ -441,25 +441,25 @@
                                     }
                                 }
                             }
-                            orderAdjustments (first: 10) {
+                            refundShippingLines (first: 10){
                                 edges{
                                     node{
-                                        reason
-                                        taxAmountSet{
+                                        id
+                                        subtotalAmountSet{
                                             presentmentMoney{
                                                 currencyCode
                                                 amount
-                                            },
+                                            }
                                             shopMoney{
                                                 currencyCode
                                                 amount
                                             }
                                         }
-                                        amountSet{
+                                        taxAmountSet{
                                             presentmentMoney{
                                                 currencyCode
                                                 amount
-                                            },
+                                            }
                                             shopMoney{
                                                 currencyCode
                                                 amount
