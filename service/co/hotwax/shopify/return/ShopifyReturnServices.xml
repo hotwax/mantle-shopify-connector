@@ -364,13 +364,10 @@ under the License.
                 queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundsByIDQuery.ftl", "")
             </script>
 
-            <log level="warn" message="get#AppeasementDetails ===================  shopifyRefundId : ${shopifyRefundId}"/>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="appeasementDetailsResponse"/>
             <if condition="appeasementDetailsResponse.response.node">
-                <log level="warn" message="get#AppeasementDetails ===================  appeasementDetailsResponse : ${appeasementDetailsResponse}"/>
                 <set field="appeasementResponse" from="appeasementDetailsResponse.response.node"/>
             </if>
-            <log level="warn" message="get#AppeasementDetails ===================  appeasementResponse : ${appeasementResponse}"/>
         </actions>
     </service>
 
