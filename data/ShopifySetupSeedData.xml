@@ -441,7 +441,7 @@ under the License.
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateAppeasementIdsFeed"
             description="Generate Appeasement Ids Feed"
             sendPath="dbresource://shopify/template/graphQL/AppeasementIdsQuery.ftl"
-            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#AppeasementIdsFeed"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundIdsFeed"
             receivePath="${contentRoot}/shopify/AppeasementIdsFeed/AppeasementIdsFeed-${dateTime}-${systemMessageId}.json"/>
 
 <!-- SystemMessageType record for generating Returns and Exchange Feed -->
@@ -449,7 +449,7 @@ under the License.
             description="Generate Appeasements Feed"
             parentTypeId="LocalFeedFile"
             sendPath="${contentRoot}/shopify/AppeasementsFeed/AppeasementsFeed-${dateTime}-${systemMessageId}.json"
-            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#AppeasementsFeed">
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundsFeed">
         <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
 

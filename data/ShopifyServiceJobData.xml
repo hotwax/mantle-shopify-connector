@@ -33,7 +33,7 @@ under the License.
     <Product productId="POL_OMS_FLFLMNT_FD" productTypeId="SERVICE" internalName="POL_OMS_FLFLMNT_FD"
              productName="Poll OMS Fulfilled Items Feed" description="Poll OMS Fulfilled Items Feed"
              primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-    <ProductCategoryMember productId="POL_OMS_FLFLMNT_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="${nowTimestamp}"/>
+    <ProductCategoryMember productId="POL_OMS_FLFLMNT_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
     <moqui.basic.Enumeration enumId="POL_OMS_FLFLMNT_FD" enumCode="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
     <moqui.service.job.ServiceJob jobName="poll_SystemMessageFileSftp_OMSFulfillmentFeed" jobTypeEnumId="POL_OMS_FLFLMNT_FD" instanceOfProductId="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed"
             serviceName="co.hotwax.ofbiz.SystemMessageServices.poll#SystemMessageFileSftp" cronExpression="0 0 * * * ?" paused="Y">
@@ -45,7 +45,7 @@ under the License.
     <Product productId="SND_SHPFY_FUL_ACK_FD" productTypeId="SERVICE" internalName="SND_SHPFY_FUL_ACK_FD"
              productName="Send Shopify Fulfillment Ack Feed" description="Send Shopify Fulfillment Ack Feed"
              primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-    <ProductCategoryMember productId="SND_SHPFY_FUL_ACK_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="${nowTimestamp}"/>
+    <ProductCategoryMember productId="SND_SHPFY_FUL_ACK_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
 
     <moqui.basic.Enumeration enumId="SND_SHPFY_FUL_ACK_FD" enumCode="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
     <moqui.service.job.ServiceJob jobName="sendShopifyFulfillmentAckFeed" jobTypeEnumId="SND_SHPFY_FUL_ACK_FD" instanceOfProductId="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed"
@@ -89,8 +89,8 @@ under the License.
     <Product productId="SND_BLK_SYS_M_SHPFY" productTypeId="SERVICE" internalName="SND_BLK_SYS_M_SHPFY"
             productName="Send next bulk query system message in queue" description="Send next bulk query system message in queue"
             primaryProductCategoryId="MISC_SYS_JOB"/>
-    <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="${nowTimestamp}"/>
-    <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="UPLOAD_SYS_JOB" fromDate="${nowTimestamp}"/>
+    <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
+    <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="UPLOAD_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
     <moqui.basic.Enumeration enumId="SND_BLK_SYS_M_SHPFY" enumCode="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue" enumTypeId="MISC_SYS_JOB"/>
     <moqui.service.job.ServiceJob jobName="send_ProducedBulkOperationSystemMessage_ShopifyBulkQuery" jobTypeEnumId="SND_BLK_SYS_M_SHPFY" instanceOfProductId="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#ProducedBulkOperationSystemMessage" cronExpression="0 0/15 * * * ?" paused="Y">
@@ -108,8 +108,8 @@ under the License.
     <Product productId="POL_BLK_RSLT_SHPFY" productTypeId="SERVICE" internalName="POL_BLK_RSLT_SHPFY"
              productName="Poll current bulk operation query result" description="Poll current bulk operation query result"
              primaryProductCategoryId="MISC_SYS_JOB"/>
-    <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="${nowTimestamp}"/>
-    <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="IMPORT_SYS_JOB" fromDate="${nowTimestamp}"/>
+    <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
+    <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="IMPORT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
     <moqui.basic.Enumeration enumId="POL_BLK_RSLT_SHPFY" enumCode="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result" enumTypeId="MISC_SYS_JOB"/>
     <moqui.service.job.ServiceJob jobName="poll_BulkOperationResult_ShopifyBulkQuery" jobTypeEnumId="POL_BLK_RSLT_SHPFY" instanceOfProductId="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.poll#BulkOperationResult" cronExpression="0 0/15 * * * ?" paused="Y">
@@ -210,11 +210,10 @@ under the License.
 
     <!-- ServiceJob data for queuing Appeasement Ids feed -->
     <moqui.service.job.ServiceJob jobName="queue_AppeasementIdsFeed" description="Queue Appeasement Ids feed"
-            serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#AppeasementIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
+        serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateAppeasementIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-        <parameters parameterName="fromDate" parameterValue=""/>
-        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing orderIds by tag feed -->
@@ -260,14 +259,14 @@ under the License.
         <parameters parameterName="thruDateLabel" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 
-    <!-- ServiceJob data for queuing Created productIds feed -->
-    <Product productId="POL_OMS_FLFLMNT_FD" productTypeId="SERVICE" internalName="POL_OMS_FLFLMNT_FD"
-             productName="Poll OMS Fulfilled Items Feed" description="Poll OMS Fulfilled Items Feed"
+<!-- ServiceJob data for queuing Created productIds feed -->
+    <Product productId="QUEUE_CRT_PRD_IDS_FD" productTypeId="SERVICE" internalName="QUEUE_CRT_PRD_IDS_FD"
+             productName="Queue Created Products Feed" description="Queue Created Products Feed"
              primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-    <ProductCategoryMember productId="QueueCreatedProductsFeed" productCategoryId="PRODUCT_SYS_JOB" fromDate="${nowTimestamp}"/>
-    <ProductCategoryMember productId="QueueCreatedProductsFeed" productCategoryId="UPLOAD_SYS_JOB" fromDate="${nowTimestamp}"/> 
-    <moqui.basic.Enumeration enumId="QueueCreatedProductsFeed" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed" jobTypeEnumId="QueueCreatedProductsFeed" instanceOfProductId="QueueCreatedProductsFeed"
+    <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="QUEUE_CRT_PRD_IDS_FD" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_CreatedProductIdsFeed" description="Queue created productIds feed" jobTypeEnumId="QUEUE_CRT_PRD_IDS_FD" instanceOfProductId="QUEUE_CRT_PRD_IDS_FD"
           serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateCreatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
@@ -281,13 +280,13 @@ under the License.
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing Updated productIds feed -->
-    <Product productId="QueueUpdatedProductsFeed" productTypeId="SERVICE" internalName="QueueUpdatedProductsFeed"
+    <Product productId="QUEUE_UPD_PRD_FEED" productTypeId="SERVICE" internalName="QUEUE_UPD_PRD_FEED"
              productName="Queue Product Updates Feed" description="Queue Product Updates Feed"
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>
-    <ProductCategoryMember productId="QueueUpdatedProductsFeed" productCategoryId="PRODUCT_SYS_JOB" fromDate="${nowTimestamp}"/>
-    <ProductCategoryMember productId="QueueUpdatedProductsFeed" productCategoryId="UPLOAD_SYS_JOB" fromDate="${nowTimestamp}"/>
-    <moqui.basic.Enumeration enumId="QueueUpdatedProductsFeed" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed" jobTypeEnumId="QueueUpdatedProductsFeed" instanceOfProductId="QueueUpdatedProductsFeed"
+    <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="QUEUE_UPD_PRD_FEED" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" description="Queue updated productIds feed" jobTypeEnumId="QUEUE_UPD_PRD_FEED" instanceOfProductId="QUEUE_UPD_PRD_FEED"
             serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateUpdatedProductIdsFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
