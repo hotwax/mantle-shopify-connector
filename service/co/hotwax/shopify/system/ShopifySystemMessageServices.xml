@@ -832,7 +832,7 @@ under the License.
     </service>
 
     <service verb="generate" noun="RefundIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
-        <description>Generate refund Ids feed.</description>
+        <description>Generate Refund Ids feed.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
