@@ -831,8 +831,8 @@ under the License.
         </actions>
     </service>
 
-    <service verb="generate" noun="AppeasementIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
-        <description>Generate returned orderIds feed.</description>
+    <service verb="generate" noun="RefundIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate refund Ids feed.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
@@ -863,8 +863,8 @@ under the License.
                 <script>
                     queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
                 </script>
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="appeasementIdsResponse"/>
-                <if condition="!appeasementIdsResponse.response.orders.edges">
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="refundOrdersResponse"/>
+                <if condition="!refundOrdersResponse.response.orders.edges">
                     <return message="No Order with refunds found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
                 </if>
                 <set field="nowDate" from="ec.user.nowTimestamp"/>
@@ -879,10 +879,9 @@ under the License.
                     JsonGenerator jGenerator = jfactory.createGenerator(pw)){
                         jGenerator.writeStartArray()
                 </script>
-                <set field="appeasementIds" from="[]"/>
-                <set field="appeasementOrderIds" from="appeasementIdsResponse.response.orders.edges"/>
-                <iterate list="appeasementOrderIds" entry="appeasementOrderMap">
-                    <iterate list="appeasementOrderMap.node.refunds" entry="refund">
+                <set field="refundOrders" from="refundOrdersResponse.response.orders.edges"/>
+                <iterate list="refundOrders" entry="refundOrder">
+                    <iterate list="refundOrder.node.refunds" entry="refund">
                         <script>
                             new ObjectMapper()
                             .setDateFormat(new java.text.SimpleDateFormat(System.getProperty("default_date_time_format")))
@@ -901,14 +900,14 @@ under the License.
                     <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
                               systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
                 </if>
-                <set field="hasNextPage" from="appeasementIdsResponse.response.orders.pageInfo.hasNextPage"/>
-                <set field="cursor" from="appeasementIdsResponse.response.orders.pageInfo.endCursor"/>
+                <set field="hasNextPage" from="refundOrdersResponse.response.orders.pageInfo.hasNextPage"/>
+                <set field="cursor" from="refundOrdersResponse.response.orders.pageInfo.endCursor"/>
             </while>
 
         </actions>
     </service>
 
-    <service verb="generate" noun="AppeasementsFeed" authenticate="anonymous-all" transaction-timeout="1800">
+    <service verb="generate" noun="RefundsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
@@ -943,10 +942,10 @@ under the License.
             </if>
 
             <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
-            <set field="appeasementIds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+            <set field="refundIds" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
 
-            <if condition="!appeasementIds">
-                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with AppeasementIdsFeed file having incorrect data and may contain null, not generating appeasements feed file."/>
+            <if condition="!refundIds">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with refundIds file having incorrect data and may contain null, not generating refunds feed file."/>
             </if>
 
             <set field="nowDate" from="ec.user.nowTimestamp"/>
@@ -975,15 +974,15 @@ under the License.
                 jGenerator.writeStartArray()
             </script>
             
-            <iterate list="appeasementIds" entry="appeasementId">
-                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#AppeasementDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyRefundId:appeasementId.id]"
-                              out-map="appeasementResponse" ignore-error="true" transaction="force-new"/>
-                <if condition="appeasementResponse">
-                    <set field="appeasementMap" from="appeasementResponse.appeasementResponse"/>
+            <iterate list="refundIds" entry="refundId">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, refundId:refundId.id]"
+                              out-map="refundDetailsResponse" ignore-error="true" transaction="force-new"/>
+                <if condition="refundDetailsResponse">
+                    <set field="refundMap" from="refundDetailsResponse.refundDetail"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, appeasementMap)
+                        .writerWithDefaultPrettyPrinter().writeValue(jGenerator, refundMap)
                     </script>
                 </if>
             </iterate>
@@ -991,7 +990,7 @@ under the License.
                         jGenerator.writeEndArray()
                     }
                 } catch (IOException e) {
-                    logger.error("Error preparing Appeasements Feed file", e)
+                    logger.error("Error preparing Refunds Feed file", e)
                 }
             </script>
 

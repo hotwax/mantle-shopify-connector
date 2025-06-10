@@ -192,6 +192,37 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundHeaderByIdQuery.ftl" isFile="Y" resourceId="RefundHeaderByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${refundId}") {
+                        id
+                        ... on
+                        Refund {
+                            id
+                            createdAt
+                            note
+                            order {
+                                id
+                                name
+                                customer{
+                                    id
+                                }
+                            }
+                            return {
+                                id
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ReturnLineItemByIdQuery.ftl" isFile="Y" resourceId="ReturnLineItemByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -344,128 +375,6 @@
                                 pageInfo{
                                     endCursor
                                     hasNextPage
-                                }
-                            }
-                        }
-                    }
-                }
-                </@compress>]]>
-            </fileData>
-            <histories versionName="01" previousVersionName="01"/>
-        </file>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="RefundsByIDQuery.ftl" isFile="Y" resourceId="RefundsByIDQuery" parentResourceId="GraphQL">
-        <file mimeType="text/html" versionName="01" rootVersionName="01">
-            <fileData>
-                <![CDATA[<#ftl output_format="HTML">
-                <@compress single_line=true>
-                query{
-                    node(id: "${shopifyRefundId}") {
-                        id
-                        ... on
-                        Refund {
-                            id
-                            order {
-                                id
-                                name
-                                customer {
-                                    id
-                                }
-                            }
-                            createdAt
-                            note
-                            return{
-                                id
-                            }
-                            transactions (first: 10) {
-                                edges{
-                                    node{
-                                        id
-                                        gateway
-                                        processedAt
-                                        status
-                                        kind
-                                        parentTransaction{
-                                            id
-                                        }
-                                        receiptJson
-                                        paymentDetails {
-                                            ... on CardPaymentDetails {
-                                                paymentMethodName
-                                                company
-                                            }
-                                        }
-                                        amountSet{
-                                            presentmentMoney{
-                                                amount
-                                                currencyCode
-                                            },
-                                            shopMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            refundLineItems (first: 10) {
-                                edges{
-                                    node{
-                                        totalTaxSet{
-                                            presentmentMoney{
-                                                amount
-                                                currencyCode
-                                            },
-                                            shopMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                        }
-                                        id
-                                        restockType
-                                        location{
-                                            id
-                                        }
-                                        lineItem {
-                                            id
-                                            quantity
-                                            variant {
-                                                id
-                                            }
-                                            product {
-                                                id
-                                                title
-                                            }
-                                            fulfillableQuantity
-                                        }
-                                    }
-                                }
-                            }
-                            refundShippingLines (first: 10){
-                                edges{
-                                    node{
-                                        id
-                                        subtotalAmountSet{
-                                            presentmentMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                            shopMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                        }
-                                        taxAmountSet{
-                                            presentmentMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                            shopMoney{
-                                                currencyCode
-                                                amount
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -686,7 +595,7 @@
                                     node {
                                         id
                                         name
-                                        refunds (first: 10) {
+                                        refunds {
                                             id
                                         }
                                     }
@@ -758,12 +667,25 @@
                                             node {
                                                 lineItem {
                                                     id
+                                                    variant {
+                                                        id
+                                                    }
                                                 }
                                                 location {
                                                     id
                                                 }
                                                 restockType
                                                 quantity
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
                                             }
                                         }
                                         pageInfo {
@@ -815,6 +737,58 @@
                                                 paymentDetails {
                                                     ... on CardPaymentDetails {
                                                         company
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundShippingLinesByIdQuery.ftl" isFile="Y" resourceId="RefundShippingLinesByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundShippingLines (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node{
+                                                id
+                                                subtotalAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                                taxAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
                                                     }
                                                 }
                                             }
