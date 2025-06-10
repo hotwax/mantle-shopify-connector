@@ -716,40 +716,6 @@ under the License.
         </actions>
     </service>
 
-    <service verb="queue" noun="AppeasementIdsFeed" authenticate="anonymous-all">
-        <in-parameters>
-            <parameter name="systemMessageTypeId" required="true"/>
-            <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="fromDate"/>
-            <parameter name="thruDate"/>
-        </in-parameters>
-        <actions>
-            <set field="queryParams" from="[:]"/>
-            <if condition="!fromDate">
-                <entity-find entity-name="moqui.service.message.SystemMessage" list="SystemMessageList" limit="1">
-                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
-                    <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
-                    <order-by field-name="-processedDate"/>
-                </entity-find>
-                <if condition="systemMessageList">
-                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
-                </if>
-            </if>
-            <if condition="fromDate">
-                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
-                <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
-            </if>
-            <if condition="thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
-                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
-            </if>
-
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, sendNow:true, messageText:org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)]"
-                          out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
-        </actions>
-    </service>
-
     <service verb="generate" noun="ReturnedOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>Generate returned orderIds feed.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
