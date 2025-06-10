@@ -142,7 +142,6 @@ under the License.
                     queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundTransactionsByIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundTransactionsResponse"/>
-                <log level="info" message="refundTransactionsResponse: ${refundTransactionsResponse}"/>
                 <if condition="!refundTransactionsResponse.response.node">
                     <return message="No Shopify refund found for id: ${refundId}"/>
                 </if>
@@ -410,71 +409,6 @@ under the License.
             <set field="orderReturns.returns" from="returns"/>
         </actions>
     </service>
-
-<!--    <service verb="get" noun="RefundsByOrderId">-->
-<!--        <description>Get all refunds detail for a given shopify orderId</description>-->
-<!--        <in-parameters>-->
-<!--            <parameter name="systemMessageRemoteId" required="true"/>-->
-<!--            <parameter name="shopifyOrderId" required="true"/>-->
-<!--        </in-parameters>-->
-<!--        <out-parameters>-->
-<!--            <parameter name="orderRefunds"/>-->
-<!--        </out-parameters>-->
-<!--        <actions>-->
-<!--            <set field="orderRefunds" from="[:]"/>-->
-<!--            <set field="hasNextPage" type="Boolean" value="true"/>-->
-<!--            <set field="refunds" from="[]"/>-->
-<!--            <while condition="hasNextPage">-->
-<!--                <script>-->
-<!--                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundsByOrderIDQuery.ftl", "")-->
-<!--                </script>-->
-<!--                <log level="warn" message="SHOPIFY SERVICE CALLED =========================== shopifyOrderId: ${shopifyOrderId}"/>-->
-<!--                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundResponse"/>-->
-<!--                <log level="warn" message="SHOPIFY SERVICE CALLED =========================== refundResponse: ${refundResponse}"/>-->
-<!--                <if condition="!refundResponse.response.node">-->
-<!--                    <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>-->
-<!--                </if>-->
-<!--                &lt;!&ndash; Getting all the refundIds for the shopifyOrderId&ndash;&gt;-->
-<!--                <set field="refundIdList" from="[]"/>-->
-<!--                <if condition="refundResponse.response.node.refunds">-->
-<!--                    <script>refundIdList.addAll(refundResponse.response.node.refunds.id)</script>-->
-<!--                </if>-->
-<!--                &lt;!&ndash; Getting refund details for each refundId&ndash;&gt;-->
-<!--                <iterate list="refundIdList" entry="refundId">-->
-<!--                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, refundId:refundId]" out-map="refundDetails"/>-->
-<!--                    <log level="warn" message="SHOPIFY SERVICE CALLED =========================== refundDetails: ${refundDetails}"/>-->
-<!--                    <script>refunds.addAll(refundDetails.refundDetail)</script>-->
-<!--                </iterate>-->
-<!--                <set field="hasNextPage" from="refundResponse.response.node.refunds.pageInfo.hasNextPage"/>-->
-<!--                <set field="cursor" from="refundResponse.response.node.refunds.pageInfo.endCursor"/>-->
-<!--            </while>-->
-<!--            <set field="orderRefunds.id" from="refundResponse.response.node.id"/>-->
-<!--            <set field="orderRefunds.name" from="refundResponse.response.node.name"/>-->
-<!--            <set field="orderRefunds.refunds" from="refunds"/>-->
-<!--        </actions>-->
-<!--    </service>-->
-
-<!--    <service verb="get" noun="AppeasementDetails">-->
-<!--        <description>Get all returns detail for a given shopify orderId</description>-->
-<!--        <in-parameters>-->
-<!--            <parameter name="systemMessageRemoteId" required="true"/>-->
-<!--            <parameter name="shopifyRefundId" required="true"/>-->
-<!--        </in-parameters>-->
-<!--        <out-parameters>-->
-<!--            <parameter name="appeasementResponse"/>-->
-<!--        </out-parameters>-->
-<!--        <actions>-->
-<!--&lt;!&ndash;            <set field="appeasementDetails" from="[:]"/>&ndash;&gt;-->
-<!--            <script>-->
-<!--                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundsByIDQuery.ftl", "")-->
-<!--            </script>-->
-
-<!--            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="appeasementDetailsResponse"/>-->
-<!--            <if condition="appeasementDetailsResponse.response.node">-->
-<!--                <set field="appeasementResponse" from="appeasementDetailsResponse.response.node"/>-->
-<!--            </if>-->
-<!--        </actions>-->
-<!--    </service>-->
 
     <service verb="get" noun="ExchangesByOrderId">
         <description>Get all exchanges detail for a given shopify orderId</description>
