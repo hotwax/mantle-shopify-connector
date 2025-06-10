@@ -141,6 +141,19 @@
             sendPath=""/>
 
     <!-- Configure remote SFTP server against your shopify config for sending the feed -->
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateAppeasementsFeed"
+            parameterName="sendSmrId"
+            parameterValue=""
+            systemMessageRemoteId=""/>
+
+    <!-- Configure SFTP file path in sendPath attribute -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendAppeasementsFeed"
+            description="Send Returns and Exchange Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+    <!-- Configure remote SFTP server against your shopify config for sending the feed -->
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateNewOrdersFeed"
             parameterName="sendSmrId"
             parameterValue=""

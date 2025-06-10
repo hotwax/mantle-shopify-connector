@@ -437,6 +437,33 @@ under the License.
     <moqui.basic.Enumeration description="Generate Returns And Exchange Feed" enumId="GenerateReturnsAndExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateReturnedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnsAndExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
+    <!-- SystemMessageType record for generating Appeasements Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateAppeasementIdsFeed"
+            description="Generate Appeasement Ids Feed"
+            sendPath="dbresource://shopify/template/graphQL/AppeasementIdsQuery.ftl"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundIdsFeed"
+            receivePath="${contentRoot}/shopify/AppeasementIdsFeed/AppeasementIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+<!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateAppeasementsFeed"
+            description="Generate Appeasements Feed"
+            parentTypeId="LocalFeedFile"
+            sendPath="${contentRoot}/shopify/AppeasementsFeed/AppeasementsFeed-${dateTime}-${systemMessageId}.json"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundsFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendAppeasementsFeed"
+            description="Send Appeasements Feed"
+            parentTypeId="LocalFeedFile"
+            sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath=""/>
+
+<!-- Enumeration to create relation between GenerateAppeasementIdsFeed, GenerateAppeasementsFeed and SendAppeasementsFeed SystemMessageType(s) -->
+    <moqui.basic.Enumeration description="Send Appeasements Feed" enumId="SendAppeasementsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Appeasements Feed" enumId="GenerateAppeasementsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendAppeasementsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Appeasement Ids Feed" enumId="GenerateAppeasementIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateAppeasementsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
     <!-- SystemMessageType record for bulk canceled order items query to Shopify -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="BulkCanceledOrderItemsQuery"
             description="Bulk Canceled Order Items Query System Message"

@@ -192,6 +192,37 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundHeaderByIdQuery.ftl" isFile="Y" resourceId="RefundHeaderByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${refundId}") {
+                        id
+                        ... on
+                        Refund {
+                            id
+                            createdAt
+                            note
+                            order {
+                                id
+                                name
+                                customer{
+                                    id
+                                }
+                            }
+                            return {
+                                id
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="ReturnLineItemByIdQuery.ftl" isFile="Y" resourceId="ReturnLineItemByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -540,6 +571,47 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="AppeasementIdsQuery.ftl" isFile="Y" resourceId="AppeasementIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if !filterQuery?has_content>
+                            <#assign filterQuery = "financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        refunds {
+                                            id
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResource filename="RefundIdsByReturnIdQuery.ftl" isFile="Y" resourceId="RefundIdsByReturnIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
@@ -595,12 +667,25 @@
                                             node {
                                                 lineItem {
                                                     id
+                                                    variant {
+                                                        id
+                                                    }
                                                 }
                                                 location {
                                                     id
                                                 }
                                                 restockType
                                                 quantity
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
                                             }
                                         }
                                         pageInfo {
@@ -652,6 +737,58 @@
                                                 paymentDetails {
                                                     ... on CardPaymentDetails {
                                                         company
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundShippingLinesByIdQuery.ftl" isFile="Y" resourceId="RefundShippingLinesByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundShippingLines (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node{
+                                                id
+                                                subtotalAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                                taxAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
                                                     }
                                                 }
                                             }
