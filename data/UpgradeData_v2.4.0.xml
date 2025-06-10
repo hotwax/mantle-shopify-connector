@@ -248,44 +248,4 @@
 
   <ProductCategoryMember fromDate="2024-01-01 00:00:00.0" productCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT"/>
   <Product description="Create Appeasement from Shopify" internalName="JOB_CRT_APPEASEMENT" isVariant="N" isVirtual="N" primaryProductCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT" productName="Create Appeasement" productTypeId="SERVICE"/>
-
-  <!-- Product data for polling OMS Fulfilled Items Feed -->
-  <Product productId="POL_OMS_FLFLMNT_FD" productTypeId="SERVICE" internalName="POL_OMS_FLFLMNT_FD"
-           productName="Poll OMS Fulfilled Items Feed" description="Poll OMS Fulfilled Items Feed"
-           primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-  <ProductCategoryMember productId="POL_OMS_FLFLMNT_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-
-  <!-- Product data to send Shopify Fulfillment Ack Feed -->
-  <Product productId="SND_SHPFY_FUL_ACK_FD" productTypeId="SERVICE" internalName="SND_SHPFY_FUL_ACK_FD"
-           productName="Send Shopify Fulfillment Ack Feed" description="Send Shopify Fulfillment Ack Feed"
-           primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-  <ProductCategoryMember productId="SND_SHPFY_FUL_ACK_FD" productCategoryId="FULFILLMENT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-
-  <!-- Product data for sending next bulk query system message in queue-->
-  <Product productId="SND_BLK_SYS_M_SHPFY" productTypeId="SERVICE" internalName="SND_BLK_SYS_M_SHPFY"
-           productName="Send next bulk query system message in queue" description="Send next bulk query system message in queue"
-           primaryProductCategoryId="MISC_SYS_JOB"/>
-  <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-  <ProductCategoryMember productId="SND_BLK_SYS_M_SHPFY" productCategoryId="UPLOAD_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-
-  <!-- Product data for polling current bulk operation query result -->
-  <Product productId="POL_BLK_RSLT_SHPFY" productTypeId="SERVICE" internalName="POL_BLK_RSLT_SHPFY"
-           productName="Poll current bulk operation query result" description="Poll current bulk operation query result"
-           primaryProductCategoryId="MISC_SYS_JOB"/>
-  <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="MISC_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-  <ProductCategoryMember productId="POL_BLK_RSLT_SHPFY" productCategoryId="IMPORT_SYS_JOB" fromDate="2025-01-01 00:00:00.0"/>
-
-  <!-- Product data for queuing Created productIds feed -->
-  <Product productId="QUEUE_CRT_PRD_IDS_FD" productTypeId="SERVICE" internalName="QUEUE_CRT_PRD_IDS_FD"
-           productName="Queue Created Products Feed" description="Queue Created Products Feed"
-           primaryProductCategoryId="FULFILLMENT_SYS_JOB"/>
-  <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-  <ProductCategoryMember productId="QUEUE_CRT_PRD_IDS_FD" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-
-  <!-- Product data for queuing Updated productIds feed -->
-  <Product productId="QUEUE_UPD_PRD_FEED" productTypeId="SERVICE" internalName="QUEUE_UPD_PRD_FEED"
-           productName="Queue Product Updates Feed" description="Queue Product Updates Feed"
-           primaryProductCategoryId="PRODUCT_SYS_JOB"/>
-  <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-  <ProductCategoryMember productId="QUEUE_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
 </entity-facade-xml>
