@@ -308,4 +308,19 @@ under the License.
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
+
+
+    <!-- ServiceJob data for Updated Shopify Product Ids feed -->
+    <Product productId="SHPFY_UPD_PRD_FEED" productTypeId="SERVICE" internalName="SHPFY_UPD_PRD_FEED"
+             productName="Updated Shopify Product Ids Feed" description="Updated Shopify Products Feed"
+             primaryProductCategoryId="PRODUCT_SYS_JOB"/>
+    <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="SHPFY_UPD_PRD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="generate_UpdatedShopifyProductsFeed" description="Generate Updated Shopify ProductIds Feed" jobTypeEnumId="SHPFY_UPD_PRD_FEED" instanceOfProductId="SHPFY_UPD_PRD_FEED"
+            serviceName="co.hotwax.shopify.product.ShopifyProductServices.generate#ShopifyProductIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="shopifyProductIds" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
