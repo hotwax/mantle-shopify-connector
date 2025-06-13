@@ -316,7 +316,7 @@ under the License.
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>
     <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
     <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <moqui.basic.Enumeration enumId="SHPFY_UPD_PRD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="SHPFY_UPD_PRD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Updated Shopify Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
     <moqui.service.job.ServiceJob jobName="generate_UpdatedShopifyProductsFeed" description="Generate Updated Shopify ProductIds Feed" jobTypeEnumId="SHPFY_UPD_PRD_FEED" instanceOfProductId="SHPFY_UPD_PRD_FEED"
             serviceName="co.hotwax.shopify.product.ShopifyProductServices.generate#ShopifyProductIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
