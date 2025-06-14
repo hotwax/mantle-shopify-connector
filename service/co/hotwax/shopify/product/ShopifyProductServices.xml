@@ -103,4 +103,65 @@ under the License.
             </while>
         </actions>
     </service>
+
+    <service verb="generate" noun="ShopifyProductIdsFeed">
+        <description>Service to generate feed file for specific Shopify Product Ids.</description>
+        <!--<implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>-->
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true">
+                <description>The System Message Remote Id of Shopify.</description>
+            </parameter>
+            <parameter name="systemMessageTypeId" required="true">
+                <description>The System Message Type Id to create or update product Ids.</description>
+            </parameter>
+            <parameter name="shopifyProductIds" type="List" required="true">
+                <description>List of shopify productIds to get the details.</description>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <!-- Prepare Shopify Product Ids JSON File Path -->
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="contentRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
+            <set field="jsonFilePathRef" value="${contentRoot}/shopify/ShopifyProductIdsFeed/ShopifyProductIdsFeed-${ec.l10n.format(ec.user.nowTimestamp, 'yyyy-MM-dd-HH-mm-ss.SSS', null, TimeZone.getDefault())}.json"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <script>
+
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+
+                try {
+                    //json file
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                    so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                        jGenerator.writeStartArray()
+            </script>
+
+            <iterate list="shopifyProductIds" entry="shopifyProductId">
+                <set field="shopifyProductGid" value="gid://shopify/Product/${shopifyProductId}" type="String"/>
+                <set field="productMap" from="[id:shopifyProductGid]"/>
+                <script>
+                    new ObjectMapper()
+                    .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                    .writerWithDefaultPrettyPrinter().writeValue(jGenerator, productMap)
+                </script>
+            </iterate>
+            <script>
+                        jGenerator.writeEndArray()
+                    }
+                } catch (IOException e) {
+                    logger.error("Error preparing Shopify Product Ids Feed file", e)
+                }
+            </script>
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:systemMessageTypeId, messageText:jsonFilePathRef,
+                    systemMessageRemoteId:systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+        </actions>
+    </service>
 </services>
