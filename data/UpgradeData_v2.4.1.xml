@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
-  <moqui.resource.DbResource filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
-    <file mimeType="text/html" versionName="01" rootVersionName="01">
-      <fileData>
-        <![CDATA[
+  <moqui.resource.DbResourceFile resourceId="RefundLineItemsByIdQuery">
+    <fileData>
+      <![CDATA[
                     <#ftl output_format="HTML">
                     <@compress single_line=true>
                         query {
@@ -59,8 +58,6 @@
                         }
                     </@compress>
                 ]]>
-      </fileData>
-      <histories versionName="01" previousVersionName="01"/>
-    </file>
-  </moqui.resource.DbResource>
+    </fileData>
+  </moqui.resource.DbResourceFile>
 </entity-facade-xml>
