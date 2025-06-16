@@ -310,14 +310,14 @@ under the License.
     </moqui.service.job.ServiceJob>
 
 
-    <!-- ServiceJob data for Updated Shopify Product Ids feed -->
-    <Product productId="SHPFY_UPD_PRD_FEED" productTypeId="SERVICE" internalName="SHPFY_UPD_PRD_FEED"
-             productName="Updated Shopify Product Ids Feed" description="Updated Shopify Products Feed"
+    <!-- ServiceJob data for generating feed for Specific Shopify Product Ids -->
+    <Product productId="IMP_SHPFY_PROD_FEED" productTypeId="SERVICE" internalName="IMP_SHPFY_PROD_FEED"
+             productName="Import Shopify Product Ids Feed" description="Import Shopify Product Ids Feed"
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>
-    <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <ProductCategoryMember productId="SHPFY_UPD_PRD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <moqui.basic.Enumeration enumId="SHPFY_UPD_PRD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="generate_UpdatedShopifyProductsFeed" description="Generate Updated Shopify ProductIds Feed" jobTypeEnumId="SHPFY_UPD_PRD_FEED" instanceOfProductId="SHPFY_UPD_PRD_FEED"
+    <ProductCategoryMember productId="IMP_SHPFY_PROD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <ProductCategoryMember productId="IMP_SHPFY_PROD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
+    <moqui.basic.Enumeration enumId="IMP_SHPFY_PROD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Import Shopify Product Ids Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="generate_ShopifyProductIdsFeed" description="Generate Feed for importing specific product ids feed" jobTypeEnumId="IMP_SHPFY_PROD_FEED" instanceOfProductId="IMP_SHPFY_PROD_FEED"
             serviceName="co.hotwax.shopify.product.ShopifyProductServices.generate#ShopifyProductIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
