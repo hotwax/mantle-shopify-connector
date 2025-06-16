@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+  <!--  Shopify GraphQl Template to request data from shopify -->
+  <moqui.resource.DbResource filename="AppeasementIdsQuery.ftl" isFile="Y" resourceId="AppeasementIdsQuery" parentResourceId="GraphQL">
+    <file mimeType="text/html" versionName="01" rootVersionName="01">
+      <fileData>
+        <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')"/>
+                        </#if>
+                        <#if !filterQuery?has_content>
+                            <#assign filterQuery = "financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'"/>
+                        </#if>
+                        query {
+                            orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                                edges {
+                                    node {
+                                        id
+                                        name
+                                        refunds {
+                                            id
+                                        }
+                                    }
+                                }
+                                pageInfo {
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+      </fileData>
+      <histories versionName="01" previousVersionName="01"/>
+    </file>
+  </moqui.resource.DbResource>
+
+  <moqui.resource.DbResource filename="RefundHeaderByIdQuery.ftl" isFile="Y" resourceId="RefundHeaderByIdQuery" parentResourceId="GraphQL">
+    <file mimeType="text/html" versionName="01" rootVersionName="01">
+      <fileData>
+        <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${refundId}") {
+                        id
+                        ... on
+                        Refund {
+                            id
+                            createdAt
+                            note
+                            order {
+                                id
+                                name
+                                customer{
+                                    id
+                                }
+                            }
+                            return {
+                                id
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+      </fileData>
+      <histories versionName="01" previousVersionName="01"/>
+    </file>
+  </moqui.resource.DbResource>
+  <moqui.resource.DbResource filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
+    <file mimeType="text/html" versionName="01" rootVersionName="01">
+      <fileData>
+        <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                lineItem {
+                                                    id
+                                                    variant {
+                                                        id
+                                                    }
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                restockType
+                                                quantity
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+      </fileData>
+      <histories versionName="01" previousVersionName="01"/>
+    </file>
+  </moqui.resource.DbResource>
+  <moqui.resource.DbResource filename="RefundShippingLinesByIdQuery.ftl" isFile="Y" resourceId="RefundShippingLinesByIdQuery" parentResourceId="GraphQL">
+    <file mimeType="text/html" versionName="01" rootVersionName="01">
+      <fileData>
+        <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundShippingLines (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node{
+                                                id
+                                                subtotalAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                                taxAmountSet{
+                                                    presentmentMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+      </fileData>
+      <histories versionName="01" previousVersionName="01"/>
+    </file>
+  </moqui.resource.DbResource>
+  <moqui.resource.DbResource filename="RefundHeaderByIdQuery.ftl" isFile="Y" resourceId="RefundHeaderByIdQuery" parentResourceId="GraphQL">
+    <file mimeType="text/html" versionName="01" rootVersionName="01">
+      <fileData>
+        <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
+                        id
+                        ... on
+                        Refund {
+                            id
+                            createdAt
+                            note
+                            name
+                            order {
+                                id
+                                name
+                                customer{
+                                    id
+                                }
+                            }
+                            return {
+                                id
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+      </fileData>
+      <histories versionName="01" previousVersionName="01"/>
+    </file>
+  </moqui.resource.DbResource>
+
+  <!-- SystemMessageType record for generating Appeasement Ids Feed -->
+  <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateAppeasementIdsFeed"
+                                           description="Generate Appeasement Ids Feed"
+                                           sendPath="dbresource://shopify/template/graphQL/AppeasementIdsQuery.ftl"
+                                           sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundIdsFeed"
+                                           receivePath="${contentRoot}/shopify/AppeasementIdsFeed/AppeasementIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+  <!-- SystemMessageType record for generating Appeasements Feed -->
+  <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateAppeasementsFeed"
+                                           description="Generate Appeasements Feed"
+                                           parentTypeId="LocalFeedFile"
+                                           sendPath="${contentRoot}/shopify/AppeasementsFeed/AppeasementsFeed-${dateTime}-${systemMessageId}.json"
+                                           consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#RefundsFeed">
+    <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+  </moqui.service.message.SystemMessageType>
+
+  <moqui.service.message.SystemMessageType systemMessageTypeId="SendAppeasementsFeed"
+                                           description="Send Appeasements Feed"
+                                           parentTypeId="LocalFeedFile"
+                                           sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                           sendPath=""/>
+
+  <!-- Enumeration to create relation between GenerateAppeasementIdsFeed, GenerateAppeasementsFeed and SendAppeasementsFeed SystemMessageType(s) -->
+  <moqui.basic.Enumeration description="Send Appeasements Feed" enumId="SendAppeasementsFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+  <moqui.basic.Enumeration description="Generate Appeasements Feed" enumId="GenerateAppeasementsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendAppeasementsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+  <moqui.basic.Enumeration description="Generate Appeasement Ids Feed" enumId="GenerateAppeasementIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateAppeasementsFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+  <!-- ServiceJob data for queuing Appeasement Ids feed -->
+  <moqui.service.job.ServiceJob jobName="queue_AppeasementIdsFeed" description="Queue Appeasement Ids feed"
+                                serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+    <parameters parameterName="systemMessageTypeId" parameterValue="GenerateAppeasementIdsFeed"/>
+    <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+    <parameters parameterName="runAsBatch" parameterValue="true"/>
+  </moqui.service.job.ServiceJob>
+
+  <ProductCategoryMember fromDate="2024-01-01 00:00:00.0" productCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT"/>
+  <Product description="Create Appeasement from Shopify" internalName="JOB_CRT_APPEASEMENT" isVariant="N" isVirtual="N" primaryProductCategoryId="ORDER_SYS_JOB" productId="JOB_CRT_APPEASEMENT" productName="Create Appeasement" productTypeId="SERVICE"/>
+</entity-facade-xml>
