@@ -2360,21 +2360,16 @@ under the License.
                 <iterate list="ordersList" entry="order">
                     <!-- Check whether the input tags are exist in the system or not-->
                     <if condition="tag">
-                        <then>
-                            <entity-find entity-name="co.hotwax.order.OrderHeaderNoteView" list="orderTag">
-                                <econdition field-name="orderId" from="order.orderId"/>
-                                <econdition field-name="noteInfo" from="tag"/>
-                            </entity-find>
-                            <if condition="!orderTag">
-                                <log level="info" message="Order with orderId: ${order.orderExternalId} does not have valid tag [${tag}]"/>
-                                <continue/>
-                            </if>
-                            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
-                        </then>
-                        <else>
-                            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
-                        </else>
+                        <entity-find entity-name="co.hotwax.order.OrderHeaderNoteView" list="orderTag">
+                            <econdition field-name="orderId" from="order.orderId"/>
+                            <econdition field-name="noteInfo" from="tag"/>
+                        </entity-find>
+                        <if condition="!orderTag">
+                            <log level="info" message="Order with orderId: ${order.orderExternalId} does not have valid tags: [${tag}]"/>
+                            <continue/>
+                        </if>
                     </if>
+                    <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
                 </iterate>
             </if>
         </actions>
@@ -2393,9 +2388,9 @@ under the License.
             </script>
             <set field="shopifyOrderId" value="gid://shopify/Order/${systemMessage.messageText}"/>
             <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:shopifyOrderId, includeFulfillmentLineItems:true]"
-                          out-map="FulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
+                          out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
 
-            <if condition="!FulfillmentOrdersResponse.fulfillmentOrdersByOrderId">
+            <if condition="!fulfillmentOrdersResponse.fulfillmentOrdersByOrderId">
                 <return message="No fulfillment orders found for orderId: ${systemMessage.messageText}"/>
             </if>
             <set field="nowDate" from="ec.user.nowTimestamp"/>
@@ -2412,7 +2407,7 @@ under the License.
                     JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
                     jGenerator.writeStartArray()
             </script>
-            <set field="order" from="FulfillmentOrdersResponse.fulfillmentOrdersByOrderId"/>
+            <set field="order" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId"/>
             <set field="fulfillmentOrdersList" from="order.fulfillmentOrders"/>
             <set field="fulfillmentOrdersMap" from="[:]"/>
             <set field="fulfillmentOrders" from="[]"/>
