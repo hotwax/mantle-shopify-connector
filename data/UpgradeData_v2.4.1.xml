@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="ext-upgrade">
+  <moqui.resource.DbResourceFile resourceId="RefundLineItemsByIdQuery">
+    <fileData>
+      <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                lineItem {
+                                                    id
+                                                    variant {
+                                                        id
+                                                    }
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                priceSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                restockType
+                                                quantity
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+    </fileData>
+  </moqui.resource.DbResourceFile>
+</entity-facade-xml>
