@@ -665,6 +665,7 @@
                                     refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
                                         edges {
                                             node {
+                                                id
                                                 lineItem {
                                                     id
                                                     variant {
@@ -673,6 +674,16 @@
                                                 }
                                                 location {
                                                     id
+                                                }
+                                                priceSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
                                                 }
                                                 restockType
                                                 quantity
