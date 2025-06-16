@@ -316,8 +316,8 @@ under the License.
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>
     <ProductCategoryMember productId="IMP_SHPFY_PROD_FEED" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
     <ProductCategoryMember productId="IMP_SHPFY_PROD_FEED" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <moqui.basic.Enumeration enumId="IMP_SHPFY_PROD_FEED" enumCode="UpdatedShopifyProductsFeed" description="Import Shopify Product Ids Feed" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="generate_ShopifyProductIdsFeed" description="Generate Feed for importing specific product ids feed" jobTypeEnumId="IMP_SHPFY_PROD_FEED" instanceOfProductId="IMP_SHPFY_PROD_FEED"
+    <moqui.basic.Enumeration enumId="IMP_SHPFY_PROD_FEED" enumCode="ShopifyProductIdsFeed" description="Import Shopify Product Ids Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.service.job.ServiceJob jobName="generate_ShopifyProductIdsFeed" description="Generate feed for importing specific shopify product ids" jobTypeEnumId="IMP_SHPFY_PROD_FEED" instanceOfProductId="IMP_SHPFY_PROD_FEED"
             serviceName="co.hotwax.shopify.product.ShopifyProductServices.generate#ShopifyProductIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
