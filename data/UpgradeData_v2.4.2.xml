@@ -16,9 +16,9 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<entity-facade-xml type="ext-upgrade-upcoming">
+<entity-facade-xml type="ext-upgrade">
 
-    <!-- ServiceJob data for generating feed for Specific Shopify Product Ids -->
+    <!-- ServiceJob data for generating feed for specific Shopify Product Ids -->
     <Product productId="IMP_SHPY_PRD_ID" productTypeId="SERVICE" internalName="IMP_SHPY_PRD_ID"
              productName="Import Shopify Product Ids" description="Import Shopify Product Ids"
              primaryProductCategoryId="PRODUCT_SYS_JOB"/>

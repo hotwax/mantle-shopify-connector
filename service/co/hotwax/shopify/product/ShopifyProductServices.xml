@@ -104,7 +104,7 @@ under the License.
         </actions>
     </service>
 
-    <service verb="generate" noun="ShopifyProductIdsFeed">
+    <service verb="generate" noun="ShopifyProductIdsFeed" authenticate="anonymous-all">
         <description>Service to generate feed file for specific Shopify Product Ids.</description>
         <!--<implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>-->
         <in-parameters>
