@@ -22,7 +22,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyProductId" required="true"/>
-            <parameter name="namespaces" type="List"/>
+            <parameter name="queryParams" type="Map"/>
         </in-parameters>
         <out-parameters>
             <parameter name="productDetail"/>
@@ -36,9 +36,9 @@ under the License.
                 <return type="warning" message="No Shopify product found for id: ${shopifyProductId}"/>
             </if>
 
-            <if condition="namespaces">
+            <if condition="queryParams?.namespaces">
                 <set field="metafields" from="[]"/>
-                <iterate list="namespaces" entry="namespace">
+                <iterate list="queryParams.namespaces" entry="namespace">
                     <service-call name="co.hotwax.shopify.product.ShopifyProductServices.get#ProductMetafields" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyProductId:shopifyProductId, namespace:namespace]"
                                   out-map="productMetafieldsOut"/>
                     <script>
@@ -49,16 +49,17 @@ under the License.
 
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="productVariants" from="[]"/>
+            <set field="product_id" from="shopifyProductId.substring(shopifyProductId.lastIndexOf('/')+1)"/>
             <while condition="hasNextPage">
                 <script>
                     queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ProductVariantsByProductIdQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="productVariantResponse"/>
-                <if condition="productVariantResponse.response.node.variants.edges">
-                    <script>productVariants.addAll(productVariantResponse.response.node.variants.edges.node)</script>
+                <if condition="productVariantResponse.response.productVariants.edges">
+                    <script>productVariants.addAll(productVariantResponse.response.productVariants.edges.node)</script>
                 </if>
-                <set field="hasNextPage" from="productVariantResponse.response.node.variants.pageInfo.hasNextPage"/>
-                <set field="cursor" from="productVariantResponse.response.node.variants.pageInfo.endCursor"/>
+                <set field="hasNextPage" from="productVariantResponse.response.productVariants.pageInfo.hasNextPage"/>
+                <set field="cursor" from="productVariantResponse.response.productVariants.pageInfo.endCursor"/>
             </while>
             <set field="productDetail" from="productResponse.response.node"/>
             <set field="productDetail.variants" from="productVariants"/>
