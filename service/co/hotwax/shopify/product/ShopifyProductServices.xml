@@ -117,6 +117,9 @@ under the License.
             <parameter name="shopifyProductIds" type="List" required="true">
                 <description>List of shopify productIds to get the details.</description>
             </parameter>
+            <parameter name="additionalParameters" type="Map">
+                <description>Additional parameters for shopify request.</description>
+            </parameter>
         </in-parameters>
         <actions>
             <!-- Prepare Shopify Product Ids JSON File Path -->
@@ -147,6 +150,9 @@ under the License.
             <iterate list="shopifyProductIds" entry="shopifyProductId">
                 <set field="shopifyProductGid" value="gid://shopify/Product/${shopifyProductId}" type="String"/>
                 <set field="productMap" from="[id:shopifyProductGid]"/>
+                <if condition="additionalParameters?.namespaces">
+                    <set field="productMap" from="productMap + [namespaces:additionalParameters.namespaces]"/>
+                </if>
                 <script>
                     new ObjectMapper()
                     .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
