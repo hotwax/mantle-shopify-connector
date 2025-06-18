@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-facade-xml type="ext-upgrade-upcoming">
+    <moqui.service.job.ServiceJob jobName="IMP_SHPY_PRD_IDS" description="Import Shopify Product Ids">
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+</entity-facade-xml>
