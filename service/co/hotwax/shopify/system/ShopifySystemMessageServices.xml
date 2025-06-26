@@ -686,6 +686,7 @@ under the License.
             <parameter name="thruDate"/>
         </in-parameters>
         <actions>
+            <log message="==========calling ====queuereturn orderid feed======"/>
             <set field="queryParams" from="[:]"/>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
@@ -980,6 +981,12 @@ under the License.
                 <field-map field-name="parameterName" value="sendSmrId"/>
                 <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             </entity-find-one>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+            <set field="shopId" from="systemMessageRemote?.remoteId"/>
+
             <if condition="sendSmrParam">
                 <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
             </if>
@@ -1055,7 +1062,7 @@ under the License.
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ExchangesByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
                                   out-map="orderExchangesResponse" ignore-error="true" transaction="force-new"/>
                     <set field="orderMap.exchanges" from="orderExchangesResponse.orderExchanges.exchanges"/>
-
+                    <set field="orderMap.shopId" from="shopId"/>
                     <script>
                         new ObjectMapper()
                         .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
