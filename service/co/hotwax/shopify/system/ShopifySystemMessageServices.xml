@@ -686,7 +686,6 @@ under the License.
             <parameter name="thruDate"/>
         </in-parameters>
         <actions>
-            <log message="==========calling ====queuereturn orderid feed======"/>
             <set field="queryParams" from="[:]"/>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
