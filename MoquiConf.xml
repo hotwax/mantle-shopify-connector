@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!-- No copyright or license for configuration file, details here are not considered a creative work. -->
 <moqui-conf xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd">
-    <default-property name="shopify_api_version" value="2024-10"/>
+    <default-property name="shopify_api_version" value="2025-07"/>
 
     <default-property name="shopify_webhook_end_point" value="/rest/s1/shopify/webhook/payload"/>
 
