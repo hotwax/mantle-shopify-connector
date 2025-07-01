@@ -5,7 +5,7 @@
          description="Generate Fulfillment Orders Feed From Shopify"
          sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#FulfillmentOrdersFeedFromShopify"
          sendPath="${contentRoot}/shopify/BulkFulfillmentOrderJson/FulfillmentOrderJson-${systemMessageId}-${dateTime}.json"
-         consumeServiceName="co.hotwax.soblegacy.system.FeedServices.consume#BulkFulfillmentOrderQueryResult"
+         consumeServiceName="co.hotwax.soblegacy.system.FeedServices.consume#FulfillmentOrderQueryResult"
     />
     <moqui.service.job.ServiceJob jobName="queue_FulfillmentOrdersFeedFromShopify" description="Queue Fulfillment Orders Feed From Shopify" serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FulfillmentOrdersFeedFromShopify" cronExpression="0 0 * * * ?" paused="Y">
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateFulfillmentOrdersFeedFromShopify"/>
