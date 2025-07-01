@@ -2401,7 +2401,7 @@ under the License.
                 <return message="No fulfillment orders found for orderId: ${systemMessage.messageText}"/>
             </if>
             <set field="nowDate" from="ec.user.nowTimestamp"/>
-            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
                                                [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
             <script>
