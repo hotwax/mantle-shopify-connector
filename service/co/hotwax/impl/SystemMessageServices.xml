@@ -34,6 +34,7 @@ under the License.
                 <econdition field-name="initDate" operator="less" from="purgeDate"/>
                 <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId" ignore-if-empty="true"/>
                 <econdition field-name="parentTypeId" operator="equals" from="parentSystemMessageTypeId" ignore-if-empty="true"/>
+                <order-by field-name="initDate"/>
                 <use-iterator/>
             </entity-find>
             <iterate list="systemMessages" entry="systemMessage">
