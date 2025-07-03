@@ -939,7 +939,7 @@ under the License.
                 JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
                 jGenerator.writeStartArray()
             </script>
-            
+
             <iterate list="refundIds" entry="refundId">
                 <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, refundId:refundId.id]"
                               out-map="refundDetailsResponse" ignore-error="true" transaction="force-new"/>
@@ -2339,6 +2339,118 @@ under the License.
                 <set field="hasNextPage" from="updatedProductVariantsResponse.response.productVariants.pageInfo.hasNextPage"/>
                 <set field="cursor" from="updatedProductVariantsResponse.response.productVariants.pageInfo.endCursor"/>
             </while>
+        </actions>
+    </service>
+    <!--Fetch orders that are currently in the brokering queue-->
+    <service verb="queue" noun="FulfillmentOrdersFeedFromShopify" authenticate="anonymous-all">
+        <description>This service fetches orders that are currently in the brokering queue with the additional check of orderTags</description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" required="true"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="tag"/>
+            <parameter name="orderIds"><description>Comma separated orderIds</description></parameter>
+            <parameter name="orderDate"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+            <!--Fetch the approved sales order that are currently in the brokering queue-->
+            <entity-find entity-name="co.hotwax.oms.order.OrderHeaderItemShipGroup" list="ordersList" distinct="true">
+                <econdition field-name="itemStatusId" value="ITEM_APPROVED"/>
+                <econdition field-name="orderTypeId" value="SALES_ORDER"/>
+                <econdition field-name="facilityId" value="_NA_"/>
+                <econdition field-name="orderDate" operator="greater-equals" from="orderDate" ignore-if-empty="true"/>
+                <econdition field-name="orderId" operator="in" from="orderIds" ignore-if-empty="true"/>
+                <select-field field-name="orderId,orderExternalId"/>
+            </entity-find>
+
+            <if condition="ordersList">
+                <iterate list="ordersList" entry="order">
+                    <!-- Check whether the input tags are exist in the system or not-->
+                    <if condition="tag">
+                        <entity-find entity-name="co.hotwax.order.OrderHeaderNoteView" list="orderTag">
+                            <econdition field-name="orderId" from="order.orderId"/>
+                            <econdition field-name="noteInfo" from="tag"/>
+                        </entity-find>
+                        <if condition="!orderTag">
+                            <log level="info" message="Order with orderId: ${order.orderExternalId} does not have valid tags: [${tag}]"/>
+                            <continue/>
+                        </if>
+                    </if>
+                    <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage" in-map="[messageText:order.orderExternalId, systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId]" out-map="serviceContext" transaction="force-new" />
+                </iterate>
+            </if>
+        </actions>
+    </service>
+    <service verb="generate" noun="FulfillmentOrdersFeedFromShopify" authenticate="anonymous-all" transaction-timeout="7200">
+        <description>This service fetches the fulfillment orders json for every single order</description>
+        <!--implemented send service-->
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+            </script>
+            <set field="shopifyOrderId" value="gid://shopify/Order/${systemMessage.messageText}"/>
+            <service-call name="co.hotwax.shopify.fulfillment.ShopifyFulfillmentServices.get#FulfillmentOrdersByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:shopifyOrderId, includeFulfillmentLineItems:true]"
+                          out-map="fulfillmentOrdersResponse" ignore-error="true" transaction="force-new"/>
+
+            <if condition="!fulfillmentOrdersResponse.fulfillmentOrdersByOrderId">
+                <return message="No fulfillment orders found for orderId: ${systemMessage.messageText}"/>
+            </if>
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.sendPath, null,
+                                               [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+            <script>
+                try {
+                    File feedFile = new File(jsonFilePath)
+                    if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                    JsonFactory jfactory = new JsonFactory()
+
+                    try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8, feedFile);
+                    JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                    jGenerator.writeStartArray()
+            </script>
+            <set field="order" from="fulfillmentOrdersResponse.fulfillmentOrdersByOrderId"/>
+            <set field="fulfillmentOrdersList" from="order.fulfillmentOrders"/>
+            <set field="fulfillmentOrdersMap" from="[:]"/>
+            <set field="fulfillmentOrders" from="[]"/>
+            <iterate list="fulfillmentOrdersList" entry="fulfillmentOrderEntry">
+                <set field="fulfillmentOrderLineItem" from="[]"/>
+                <iterate list="fulfillmentOrderEntry.lineItems" entry="fulfillmentOrderLineItemEntry">
+                    <set field="item" from="[:]"/>
+                    <set field="item.id" from="fulfillmentOrderLineItemEntry.id"/>
+                    <set field="item.remainingQuantity" from="fulfillmentOrderLineItemEntry.remainingQuantity"/>
+
+                    <set field="lineItem" from="[:]"/>
+                    <set field="lineItem.id" from="fulfillmentOrderLineItemEntry.lineItem.id"/>
+                    <set field="item.lineItem" from="lineItem"/>
+                    <set field="fulfillmentOrderLineItem" from="fulfillmentOrderLineItem + item"/>
+                </iterate>
+                <set field="fulfillmentOrderMap" from="[:]"/>
+                <set field="fulfillmentOrderMap.id" from="fulfillmentOrderEntry.id"/>
+                <set field="fulfillmentOrderMap.status" from="fulfillmentOrderEntry.status"/>
+                <set field="fulfillmentOrderMap.assignedLocation" from="fulfillmentOrderEntry.assignedLocation"/>
+                <set field="fulfillmentOrderMap.FulfillmentOrderLineItem" from="fulfillmentOrderLineItem"/>
+                <set field="fulfillmentOrders" from="fulfillmentOrders + fulfillmentOrderMap"/>
+            </iterate>
+            <set field="fulfillmentOrdersMap.id" from="order.id"/>
+            <set field="fulfillmentOrdersMap.FulfillmentOrder" from="fulfillmentOrders"/>
+            <script>
+                new ObjectMapper()
+                .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                .writerWithDefaultPrettyPrinter().writeValue(jGenerator, fulfillmentOrdersMap)
+
+                jGenerator.writeEndArray()
+                }
+                } catch (IOException e) {
+                logger.error("Error preparing FulfillmentOrders Feed file", e)
+                }
+            </script>
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:systemMessage.systemMessageTypeId, messageText:jsonFilePathRef, systemMessageRemoteId:systemMessage.systemMessageRemoteId]" transaction="force-new" ignore-error="true"/>
         </actions>
     </service>
 </services>
