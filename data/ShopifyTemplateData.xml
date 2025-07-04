@@ -669,9 +669,6 @@
                           edges {
                             node {
                               createdAt
-                              device {
-                                id
-                              }
                             }
                           }
                         }
@@ -739,13 +736,6 @@
                                             endCursor
                                         }
                                     }
-                                    transactions{
-                                        nodes{
-                                            device{
-                                                id
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -771,9 +761,6 @@
                                         edges {
                                             node {
                                                 id
-                                                device{
-                                                    id
-                                                }
                                                 parentTransaction {
                                                     id
                                                 }
