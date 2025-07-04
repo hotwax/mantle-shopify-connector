@@ -15,4 +15,33 @@
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="shopifyProductIds" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+    <moqui.resource.DbResource filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                <#ftl output_format="HTML">
+                <@compress single_line=true>
+                query {
+                  node(id: "${shopifyOrderId}") {
+                    id
+                    ... on Order {
+                      refunds(first: 10) {
+                        id
+                        transactions(first: 10) {
+                          edges {
+                            node {
+                              createdAt
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                </@compress>
+            ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>
