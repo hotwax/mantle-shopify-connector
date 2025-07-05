@@ -663,15 +663,8 @@
                   node(id: "${shopifyOrderId}") {
                     id
                     ... on Order {
-                      refunds(first: 10) {
+                      refunds{
                         id
-                        transactions(first: 10) {
-                          edges {
-                            node {
-                              createdAt
-                            }
-                          }
-                        }
                       }
                     }
                   }

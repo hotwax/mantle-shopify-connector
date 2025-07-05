@@ -1058,7 +1058,7 @@ under the License.
 
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundsByOrderId"
                                   in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
-                                  out-map="refundsResponse" ignore-error="true" transaction="force-new"/>
+                                  out-map="refundsResponse" ignore-error="true"/>
                     <set field="orderMap.refunds" from="refundsResponse.orderRefunds.refunds"/>
                     <script>
                         new ObjectMapper()
