@@ -15,4 +15,60 @@
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="shopifyProductIds" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+    <moqui.resource.DbResource filename="RefundTransactionsByIdQuery.ftl" isFile="Y" resourceId="RefundTransactionsByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    transactions (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                device{
+                                                    id
+                                                }
+                                                parentTransaction {
+                                                    id
+                                                }
+                                                status
+                                                amountSet {
+                                                    presentmentMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney {
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                kind
+                                                gateway
+                                                paymentDetails {
+                                                    ... on CardPaymentDetails {
+                                                        company
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            endCursor
+                                            hasNextPage
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>
