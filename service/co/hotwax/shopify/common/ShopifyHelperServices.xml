@@ -89,14 +89,14 @@ under the License.
                 restClient.method(requestType)
                 restClient.uri(sendUrl)
 
-                //Check for basic auth, in case of private app system should use basic auth
-                if (systemMessageRemote.username && systemMessageRemote.password && !systemMessageRemote.authHeaderName) {
-                    restClient.basicAuth(systemMessageRemote.username, systemMessageRemote.password);
-                } else if (systemMessageRemote.sharedSecret) {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sharedSecret);
-                } else {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.password);
+                def authHeaderName = systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token';
+                def accessToken = systemMessageRemote.sendSharedSecret;
+                //TODO: Fallback handling, this will be removed in upcoming releaes
+                if (systemMessageRemote.password) {
+                    accessToken = systemMessageRemote.password
                 }
+                restClient.addHeader(authHeaderName,accessToken);
+
                 restClient.contentType(contentType)
 
                 // Include parameters only if endPoint and parameters is not null
