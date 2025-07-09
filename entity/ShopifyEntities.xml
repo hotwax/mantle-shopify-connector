@@ -33,7 +33,7 @@ under the License.
 
     <extend-entity entity-name="SystemMessageRemote" package="moqui.service.message">
         <field name="accessScopeEnumId" type="id"/>
-        <field name="oldSharedSecret" type="text-medium"/>
+        <field name="oldSharedSecret" type="text-medium" enable-audit-log="true" encrypt="true"/>
         <relationship type="one" title="ShopifyShopAccessScope" related="moqui.basic.Enumeration" short-alias="access">
             <key-map field-name="accessScopeEnumId"/>
         </relationship>
