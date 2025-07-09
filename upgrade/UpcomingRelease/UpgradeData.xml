@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-facade-xml type="ext-upgrade">
+    <moqui.basic.Enumeration description="Shopify Shop No Access" enumCode="SHOP_NO" enumId="SHOP_NO_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+    <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumCode="SHOP_READ" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+    <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumCode="SHOP_READ_WRITE" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+</entity-facade-xml>
