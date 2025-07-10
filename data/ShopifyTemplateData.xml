@@ -538,17 +538,19 @@
                 <![CDATA[
                     <#ftl output_format="HTML">
                     <@compress single_line=true>
+                        <#assign returnRefundFilter = "(return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')) OR (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'))"/>
+                        <#assign dateFilter = ""/>
                         <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
-                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND (return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')))"/>
+                        <#assign dateFilter = "updated_at:>'${queryParams.fromDate}'"/>
+                        <#elseif queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                            <#assign dateFilter = "updated_at:<'${queryParams.thruDate}'"/>
+                        <#elseif queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                            <#assign dateFilter = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
                         </#if>
-                        <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
-                            <#assign filterQuery = "updated_at:<'${queryParams.thruDate}' AND (return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')))"/>
-                        </#if>
-                        <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
-                            <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}' AND (return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')))"/>
-                        </#if>
-                        <#if !filterQuery?has_content>
-                            <#assign filterQuery = "return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'))"/>
+                         <#if dateFilter?has_content>
+                            <#assign filterQuery = "${dateFilter} AND ${returnRefundFilter}"/>
+                        <#else>
+                            <#assign filterQuery = returnRefundFilter/>
                         </#if>
                         query {
                             orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
