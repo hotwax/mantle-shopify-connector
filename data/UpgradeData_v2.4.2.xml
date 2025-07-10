@@ -43,7 +43,7 @@
                 <![CDATA[
                     <#ftl output_format="HTML">
                     <@compress single_line=true>
-                        <#assign returnRefundFilter = "(return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')) OR (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'))"/>
+                        <#assign returnRefundFilter = "-return_status:'IN_PROGRESS' AND (return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')) OR (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'))"/>
                         <#assign dateFilter = ""/>
                         <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
                         <#assign dateFilter = "updated_at:>'${queryParams.fromDate}'"/>
