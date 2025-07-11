@@ -99,9 +99,6 @@ under the License.
             </iterate>
 
             <set field="requestBody" from="['fulfillment':['line_items_by_fulfillment_order':lineItemsByFulfillmentOrder, 'notify_customer':notifyCustomer, 'tracking_info':['number': trackingNumber, 'company': carrier, 'url': trackingUrl]]]"/>
-            <log message="============== Request Body: ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(requestBody))}\n\n"/>
-            <return/>
-
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, endPoint:'fulfillments.json',
                         requestType:'POST', contentType:'application/json', requestBody:requestBody]" out-map="createFulfillmentResponse"/>
 
