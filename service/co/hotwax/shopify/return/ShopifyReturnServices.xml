@@ -409,7 +409,35 @@ under the License.
             <set field="orderReturns.returns" from="returns"/>
         </actions>
     </service>
-
+    <service verb="get" noun="RefundsByOrderId">
+        <description>Get all returns detail for a given shopify orderId</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="orderRefunds"/>
+        </out-parameters>
+        <actions>
+            <set field="orderRefunds" from="[:]"/>
+            <set field="refunds" from="[]"/>
+            <script>
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundIdsByOrderIdQuery.ftl", "")
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundResponse"/>
+            <if condition="!refundResponse.response.node">
+                <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+            </if>
+            <if condition="refundResponse.response.node.refunds">
+                <iterate list="refundResponse.response.node.refunds" entry="refund">
+                    <set field="refundIdString" from="refund.id"/>
+                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, refundId:refundIdString]" out-map="refundDetails"/>
+                    <script>refunds.add(refundDetails.refundDetail)</script>
+                </iterate>
+            </if>
+            <set field="orderRefunds.refunds" from="refunds"/>
+        </actions>
+    </service>
     <service verb="get" noun="ExchangesByOrderId">
         <description>Get all exchanges detail for a given shopify orderId</description>
         <in-parameters>
