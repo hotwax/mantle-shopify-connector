@@ -94,17 +94,35 @@ class ShopifyWebhookFilter implements Filter {
             return
         }
         request.setAttribute("payload", ContextJavaUtil.jacksonMapper.readValue(requestBody, Map.class))
-
-
         EntityList systemMessageRemoteList = ec.entityFacade.find("moqui.service.message.SystemMessageRemote")
                 .condition("sendUrl", EntityCondition.ComparisonOperator.LIKE, "%"+shopDomain+"%")
-                .condition("sendSharedSecret", EntityCondition.ComparisonOperator.NOT_EQUAL, null)
+                .condition(ec.entity.conditionFactory.makeCondition(
+                        ec.entity.conditionFactory.makeCondition("accessScopeEnumId", EntityCondition.ComparisonOperator.NOT_EQUAL, "SHOP_NO_ACCESS"),
+                        EntityCondition.OR,
+                        ec.entity.conditionFactory.makeCondition("accessScopeEnumId", EntityCondition.ComparisonOperator.IS_NULL, null)))
                 .disableAuthz().list()
+
         for (EntityValue systemMessageRemote in systemMessageRemoteList) {
             // Call service to verify Hmac
             Map result = ec.serviceFacade.sync().name("co.hotwax.shopify.webhook.ShopifyWebhookServices.verify#Hmac")
-                    .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.sendSharedSecret])
+                    .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.sharedSecret])
                     .disableAuthz().call()
+            // TODO: Remove `verifyHmac` with `sendSharedSecret` fallback handling.
+            // This is temporary logic for backward compatibility.
+            // Once all production instances are updated with the new `SystemMessageRemote` mapping,
+            // this fallback should be removed to enforce the new verification flow.
+            //===========fallback code start=============
+            if (!result.isValidWebhook) {
+                result = ec.serviceFacade.sync().name("co.hotwax.shopify.webhook.ShopifyWebhookServices.verify#Hmac")
+                        .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.sendSharedSecret])
+                        .disableAuthz().call()
+            }
+            //===========fallback code end=============
+            if (!result.isValidWebhook && systemMessageRemote.oldSharedSecret) {
+                result = ec.serviceFacade.sync().name("co.hotwax.shopify.webhook.ShopifyWebhookServices.verify#Hmac")
+                        .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.oldSharedSecret])
+                        .disableAuthz().call()
+            }
             // If the hmac matched with the calculatedHmac, break the loop and return
             if (result.isValidWebhook) {
                 request.setAttribute("systemMessageRemoteId", systemMessageRemote.systemMessageRemoteId)

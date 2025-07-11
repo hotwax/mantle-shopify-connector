@@ -58,7 +58,7 @@ under the License.
             </if>
 
             <!-- Preparing the shopify url -->
-            <if condition="endPoint">
+            <!--<if condition="endPoint">
                 <then>
                     <set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
                     <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')])"/>
@@ -67,27 +67,36 @@ under the License.
                 <else-if condition="url">
                     <set field="shopifyUrl" from="url"/>
                 </else-if>
-            </if>
+            </if>-->
 
             <script><![CDATA[
                 import org.moqui.util.RestClient
+                import co.hotwax.shopify.util.ShopifyHelper
 
-                //shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
+                def sendUrl = ''
+                if (endPoint) {
+                   def apiUrl = new StringBuilder(ShopifyHelper.sanitizeUrl(systemMessageRemote.sendUrl, true))
+                   apiUrl.append('/admin/api/').append(System.getProperty('shopify_api_version')).append(endPoint)
+                   sendUrl = apiUrl.toString()
+                } else if (url) {
+                    sendUrl = url
+                }
+
                 // Prepare RestClient and call Shopify API
                 RestClient restClient = ec.service.rest()
                 restClient.timeoutRetry(true);
                 restClient.retry(2, 4);
                 restClient.method(requestType)
-                restClient.uri(shopifyUrl)
+                restClient.uri(sendUrl)
 
-                //Check for basic auth, in case of private app system should use basic auth
-                if (systemMessageRemote.username && systemMessageRemote.password && !systemMessageRemote.authHeaderName) {
-                    restClient.basicAuth(systemMessageRemote.username, systemMessageRemote.password);
-                } else if (systemMessageRemote.sharedSecret) {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sharedSecret);
-                } else {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.password);
+                def authHeaderName = systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token';
+                def accessToken = systemMessageRemote.sendSharedSecret;
+                //TODO: Fallback handling, this will be removed in upcoming releaes
+                if (systemMessageRemote.password) {
+                    accessToken = systemMessageRemote.password
                 }
+                restClient.addHeader(authHeaderName,accessToken);
+
                 restClient.contentType(contentType)
 
                 // Include parameters only if endPoint and parameters is not null
@@ -187,29 +196,32 @@ under the License.
                 <return error="true" message="Cannot post graphQL mutation, only read access is enabled for Shopify with systemMessageRemoteId, ${systemMessageRemoteId}."/>
             </if>
 
-            <set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
+            <!--<set field="remoteSendUrl" from="systemMessageRemote.sendUrl.endsWith('/') ? systemMessageRemote.sendUrl : systemMessageRemote.sendUrl+ '/'" />
             <set field="sendUrl" from="ec.resourceFacade.expand(remoteSendUrl, null, ['shopifyApiVersion': System.getProperty('shopify_api_version')])"/>
-            <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>
+            <set field="shopifyUrl" from="sendUrl + 'graphql.json'"/>-->
 
             <script><![CDATA[
                 import org.moqui.util.RestClient
+                import co.hotwax.shopify.util.ShopifyHelper
 
-                //shopifyUrl = ec.resourceFacade.expand(shopifyUrl, null, ["shopifyApiVersion": System.getProperty("shopify_api_version")])
+                def sendUrl = new StringBuilder(ShopifyHelper.sanitizeUrl(systemMessageRemote.sendUrl, true))
+                sendUrl.append('/admin/api/').append(System.getProperty('shopify_api_version')).append("/graphql.json")
+
+
                 // Prepare RestClient and call Shopify API
                 RestClient restClient = ec.service.rest()
                 restClient.timeoutRetry(true);
                 restClient.retry(2, 4);
                 restClient.method("POST")
-                restClient.uri(shopifyUrl)
-
-                //Check for basic auth, in case of private app system should use basic auth
-                if (systemMessageRemote.username && systemMessageRemote.password && !systemMessageRemote.authHeaderName) {
-                    restClient.basicAuth(systemMessageRemote.username, systemMessageRemote.password);
-                } else if (systemMessageRemote.sharedSecret) {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.sharedSecret);
-                } else {
-                    restClient.addHeader(systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token',systemMessageRemote.password);
+                restClient.uri(sendUrl.toString())
+                def authHeaderName = systemMessageRemote.authHeaderName?:'X-Shopify-Access-Token';
+                def accessToken = systemMessageRemote.sendSharedSecret;
+                //TODO: Fallback handling, this will be removed in upcoming releaes
+                if (systemMessageRemote.password) {
+                    accessToken = systemMessageRemote.password
                 }
+                restClient.addHeader(authHeaderName,accessToken);
+
                 restClient.contentType("application/json")
 
                 restClient.jsonObject([query:queryText, variables:variables])
@@ -233,9 +245,9 @@ under the License.
             </if>
             <set field="response" from="gqlResponse.data"/>
             <if condition="gqlResponse.extensions &amp;&amp; gqlResponse.extensions.cost">
-                <log level="info" message="GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
-                <log level="info" message="GraphQL actual query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
-                <log level="info" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
+                <log level="debug" message="GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
+                <log level="debug" message="GraphQL actual query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
+                <log level="debug" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
             </if>
         </actions>
     </service>

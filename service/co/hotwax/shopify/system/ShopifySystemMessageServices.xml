@@ -1621,8 +1621,12 @@ under the License.
                     logger.error("Error preparing CreatedProductIds Feed file", e)
                     }
                 </script>
-                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateCreatedProductsFeed', messageText:jsonFilePathRef,
-                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+
+                <!-- Creating a System Message record in SmsgReceived status. These system messages will be consumed by consume#AllReceivedSystemMessage service job. -->
+                <service-call name="create#moqui.service.message.SystemMessage" in-map="[systemMessageTypeId:'GenerateCreatedProductsFeed',
+                        systemMessageRemoteId:systemMessage.systemMessageRemoteId,messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1),
+                        parentMessageId:systemMessageId, statusId:'SmsgReceived', isOutgoing:'N', initDate:ec.user.nowTimestamp]" out-map="context"/>
+
                 <set field="hasNextPage" from="createdProductIdsResponse.response.products.pageInfo.hasNextPage"/>
                 <set field="cursor" from="createdProductIdsResponse.response.products.pageInfo.endCursor"/>
             </while>
@@ -1746,8 +1750,11 @@ under the License.
                     }
                 </script>
 
-                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateProductUpdatesFeed', messageText:jsonFilePathRef,
-                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessage.systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
+                <!-- Creating a System Message record in SmsgReceived status. These system messages will be consumed by consume#AllReceivedSystemMessage service job. -->
+                <service-call name="create#moqui.service.message.SystemMessage" in-map="[systemMessageTypeId:'GenerateProductUpdatesFeed',
+                        systemMessageRemoteId:systemMessage.systemMessageRemoteId,messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1),
+                        parentMessageId:systemMessageId, statusId:'SmsgReceived', isOutgoing:'N', initDate:ec.user.nowTimestamp]" out-map="context"/>
+
                 <set field="hasNextPage" from="updatedProductIdsResponse.response.products.pageInfo.hasNextPage"/>
                 <set field="cursor" from="updatedProductIdsResponse.response.products.pageInfo.endCursor"/>
             </while>
