@@ -1804,4 +1804,28 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="ResetInventoryQoh.ftl" isFile="Y" resourceId="ResetInventoryQoh" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                mutation InventorySet($input: InventorySetQuantitiesInput!) {
+                    inventorySetQuantities(input: $input) {
+                        inventoryAdjustmentGroup {
+                            changes {
+                                name
+                                delta
+                            }
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
 </entity-facade-xml>
