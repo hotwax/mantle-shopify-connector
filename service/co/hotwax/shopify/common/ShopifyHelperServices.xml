@@ -116,9 +116,7 @@ under the License.
                 if (requestBody != null) {
                     restClient.jsonObject(requestBody)
                 }
-                try {
-                ec.logger.info("Chinmay Sharma: "+ accessToken + " " + authHeaderName);
-                ec.logger.info("Shopify Request: " + sendUrl + " with parameters: " + parameters + " and requestBody: " + requestBody);
+                try {                
                     RestClient.RestResponse restResponse = restClient.call()
                     response = restResponse.jsonObject()
                     statusCode = restResponse.getStatusCode()
