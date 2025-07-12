@@ -698,6 +698,32 @@
                                                     variant {
                                                         id
                                                     }
+                                                    discountAllocations{
+                                                        allocatedAmountSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                    }
+                                                    taxLines{
+                                                        priceSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                        rate
+                                                        title
+                                                    }
                                                 }
                                                 location {
                                                     id
