@@ -116,7 +116,7 @@ under the License.
                 if (requestBody != null) {
                     restClient.jsonObject(requestBody)
                 }
-                try {                
+                try {
                     RestClient.RestResponse restResponse = restClient.call()
                     response = restResponse.jsonObject()
                     statusCode = restResponse.getStatusCode()
