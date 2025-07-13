@@ -75,6 +75,9 @@ under the License.
 
                 def sendUrl = ''
                 if (endPoint) {
+                   if (!endPoint.startsWith('/')) {
+                       endPoint = '/' + endPoint
+                   }
                    def apiUrl = new StringBuilder(ShopifyHelper.sanitizeUrl(systemMessageRemote.sendUrl, true))
                    apiUrl.append('/admin/api/').append(System.getProperty('shopify_api_version')).append(endPoint)
                    sendUrl = apiUrl.toString()
