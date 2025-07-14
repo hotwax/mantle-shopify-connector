@@ -1737,7 +1737,7 @@ under the License.
                 </script>
 
                 <!-- Creating a System Message record in SmsgReceived status. These system messages will be consumed by consume#AllReceivedSystemMessage service job. -->
-                <service-call name="create#moqui.service.message.SystemMessage" in-map="[systemMessageTypeId:'GenerateProductUpdatesFeed',
+                <service-call name="create#moqui.service.message.SystemMessage" in-map="[systemMessageTypeId:'GenerateCreatedProductsFeed',
                         systemMessageRemoteId:systemMessage.systemMessageRemoteId,messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1),
                         parentMessageId:systemMessageId, statusId:'SmsgReceived', isOutgoing:'N', initDate:ec.user.nowTimestamp]" out-map="context"/>
 
