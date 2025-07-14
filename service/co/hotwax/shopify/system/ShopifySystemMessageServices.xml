@@ -984,7 +984,7 @@ under the License.
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
                 <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
             </entity-find-one>
-            <set field="shopId" from="systemMessageRemote?.remoteId"/>
+            <set field="shopId" from="systemMessageRemote?.internalId"/>
 
             <if condition="sendSmrParam">
                 <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
