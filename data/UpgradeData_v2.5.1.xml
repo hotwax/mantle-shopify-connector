@@ -1,21 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <entity-facade-xml type="ext-upgrade">
-
-    <!-- ServiceJob data for generating feed for specific Shopify Product Ids -->
-    <Product productId="IMP_SHPY_PRD_ID" productTypeId="SERVICE" internalName="IMP_SHPY_PRD_ID"
-             productName="Import Shopify Product Ids" description="Import Shopify Product Ids"
-             primaryProductCategoryId="PRODUCT_SYS_JOB"/>
-    <ProductCategoryMember productId="IMP_SHPY_PRD_ID" productCategoryId="PRODUCT_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <ProductCategoryMember productId="IMP_SHPY_PRD_ID" productCategoryId="UPLOAD_SYS_JOB" fromDate="2024-01-01 00:00:00"/>
-    <moqui.basic.Enumeration enumId="IMP_SHPY_PRD_ID" enumCode="IMP_SHPY_PRD_ID" description="Import Shopify Product Ids" enumTypeId="PRODUCT_SYS_JOB"/>
-    <moqui.service.job.ServiceJob jobName="IMP_SHPY_PRD_IDS" description="Import Shopify Product Ids" jobTypeEnumId="IMP_SHPY_PRD_ID" instanceOfProductId="IMP_SHPY_PRD_ID"
-            serviceName="co.hotwax.shopify.product.ShopifyProductServices.generate#ShopifyProductIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
-        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
-        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
-        <parameters parameterName="shopifyProductIds" parameterValue=""/>
-    </moqui.service.job.ServiceJob>
-    <moqui.resource.DbResourceFile filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResource filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
@@ -36,7 +22,7 @@
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
-    </moqui.resource.DbResourceFile>
+    </moqui.resource.DbResource>
     <moqui.resource.DbResourceFile filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
