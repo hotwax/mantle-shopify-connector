@@ -15,7 +15,7 @@
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="shopifyProductIds" parameterValue=""/>
     </moqui.service.job.ServiceJob>
-    <moqui.resource.DbResource filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
+    <moqui.resource.DbResourceFile filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
@@ -36,8 +36,8 @@
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQL">
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
@@ -80,8 +80,8 @@
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
-    </moqui.resource.DbResource>
-    <moqui.resource.DbResource filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
                 <![CDATA[
@@ -169,5 +169,5 @@
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
-    </moqui.resource.DbResource>
+    </moqui.resource.DbResourceFile>
 </entity-facade-xml>
