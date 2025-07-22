@@ -18,8 +18,7 @@ tasks.withType(GroovyCompile) { options.compilerArgs << "-proc:none" }
 dependencies {
     implementation project(':framework')
 
-    // https://mvnrepository.com/artifact/org.json/json
-    implementation 'org.json:json:20230618'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.0'
     implementation 'org.apache.commons:commons-text:1.10.0'
 }
 
