@@ -1809,32 +1809,8 @@
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
-                mutation {
-                    fulfillmentCreate (
-                        fulfillment: {
-                            lineItemsByFulfillmentOrder: [
-                                <#list lineItemsByFulfillmentOrder as fulfillmentOrder>
-                                {
-                                    fulfillmentOrderId: "${fulfillmentOrder.fulfillmentOrderId}",
-                                    fulfillmentOrderLineItems: [
-                                        <#list fulfillmentOrder.fulfillmentOrderLineItems as item>
-                                        {
-                                            id: "${item.id}",
-                                            quantity: ${item.quantity}
-                                        }<#if item_has_next>,</#if>
-                                        </#list>
-                                    ]
-                                }<#if fulfillmentOrder_has_next>,</#if>
-                                </#list>
-                            ],
-                            notifyCustomer: ${notifyCustomer},
-                            trackingInfo: {<#if carrierPartyId?has_content>
-                                company: "${carrierPartyId}"</#if><#if trackingIdNumber?has_content>,
-                                number: "${trackingIdNumber}"</#if><#if trackingUrl?has_content>,
-                                url: "${trackingUrl}"</#if>
-                            }
-                        }
-                    ) {
+                mutation fulfillmentCreate ($fulfillment: FulfillmentInput!) {
+                    fulfillmentCreate (fulfillment: $fulfillment) {
                         fulfillment {
                             id
                         }
