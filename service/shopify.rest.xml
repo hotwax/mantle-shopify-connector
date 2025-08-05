@@ -36,6 +36,11 @@ under the License.
             </method>
         </resource>
     </resource>
+    <resource name="return" require-authentication="anonymous-all">
+        <resource name="refund" require-authentication="anonymous-all">
+            <method type="get"><service name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails"/></method>
+        </resource>
+    </resource>
     <resource name="bulk" require-authentication="anonymous-all">
         <resource name="query" require-authentication="anonymous-all">
             <method type="post">
