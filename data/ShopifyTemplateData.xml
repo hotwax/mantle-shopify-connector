@@ -782,6 +782,9 @@
                                         edges {
                                             node {
                                                 id
+                                                device{
+                                                    id
+                                                }
                                                 parentTransaction {
                                                     id
                                                 }
