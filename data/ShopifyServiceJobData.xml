@@ -322,5 +322,6 @@ under the License.
         <parameters parameterName="systemMessageTypeId" parameterValue="GenerateProductUpdatesFeed"/>
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="shopifyProductIds" parameterValue=""/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
     </moqui.service.job.ServiceJob>
 </entity-facade-xml>
