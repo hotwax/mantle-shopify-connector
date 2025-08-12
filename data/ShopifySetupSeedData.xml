@@ -718,4 +718,11 @@ under the License.
             consumeServiceName="">
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for importing Shopify New Orders Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyNewOrdersFeed"
+              description="Shopify New Orders Feed"
+            parentTypeId="LocalFeedFile"
+            consumeServiceName="">
+    </moqui.service.message.SystemMessageType>
 </entity-facade-xml>
