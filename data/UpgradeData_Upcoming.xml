@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Enumeration for Shopify Related Jobs -->
+<entity-facade-xml type="ext-upgrade">
+    <!-- Enumeration Types -->
+    <moqui.basic.EnumerationType enumTypeId="FULFILLMENT_SYS_JOB" description="Fulfillment Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="MISC_SYS_JOB" description="Miscellaneous Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="PRODUCT_SYS_JOB" description="Product Jobs"/>
+    <moqui.basic.EnumerationType enumTypeId="ShopifyMessageTypeEnum" description="Shopify System Message Type Enum"/>
+
+    <!-- Fulfillment System Jobs -->
+    <moqui.basic.Enumeration enumId="POL_OMS_FLFLMNT_FD" enumCode="POL_OMS_FLFLMNT_FD" description="Poll OMS Fulfilled Items Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="SND_SHPFY_FUL_ACK_FD" enumCode="SND_SHPFY_FUL_ACK_FD" description="Send Shopify Fulfillment Ack Feed" enumTypeId="FULFILLMENT_SYS_JOB"/>
+
+    <!-- Miscellaneous System Jobs -->
+    <moqui.basic.Enumeration enumId="SND_BLK_SYS_M_SHPFY" enumCode="SND_BLK_SYS_M_SHPFY" description="Send next bulk query system message in queue" enumTypeId="MISC_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="POL_BLK_RSLT_SHPFY" enumCode="POL_BLK_RSLT_SHPFY" description="Poll current bulk operation query result" enumTypeId="MISC_SYS_JOB"/>
+
+    <!-- Product System Jobs -->
+    <moqui.basic.Enumeration enumId="QUEUE_CRT_PRD_IDS_FD" enumCode="QueueCreatedProductsFeed" description="Queue Created Products Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+    <moqui.basic.Enumeration enumId="QUEUE_UPD_PRD_FEED" enumCode="QueueUpdatedProductsFeed" description="Queue Product Updates Feed" enumTypeId="PRODUCT_SYS_JOB"/>
+
+    <!-- Shopify Message Types (with Relations) -->
+    <moqui.basic.Enumeration enumId="SendBulkUpdateProductTagsResult" enumCode="SendBulkUpdateProductTagsResult" description="Send Bulk Update Product Tags Result" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="BulkUpdateProductTags" enumCode="BulkUpdateProductTags" description="Bulk Update Product Tags" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductTagsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="ProductTagsFeed" enumCode="ProductTagsFeed" description="Product Tags Feed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductTags" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <moqui.basic.Enumeration enumId="SendBulkUpdateProductVariantsResult" enumCode="SendBulkUpdateProductVariantsResult" description="Send Bulk Update Product Variants Result" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="BulkUpdateProductVariants" enumCode="BulkUpdateProductVariants" description="Bulk Update Product Variants" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkUpdateProductVariantsResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="ProductVariantsFeed" enumCode="ProductVariantsFeed" description="Product Variants Feed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="BulkUpdateProductVariants" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <moqui.basic.Enumeration enumId="SendBulkVariantsMetafieldQueryResult" enumCode="SendBulkVariantsMetafieldQueryResult" description="Send Bulk Variants Metafield Query Result" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="BulkVariantsMetafieldQuery" enumCode="BulkVariantsMetafieldQuery" description="Bulk Variants Metafield Query" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkVariantsMetafieldQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <moqui.basic.Enumeration enumId="SendBulkOrderMetafieldsQueryResult" enumCode="SendBulkOrderMetafieldsQueryResult" description="Send Bulk Order Metafields Query Result" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration enumId="BulkOrderMetafieldsQuery" enumCode="BulkOrderMetafieldsQuery" description="Bulk Order Metafields Query" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendBulkOrderMetafieldsQueryResult" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+
+    <moqui.basic.Enumeration enumId="BulkOperationsFinish" enumCode="bulk_operations/finish" description="Shopify Bulk Operation Finish Webhook" enumTypeId="ShopifyMessageTypeEnum"/>
+</entity-facade-xml>
