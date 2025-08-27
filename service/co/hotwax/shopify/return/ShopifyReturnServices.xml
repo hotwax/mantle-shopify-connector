@@ -230,6 +230,7 @@ under the License.
             </while>
         </actions>
     </service>
+
     <service verb="get" noun="ReverseFulfillmentOrders" authenticate="anonymous-all">
         <description>Get reverse fulfillment orders for a given Return Id</description>
         <in-parameters>
@@ -408,7 +409,6 @@ under the License.
             <set field="orderReturns.returns" from="returns"/>
         </actions>
     </service>
-
     <service verb="get" noun="RefundsByOrderId">
         <description>Get all returns detail for a given shopify orderId</description>
         <in-parameters>
@@ -421,32 +421,23 @@ under the License.
         <actions>
             <set field="orderRefunds" from="[:]"/>
             <set field="refunds" from="[]"/>
-                <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundIdsByOrderIdQuery.ftl", "")
-                </script>
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundResponse"/>
-                <if condition="!refundResponse.response.node">
-                    <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
-                </if>
-                <!-- Getting all the returnId for the shopifyOrderId-->
-                <set field="refundIdList" from="[]"/>
-                <if condition="refundResponse.response.node.refunds">
-                    <script>refundIdList.addAll(refundResponse.response.node.refunds)</script>
-                </if>
-
-            <!-- Getting return details for each returnId-->
-                <iterate list="refundIdList" entry="refund">
+            <script>
+                queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/RefundIdsByOrderIdQuery.ftl", "")
+            </script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="refundResponse"/>
+            <if condition="!refundResponse.response.node">
+                <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+            </if>
+            <if condition="refundResponse.response.node.refunds">
+                <iterate list="refundResponse.response.node.refunds" entry="refund">
                     <set field="refundIdString" from="refund.id"/>
                     <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, refundId:refundIdString]" out-map="refundDetails"/>
-                    <script>refunds.addAll(refundDetails.refundDetail)</script>
-
+                    <script>refunds.add(refundDetails.refundDetail)</script>
                 </iterate>
-<!--            <set field="orderRefunds.id" from="refundResponse.response.node.refunds.id"/>-->
-
+            </if>
             <set field="orderRefunds.refunds" from="refunds"/>
         </actions>
     </service>
-
     <service verb="get" noun="ExchangesByOrderId">
         <description>Get all exchanges detail for a given shopify orderId</description>
         <in-parameters>

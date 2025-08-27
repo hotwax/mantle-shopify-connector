@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResource filename="RefundIdsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundIdsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                   <#ftl output_format="HTML">
+                   <@compress single_line=true>
+                   query {
+                     node(id: "${shopifyOrderId}") {
+                       id
+                       ... on Order {
+                         refunds {
+                           id
+                         }
+                       }
+                     }
+                   }
+                   </@compress>
+               ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResourceFile filename="ReturnedOrderIdsQuery.ftl" isFile="Y" resourceId="ReturnedOrderIdsQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                   <#ftl output_format="HTML">
+                   <@compress single_line=true>
+                       <#assign returnRefundFilter = "-return_status:'IN_PROGRESS' AND (return_status:'RETURNED' OR (return_status:'NO_RETURN' AND (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED')) OR (financial_status:'PARTIALLY_REFUNDED' OR financial_status:'REFUNDED'))"/>
+                       <#assign dateFilter = ""/>
+                       <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                       <#assign dateFilter = "updated_at:>'${queryParams.fromDate}'"/>
+                       <#elseif queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                           <#assign dateFilter = "updated_at:<'${queryParams.thruDate}'"/>
+                       <#elseif queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                           <#assign dateFilter = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                       </#if>
+                        <#if dateFilter?has_content>
+                           <#assign filterQuery = "${dateFilter} AND ${returnRefundFilter}"/>
+                       <#else>
+                           <#assign filterQuery = returnRefundFilter/>
+                       </#if>
+                       query {
+                           orders (first: 100<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
+                               edges {
+                                   node {
+                                       id
+                                       name
+                                       returnStatus
+                                       refunds {
+                                           id
+                                       }
+                                   }
+                               }
+                               pageInfo {
+                                   endCursor
+                                   hasNextPage
+                               }
+                           }
+                       }
+                   </@compress>
+               ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile filename="RefundLineItemsByIdQuery.ftl" isFile="Y" resourceId="RefundLineItemsByIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                lineItem {
+                                                    id
+                                                    variant {
+                                                        id
+                                                    }
+                                                    discountAllocations{
+                                                        allocatedAmountSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                    }
+                                                    taxLines{
+                                                        priceSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                        rate
+                                                        title
+                                                    }
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                priceSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                restockType
+                                                quantity
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>
+                ]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResourceFile>
+</entity-facade-xml>
