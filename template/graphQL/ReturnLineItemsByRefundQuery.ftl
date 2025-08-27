@@ -47,13 +47,6 @@ under the License.
                         }
                     }
                 }
-                transactions{
-                    nodes{
-                        device{
-                            id
-                        }
-                    }
-                }
             }
         }
     }
