@@ -740,6 +740,11 @@
                                                 }
                                                 restockType
                                                 quantity
+                                                subtotalSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                    }
+                                                }
                                                 totalTaxSet{
                                                     presentmentMoney{
                                                         amount

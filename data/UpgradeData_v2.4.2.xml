@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<entity-facade-xml type="ext-upgrade">
+<entity-facade-xml type="ext-upgrade-v2.4.2">
 
     <!-- ServiceJob data for generating feed for specific Shopify Product Ids -->
     <Product productId="IMP_SHPY_PRD_ID" productTypeId="SERVICE" internalName="IMP_SHPY_PRD_ID"
