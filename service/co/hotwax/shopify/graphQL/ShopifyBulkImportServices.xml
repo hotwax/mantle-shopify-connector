@@ -58,8 +58,12 @@ under the License.
         <actions>
             <script><![CDATA[
                 import org.moqui.util.RestClient
-                import org.moqui.impl.context.ContextJavaUtil
-                import org.json.XML
+                import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+                import com.fasterxml.jackson.databind.ObjectMapper;
+                import com.fasterxml.jackson.databind.JsonNode;
+                import javax.xml.stream.XMLInputFactory;
+                import javax.xml.stream.XMLStreamReader;
+                import java.io.StringReader
 
                 RestClient restClient = ec.service.rest()
                 restClient.method("POST")
@@ -75,9 +79,25 @@ under the License.
                 fileText = ec.resourceFacade.template(fileLocation, "")
                 restClient.addFilePart("file", fileName, fileText)
 
+                Map<String, Object> response = [:];
                 try {
                     RestClient.RestResponse restResponse = restClient.call()
-                    response = ContextJavaUtil.jacksonMapper.readValue(XML.toJSONObject(restResponse.text()).toString(), Map.class)
+                    def responseText = restResponse.text()
+                    def factory = XMLInputFactory.newInstance()
+                    String rootName = null
+                    try (def reader = factory.createXMLStreamReader(new StringReader(responseText))) {
+                        while (reader.hasNext()) {
+                            if (reader.next() == XMLStreamReader.START_ELEMENT) {
+                                rootName = reader.localName
+                                break
+                            }
+                        }
+                    }
+                    // Parse XML to JsonNode
+                    XmlMapper xmlMapper = new XmlMapper();
+                    JsonNode jsonNode = xmlMapper.readTree(responseText);
+                    ObjectMapper jsonMapper = new ObjectMapper();
+                    response.put(rootName, jsonMapper.convertValue(jsonNode, Map.class));
                 } catch (Exception e) {
                     ec.logger.error("Error in API call, Error: ${e.getMessage()}")
                 }
