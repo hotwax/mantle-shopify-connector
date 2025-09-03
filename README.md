@@ -25,7 +25,7 @@ This is the global configuration needed for most features in this integration.
 <moqui.service.message.SystemMessageRemote systemMessageRemoteId="[Your ID]"
         description="Shopify Connection Configuration"
         sendUrl="https://[shopifyHost]/admin/api/${shopifyApiVersion}" password="[apiToken]"
-        accessScopeEnumId="SHOP_READ_WRITE_ACCESS"/>
+        accessScopeEnumId="SHOP_RW_ACCESS"/>
 ```
 
 ## Shopify Fulfillment API Integration
