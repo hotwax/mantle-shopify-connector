@@ -684,8 +684,13 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="fromDate"/>
             <parameter name="thruDate"/>
+            <parameter name="bufferTime" type="Long"/>
         </in-parameters>
         <actions>
+            <log message="=========== fromDate  ---   ${fromDate} ==========="/>
+            <log message="=========== thruDate  ---   ${thruDate} ==========="/>
+            <log message="=========== bufferTime  ---   ${bufferTime} ==========="/>
+
             <set field="queryParams" from="[:]"/>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
@@ -694,17 +699,26 @@ under the License.
                     <order-by field-name="-processedDate"/>
                 </entity-find>
                 <if condition="systemMessageList">
-                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
+                    <set field="fromDate" from="java.sql.Timestamp.from(systemMessageList[0].processedDate.toInstant().minus(java.time.Duration.ofMinutes(bufferTime)))"/>
                 </if>
             </if>
             <if condition="fromDate">
-                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(fromDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
             </if>
             <if condition="thruDate">
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
+            <if condition="!thruDate">
+                <set field="thruDate" from="java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofMinutes(bufferTime as long)))"/>
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(thruDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
+            </if>
+            <log message="=========== fromDate  ---   ${fromDate} ==========="/>
+            <log message="=========== thruDate  ---   ${thruDate} ==========="/>
+            <log message="=========== bufferTime  ---   ${bufferTime} ==========="/>
+            <log message="=========== queryParams  ---  ${queryParams} ============ "/>
             <log level="warn" message="SERVICE CALL STARTED FOR SYSTEM MESSAGE QUEUE [systemMessageTypeId:${systemMessageTypeId}, systemMessageRemoteId:${systemMessageRemoteId},
                                        messageText:${org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)},  sendNow:true]"/>
 
