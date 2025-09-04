@@ -687,10 +687,6 @@ under the License.
             <parameter name="bufferTime" type="Long"/>
         </in-parameters>
         <actions>
-            <log message="=========== fromDate  ---   ${fromDate} ==========="/>
-            <log message="=========== thruDate  ---   ${thruDate} ==========="/>
-            <log message="=========== bufferTime  ---   ${bufferTime} ==========="/>
-
             <set field="queryParams" from="[:]"/>
             <if condition="!fromDate">
                 <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
@@ -715,10 +711,6 @@ under the License.
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(thruDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
-            <log message="=========== fromDate  ---   ${fromDate} ==========="/>
-            <log message="=========== thruDate  ---   ${thruDate} ==========="/>
-            <log message="=========== bufferTime  ---   ${bufferTime} ==========="/>
-            <log message="=========== queryParams  ---  ${queryParams} ============ "/>
             <log level="warn" message="SERVICE CALL STARTED FOR SYSTEM MESSAGE QUEUE [systemMessageTypeId:${systemMessageTypeId}, systemMessageRemoteId:${systemMessageRemoteId},
                                        messageText:${org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)},  sendNow:true]"/>
 
