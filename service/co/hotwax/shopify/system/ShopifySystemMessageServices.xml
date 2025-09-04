@@ -694,8 +694,11 @@ under the License.
                     <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
                     <order-by field-name="-processedDate"/>
                 </entity-find>
-                <if condition="systemMessageList">
+                <if condition="systemMessageList &amp;&amp; bufferTime">
                     <set field="fromDate" from="java.sql.Timestamp.from(systemMessageList[0].processedDate.toInstant().minus(java.time.Duration.ofMinutes(bufferTime)))"/>
+                    <else>
+                        <set field="fromDate" from="systemMessageList[0].processedDate"/>
+                    </else>
                 </if>
             </if>
             <if condition="fromDate">
@@ -706,7 +709,7 @@ under the License.
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
-            <if condition="!thruDate">
+            <if condition="!thruDate &amp;&amp; bufferTime">
                 <set field="thruDate" from="java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofMinutes(bufferTime as long)))"/>
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(thruDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
