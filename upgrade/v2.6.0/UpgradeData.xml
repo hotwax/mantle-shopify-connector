@@ -4,4 +4,13 @@
     <moqui.basic.Enumeration description="Shopify Shop No Access" enumCode="SHOP_NO" enumId="SHOP_NO_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
     <moqui.basic.Enumeration description="Shopify Shop Read Only Access" enumCode="SHOP_READ" enumId="SHOP_READ_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
     <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumCode="SHOP_READ_WRITE" enumId="SHOP_READ_WRITE_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
+
+    <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeed" description="Queue returned orderIds feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#ReturnedOrderIdsFeed" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateReturnedOrderIdsFeed"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="bufferTime" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
 </entity-facade-xml>
