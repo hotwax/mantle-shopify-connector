@@ -684,7 +684,7 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="fromDate"/>
             <parameter name="thruDate"/>
-            <parameter name="bufferTime" type="Long"/>
+            <parameter name="bufferTime" type="Integer" default-value="1"/>
         </in-parameters>
         <actions>
             <set field="queryParams" from="[:]"/>
@@ -694,23 +694,22 @@ under the License.
                     <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
                     <order-by field-name="-processedDate"/>
                 </entity-find>
-                <if condition="systemMessageList &amp;&amp; bufferTime">
-                    <set field="fromDate" from="java.sql.Timestamp.from(systemMessageList[0].processedDate.toInstant().minus(java.time.Duration.ofMinutes(bufferTime)))"/>
-                    <else>
-                        <set field="fromDate" from="systemMessageList[0].processedDate"/>
-                    </else>
+                <if condition="systemMessageList">
+                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
                 </if>
             </if>
             <if condition="fromDate">
-                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(fromDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="fromTs" from="Timestamp.valueOf(fromDate)"/>
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(fromTs.toInstant().minus(java.time.Duration.ofMinutes(bufferTime)),java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
             </if>
             <if condition="thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <set field="thruTs" from="Timestamp.valueOf(thruDate)"/>
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(thruTs.toInstant().minus(java.time.Duration.ofMinutes(bufferTime)), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
-            <if condition="!thruDate &amp;&amp; bufferTime">
-                <set field="thruDate" from="java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofMinutes(bufferTime as long)))"/>
+            <if condition="!thruDate">
+                <set field="thruDate" from="java.sql.Timestamp.from(java.time.Instant.now().minus(java.time.Duration.ofMinutes(bufferTime)))"/>
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(thruDate.toInstant(), java.time.ZoneId.of('UTC'))"/>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
