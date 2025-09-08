@@ -1374,7 +1374,11 @@ under the License.
                 </if>
                 <set field="thruDateTs" from="ec.user.nowTimestamp"/>
                 <if condition="bufferTime">
-                        <set field="thruDateTs" from="new java.sql.Timestamp(thruDateTs.getTime() - (bufferTime * 60 * 1000))"/>
+                    <script>
+                        Calendar delayCal = ec.user.getNowCalendar();
+                        delayCal.add(Calendar.MINUTE, (int) -bufferTime);
+                        thruDateTs = new java.sql.Timestamp(delayCal.getTimeInMillis());
+                    </script>
                 </if>
                 <set field="thruDate" from="thruDateTs.toString()" type="String"/>
             </if>
