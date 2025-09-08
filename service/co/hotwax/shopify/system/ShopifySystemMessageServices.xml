@@ -1377,7 +1377,7 @@ under the License.
                     delayCal.add(Calendar.MINUTE, (int) -bufferTime);
                     thruDateTs = new Timestamp(delayCal.getTimeInMillis());
                 </script>
-                <set field="thruDate" from="thruDateTs.toString()" type="String"/>
+                <set field="thruDate" from="thruDateTs.toString()"/>
             </if>
             <if condition="fromDate">
                 <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>

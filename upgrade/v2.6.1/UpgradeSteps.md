@@ -8,12 +8,13 @@
             <parameter name="runAsBatch" parameterValue="true"/>
         </moqui.service.job.ServiceJob>
         ```
-3. Check for last System Message ProcessedDate, add that date as fromDate in the job and update it.
-        ```Sql query
-        SELECT MAX(processed_date) AS last_processed_date
-        FROM system_message
-        WHERE system_message_type_id = 'GenerateReturnedOrderIdsFeed';
+3. Update the SystemMessage with the latest processed date:
+        ```SQL query
+                SELECT SYSTEM_MESSAGE_ID, INIT_DATE, MESSAGE_DATE
+                FROM system_message
+                WHERE system_message_type_id = 'GenerateReturnedOrderIdsFeed'
+                ORDER BY PROCESSED_DATE DESC
+                LIMIT 1;
         ```
-4. Run the job once with this fromDate.
-5. After the first run, remove fromDate and update the job.
-6. Un-pause the job to resume normal scheduling.
+4. Retrieve the InitDate from the result.
+5. Update the same SystemMessage by adding MessageDate to the retrieved InitDate.
