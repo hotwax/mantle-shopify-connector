@@ -4,11 +4,12 @@
 2. Add below data
         ```xml
         <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeed" serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage">
-            <parameters parameterName="bufferTime" parameterValue=""/>
+            <parameters parameterName="additionalParameters" parameterValue=""/>
             <parameter name="runAsBatch" parameterValue="true"/>
         </moqui.service.job.ServiceJob>
         ```
-3. Update the SystemMessage with the latest processed date:
+3. Provide value for additionalParameters. Example- {"thruDateBuffer":5}
+4. Update the SystemMessage with the Init date:
         ```SQL query
                 SELECT SYSTEM_MESSAGE_ID, INIT_DATE, MESSAGE_DATE
                 FROM system_message
@@ -16,5 +17,5 @@
                 ORDER BY PROCESSED_DATE DESC
                 LIMIT 1;
         ```
-4. Retrieve the InitDate from the result.
-5. Update the same SystemMessage by adding MessageDate to the retrieved InitDate.
+5. Retrieve the InitDate from the result.
+6. Update the same SystemMessage’s message_date with the retrieved init_date value.
