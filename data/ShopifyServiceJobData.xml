@@ -206,8 +206,8 @@ under the License.
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
-        <parameters parameterName="bufferTime" parameterValue=""/>
-        <parameter name="runAsBatch" parameterValue="true"/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
     <!-- ServiceJob data for queuing Appeasement Ids feed -->

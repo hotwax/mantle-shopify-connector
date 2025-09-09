@@ -1350,7 +1350,6 @@ under the License.
             <parameter name="thruDateLabel"/>
             <parameter name="additionalParameters" type="Map"/>
             <parameter name="runAsBatch" type="Boolean" default-value="false"/>
-            <parameter name="bufferTime" type="Integer" default-value="0"/>
         </in-parameters>
         <actions>
             <set field="queryParams" from="[:]"/>
@@ -1372,11 +1371,14 @@ under the License.
                         <set field="fromDate" from="systemMessageList[0].messageDate" type="String"/>
                     </if>
                 </if>
-                <script>
-                    Calendar delayCal = ec.user.getNowCalendar();
-                    delayCal.add(Calendar.MINUTE, (int) -bufferTime);
-                    thruDateTs = new Timestamp(delayCal.getTimeInMillis());
-                </script>
+                <set field="thruDateTs" from="ec.user.nowTimestamp"/>
+                <if condition="queryParams.thruDateBuffer">
+                    <script>messageDate
+                        Calendar delayCal = ec.user.getNowCalendar();
+                        delayCal.add(Calendar.MINUTE, -queryParams.thruDateBuffer.toInteger());
+                        thruDateTs = new Timestamp(delayCal.getTimeInMillis());
+                    </script>
+                </if>
                 <set field="thruDate" from="thruDateTs.toString()"/>
             </if>
             <if condition="fromDate">
