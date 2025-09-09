@@ -1350,6 +1350,7 @@ under the License.
             <parameter name="thruDateLabel"/>
             <parameter name="additionalParameters" type="Map"/>
             <parameter name="runAsBatch" type="Boolean" default-value="false"/>
+            <parameter name="bufferTime" type="Integer" default-value="0"/>
         </in-parameters>
         <actions>
             <set field="queryParams" from="[:]"/>
@@ -1371,7 +1372,12 @@ under the License.
                         <set field="fromDate" from="systemMessageList[0].messageDate" type="String"/>
                     </if>
                 </if>
-                <set field="thruDate" from="ec.user.nowTimestamp" type="String"/>
+                <script>
+                    Calendar delayCal = ec.user.getNowCalendar();
+                    delayCal.add(Calendar.MINUTE, (int) -bufferTime);
+                    thruDateTs = new Timestamp(delayCal.getTimeInMillis());
+                </script>
+                <set field="thruDate" from="thruDateTs.toString()"/>
             </if>
             <if condition="fromDate">
                 <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
@@ -1379,9 +1385,6 @@ under the License.
             </if>
             <if condition="thruDate">
                 <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
-                <if condition="queryParams.thruDateBuffer">
-                    <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
-                </if>
                 <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
             </if>
             <log message="queryParams: ${queryParams}"/>

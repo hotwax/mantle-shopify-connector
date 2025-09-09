@@ -206,7 +206,7 @@ under the License.
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="fromDate" parameterValue=""/>
         <parameters parameterName="thruDate" parameterValue=""/>
-        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="bufferTime" parameterValue=""/>
         <parameter name="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
