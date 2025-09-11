@@ -3,6 +3,6 @@
 <entity-facade-xml type="ext-upgrade">
     <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeed" serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage">
         <parameters parameterName="additionalParameters" parameterValue=""/>
-        <parameter name="runAsBatch" parameterValue="true"/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 </entity-facade-xml>
