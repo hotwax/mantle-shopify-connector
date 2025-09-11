@@ -391,6 +391,12 @@
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
+                <#if !includeClosed>
+                    <#assign query = "-status:CLOSED"/>
+                </#if>
+                <#if assignedLocationId?has_content>
+                    <#assign query = "${query} assigned_location_id:${assignedLocationId}"/>
+                </#if>
                 query{
                     node(id: "${shopifyOrderId}") {
                         id
@@ -398,7 +404,7 @@
                         Order {
                             id
                             name
-                            fulfillmentOrders (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                            fulfillmentOrders (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query: "${query}") {
                                 edges {
                                     node {
                                         id
