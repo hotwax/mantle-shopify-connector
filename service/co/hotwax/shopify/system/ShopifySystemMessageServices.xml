@@ -678,43 +678,6 @@ under the License.
             </if>
         </actions>
     </service>
-    <service verb="queue" noun="ReturnedOrderIdsFeed" authenticate="anonymous-all">
-        <in-parameters>
-            <parameter name="systemMessageTypeId" required="true"/>
-            <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="fromDate"/>
-            <parameter name="thruDate"/>
-        </in-parameters>
-        <actions>
-            <set field="queryParams" from="[:]"/>
-            <if condition="!fromDate">
-                <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
-                    <econdition field-name="systemMessageTypeId" operator="equals" from="systemMessageTypeId"/>
-                    <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
-                    <order-by field-name="-processedDate"/>
-                </entity-find>
-                <if condition="systemMessageList">
-                    <set field="fromDate" from="systemMessageList[0].processedDate" type="String"/>
-                </if>
-            </if>
-            <if condition="fromDate">
-                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
-                <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
-            </if>
-            <if condition="thruDate">
-                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
-                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
-            </if>
-            <log level="warn" message="SERVICE CALL STARTED FOR SYSTEM MESSAGE QUEUE [systemMessageTypeId:${systemMessageTypeId}, systemMessageRemoteId:${systemMessageRemoteId},
-                                       messageText:${org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams)},  sendNow:true]"/>
-
-            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                          in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId,
-                                       messageText:org.moqui.impl.context.ContextJavaUtil.jacksonMapper.writeValueAsString(queryParams),  sendNow:true]"
-                          out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
-            <log level="warn" message="SERVICE CALL ENDED FOR SYSTEM MESSAGE QUEUE"/>
-        </actions>
-    </service>
 
     <service verb="generate" noun="ReturnedOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <description>Generate returned orderIds feed.</description>
