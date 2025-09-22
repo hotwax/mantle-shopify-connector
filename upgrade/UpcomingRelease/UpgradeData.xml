@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
-    <moqui.basic.Enumeration description="Shopify Shop Read and Write Access" enumCode="SHOP_READ_WRITE" enumId="SHOP_RW_ACCESS" enumTypeId="ShopifyShopAccessScope"/>
-
     <moqui.resource.DbResource filename="FulfillmentOrdersByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrdersByOrderIdQuery"
                                parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
