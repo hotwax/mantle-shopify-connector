@@ -1,3 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResource filename="FulfillmentOrdersByOrderIdQuery.ftl" isFile="Y" resourceId="FulfillmentOrdersByOrderIdQuery"
+                               parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                <#assign query = ""/>
+                <#assign excludedQuery = "">
+                <#if excludedStatus?has_content>
+                    <#assign parts = []>
+                    <#list excludedStatus as st>
+                        <#assign parts = parts + ["-status:${st}"]>
+                    </#list>
+                    <#if parts?size &gt; 0>
+                        <#assign excludedQuery = parts?join(" AND ")>
+                    </#if>
+                    <#assign query = "${excludedQuery}"/>
+                </#if>
+                <#if assignedLocationId?has_content>
+                    <#assign query = "${query} assigned_location_id:${assignedLocationId}"/>
+                </#if>
+                query{
+                    node(id: "${shopifyOrderId}") {
+                        id
+                        ... on
+                        Order {
+                            id
+                            name
+                            fulfillmentOrders (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query: "${query}") {
+                                edges {
+                                    node {
+                                        id
+                                    }
+                                }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
 </entity-facade-xml>
