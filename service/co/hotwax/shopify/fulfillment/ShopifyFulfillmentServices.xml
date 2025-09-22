@@ -367,7 +367,7 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
             <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
-            <parameter name="includeClosed" type="Boolean" default="true"/>
+            <parameter name="excludedStatus" type="List"/>
             <parameter name="assignedLocationId"/>
         </in-parameters>
         <out-parameters>

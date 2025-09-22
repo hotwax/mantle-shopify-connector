@@ -391,8 +391,17 @@
             <fileData>
                 <![CDATA[<#ftl output_format="HTML">
                 <@compress single_line=true>
-                <#if !includeClosed>
-                    <#assign query = "-status:CLOSED"/>
+                <#assign query = ""/>
+                <#assign excludedQuery = "">
+                <#if excludedStatus?has_content>
+                    <#assign parts = []>
+                    <#list excludedStatus as st>
+                        <#assign parts = parts + ["-status:${st}"]>
+                    </#list>
+                    <#if parts?size &gt; 0>
+                        <#assign excludedQuery = parts?join(" AND ")>
+                    </#if>
+                    <#assign query = "${excludedQuery}"/>
                 </#if>
                 <#if assignedLocationId?has_content>
                     <#assign query = "${query} assigned_location_id:${assignedLocationId}"/>
