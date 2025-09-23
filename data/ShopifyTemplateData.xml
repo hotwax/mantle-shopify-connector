@@ -1317,7 +1317,7 @@
                                                     presentmentMoney {
                                                         amount
                                                         currencyCode
-                                                    }
+                                                    }    
                                                 }
                                                 transactions {
                                                     id
