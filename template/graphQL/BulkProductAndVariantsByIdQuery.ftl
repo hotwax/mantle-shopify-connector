@@ -137,27 +137,29 @@ under the License.
                                     }
                                 }
                             }
-                            metafields <#if namespace?has_content>(namespace:"${namespace}")</#if> {
-                            edges {
-                                node {
-                                    id
-                                    key
-                                    namespace
-                                    value
-                                    type
-                                    reference {
-                                        ... on Metaobject {
-                                            id
-                                            handle
-                                            type
-                                            fields {
-                                                key
-                                                value
+                            <#if namespace?has_content>
+                                metafields (namespace:"${namespace}") {
+                                edges {
+                                    node {
+                                        id
+                                        key
+                                        namespace
+                                        value
+                                        type
+                                        reference {
+                                            ... on Metaobject {
+                                                id
+                                                handle
+                                                type
+                                                fields {
+                                                    key
+                                                    value
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
+                            </#if>
                         }
                     }
                 }
