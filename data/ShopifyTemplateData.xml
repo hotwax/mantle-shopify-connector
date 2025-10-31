@@ -1889,4 +1889,191 @@
             <histories versionName="01" previousVersionName="01"/>
         </file>
     </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="OrdersQuery.ftl" isFile="Y" resourceId="OrdersQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                 <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                       <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                 </#if>
+                 <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                       <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                 </#if>
+                 <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                       <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                 </#if>
+                query  {
+                      orders(first:50) {
+                        legacyResourceId
+                        id
+                        name
+                        createdAt
+                        cancelledAt
+                        phone
+                        email
+                        tags
+                        note
+                        currencyCode
+                        number
+                        sourceName
+
+                        shippingAddress{
+                            firstName
+                            lastName
+                            phone
+                            address1
+                            address2
+                            longitude
+                            latitude
+                            city
+                            province
+                            country
+                            zip
+                            countryCode
+
+                        }
+                        discountCodes
+                        discountApplications(first:10){
+                            edges{
+                                node{
+                                    targetType
+                                            ... on DiscountCodeApplication {
+                                                index
+                                            code
+
+                                            targetType
+                                            value {
+                                                __typename
+
+                                                ... on MoneyV2 {
+                                                amount
+                                                currencyCode
+                                                }
+
+                                            }
+                                        }
+                                    value{
+                                        __typename
+                                        ...on MoneyV2{
+                                            amount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        retailLocation {
+                          id
+                        }
+
+                        shippingLine {
+                            price
+                          title
+                          discountAllocations {
+                            allocatedAmountSet {
+                              presentmentMoney {
+                                amount
+                                currencyCode
+                              }
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+                            discountApplication {
+                              index
+
+                            }
+                          }
+                          taxLines {
+                            title
+                            priceSet {
+                              presentmentMoney {
+                                amount
+                                currencyCode
+                              }
+                              shopMoney {
+                                amount
+                                currencyCode
+                              }
+                            }
+                            rate
+                          }
+                        }
+
+                        customer {
+                          legacyResourceId
+                          id
+                          firstName
+                          lastName
+                          state
+                          defaultEmailAddress {
+                            emailAddress
+                          }
+                          defaultPhoneNumber {
+                            phoneNumber
+                          }
+                        }
+
+                            lineItems(first: 50) {
+                              edges {
+                                node {
+                                  id
+                                  quantity
+                                  variant {
+                                    id
+                                    legacyResourceId
+                                    title
+                                  }
+                                  discountAllocations {
+                                    allocatedAmountSet {
+                                      presentmentMoney {
+                                        amount
+                                        currencyCode
+                                      }
+                                      shopMoney {
+                                        amount
+                                        currencyCode
+                                      }
+                                    }
+                                  }
+
+                                  taxLines {
+                                    title
+                                    rate
+                                    priceSet {
+                                      presentmentMoney {
+                                        amount
+                                        currencyCode
+                                      }
+                                      shopMoney {
+                                        amount
+                                        currencyCode
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+
+                        totalPriceSet {
+                          presentmentMoney {
+                            amount
+                            currencyCode
+                          }
+                          shopMoney {
+                            amount
+                            currencyCode
+                          }
+                        }
+
+                      }
+                    }
+
+            </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+
 </entity-facade-xml>
