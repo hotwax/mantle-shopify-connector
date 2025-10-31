@@ -2356,4 +2356,108 @@ under the License.
             </while>
         </actions>
     </service>
+    <service verb="get" noun="OrdersFromShopify" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate Order Ids feed from Shopify and store output in DataManager.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <!-- Fetch system message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Parse input parameters -->
+            <set field="queryParams"
+                 from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <!-- Imports for scripts -->
+            <script>
+                import com.fasterxml.jackson.core.JsonGenerator
+                import com.fasterxml.jackson.core.JsonFactory
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import java.nio.charset.StandardCharsets
+                import org.apache.commons.fileupload.disk.DiskFileItem
+                import org.apache.commons.io.IOUtils
+            </script>
+
+            <!-- Initialize pagination -->
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="cursor" from="null"/>
+
+            <while condition="hasNextPage">
+                <!-- Load GraphQL query template -->
+                <script>
+                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                </script>
+
+                <!-- Call Shopify GraphQL API -->
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
+                              out-map="ordersResponse"/>
+
+                <!-- Check for null or empty orders -->
+                <if condition="!ordersResponse.response.orders.edges">
+                    <return message="No orders found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
+                </if>
+
+                <!-- Prepare file path -->
+                <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
+                                               [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
+            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
+
+                <!-- Write JSON File -->
+                <script>
+                    try {
+                        File feedFile = new File(jsonFilePath)
+                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
+                        JsonFactory jfactory = new JsonFactory()
+
+                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
+                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
+                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8,feedFile);
+                             JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
+                            jGenerator.writeStartArray()
+                </script>
+                <set field="orderIds" from="ordersResponse.response.orders.edges.node"/>
+                <iterate list="orderIds" entry="orderMap">
+                    <set field="orderMap" from="orderMap + queryParams"/>
+                    <script>
+                        new ObjectMapper()
+                                .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
+                                .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderMap)
+                    </script>
+                </iterate>
+                <script>
+                    jGenerator.writeEndArray()
+                    }
+                    } catch (IOException e) {
+                        logger.error("Error preparing UpdatedOrderIds Feed file", e)
+                    }
+                </script>
+                <script>
+                    // Convert the file to FileItem for upload service
+                    File file = new File(jsonFilePath)
+                    DiskFileItem fileItem = new DiskFileItem("contentFile", "application/json", false, file.getName(), (int) file.length(), file.getParentFile())
+                    try (InputStream input = new FileInputStream(file);
+                         OutputStream os = fileItem.getOutputStream()) {
+                        IOUtils.copy(input, os)
+                    }
+
+                    context.fileItem = fileItem
+                </script>
+                <!-- Upload file to DataManager -->
+                <service-call name="co.hotwax.util.UtilityServices.upload#DataManagerFile"
+                              in-map="[configId:'imp_test', contentFile:fileItem]"/>
+
+                <!-- Pagination handling -->
+                <if condition="ordersResponse.response.orders.pageInfo">
+                    <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
+                    <log message="==${hasNextPage}"/>
+                    <set field="cursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
+                </if>
+                <else>
+                    <set field="hasNextPage" value="false"/>
+                </else>
+            </while>
+        </actions>
+    </service>
+
 </services>
