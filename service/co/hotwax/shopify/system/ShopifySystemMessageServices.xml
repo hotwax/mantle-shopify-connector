@@ -1827,22 +1827,6 @@ under the License.
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-
-            <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
-            <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
-                <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
-            </entity-find-one>
-
-            <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
-                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
-                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
-                </entity-find-one>
-                <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
-                <else>
-                    <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
-                </else>
-            </if>
-
             <set field="queryParams" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
 
             <script>
@@ -1892,10 +1876,9 @@ under the License.
                         logger.error("Error preparing UpdatedOrderIds Feed file", e)
                     }
                 </script>
-                <if condition="relatedSystemMessageType">
-                    <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, messageText:jsonFilePathRef,
-                              systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
-                </if>
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'GenerateNewOrdersFeed', messageText:jsonFilePathRef,
+                          systemMessageRemoteId:systemMessage.systemMessageRemoteId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" transaction="force-new" ignore-error="true"/>
+
                 <set field="hasNextPage" from="newOrderIdsResponse.response.orders.pageInfo.hasNextPage"/>
                 <set field="cursor" from="newOrderIdsResponse.response.orders.pageInfo.endCursor"/>
             </while>
@@ -1905,35 +1888,6 @@ under the License.
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-
-            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
-                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
-                <field-map field-name="parameterName" value="sendSmrId"/>
-                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-            </entity-find-one>
-            <if condition="sendSmrParam">
-                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
-            </if>
-
-            <if condition="sendSmrId">
-                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
-                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
-                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
-                </entity-find-one>
-
-                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
-                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
-                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
-                    </entity-find-one>
-                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
-                    <else>
-                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
-                    </else>
-                </if>
-                <else>
-                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
-                </else>
-            </if>
 
             <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
             <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
@@ -1987,12 +1941,9 @@ under the License.
                 }
             </script>
 
-            <if condition="relatedSystemMessageType">
-                <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
-                              in-map="[systemMessageTypeId:relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:sendSmrId,
-                                       messageText:jsonFilePathRef, remoteMessageId: jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1), sendNow:true]"
-                              out-map="queueSystemMessageOut" ignore-error="true" transaction="force-new"/>
-            </if>
+            <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId:'ShopifyNewOrdersFeed', messageText:jsonFilePathRef,
+                systemMessageRemoteId:systemMessage.systemMessageRemoteId, parentMessageId:systemMessage.systemMessageId, remoteMessageId:jsonFilePathRef.substring(jsonFilePathRef.lastIndexOf('/')+1)]" async="true"/>
+
         </actions>
     </service>
     <service verb="generate" noun="UpdatedAgreementOrderIdsFeed" authenticate="anonymous-all" transaction-timeout="1800">
