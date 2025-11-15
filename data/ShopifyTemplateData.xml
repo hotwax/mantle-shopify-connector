@@ -1482,60 +1482,65 @@
     <moqui.resource.DbResource filename="ProductVariantsByProductIdQuery.ftl" isFile="Y" resourceId="ProductVariantsByProductIdQuery" parentResourceId="GraphQL">
         <file mimeType="text/html" versionName="01" rootVersionName="01">
             <fileData>
-                <![CDATA[<#ftl output_format="HTML">
-                <@compress single_line=true>
-                    query {
-                        node (id: "${shopifyProductId}") {
-                            id
-                            ... on
-                            Product {
-                                id
-                                variants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
-                                    edges {
-                                        node {
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        <#if queryParams?has_content>
+                            <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
+                                <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                            </#if>
+                            <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
+                                <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                            </#if>
+                            <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
+                                <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                            </#if>
+                        </#if>
+                        query {
+                            productVariants (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>, query: "product_id:${product_id}<#if filterQuery?has_content> AND ${filterQuery}</#if>") {
+                                edges {
+                                    node {
+                                        id
+                                        title
+                                        sku
+                                        barcode
+                                        product {
                                             id
+                                            handle
                                             title
-                                            sku
-                                            barcode
-                                            product {
-                                                id
-                                                handle
-                                                title
-                                                isGiftCard
-                                                productType
-                                                vendor
-                                            }
-                                            price
-                                            compareAtPrice
-                                            position
-                                            requiresComponents
-                                            image {
-                                                url
-                                            }
-                                            selectedOptions {
-                                                name
-                                                value
-                                            }
-                                            inventoryItem {
-                                                id
-                                                requiresShipping
-                                                measurement {
-                                                    weight {
-                                                        unit
-                                                        value
-                                                    }
+                                            isGiftCard
+                                            productType
+                                            vendor
+                                        }
+                                        price
+                                        compareAtPrice
+                                        position
+                                        requiresComponents
+                                        image {
+                                            url
+                                        }
+                                        selectedOptions {
+                                            name
+                                            value
+                                        }
+                                        inventoryItem {
+                                            id
+                                            requiresShipping
+                                            measurement {
+                                                weight {
+                                                    unit
+                                                    value
                                                 }
                                             }
                                         }
                                     }
-                                    pageInfo {
-                                        hasNextPage
-                                        endCursor
-                                    }
+                                }
+                                pageInfo {
+                                    hasNextPage
+                                    endCursor
                                 }
                             }
                         }
-                    }
                 </@compress>]]>
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
