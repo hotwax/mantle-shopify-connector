@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="get" noun="CustomerByEmail" authenticate="anonymous-all">
+        <description>Get Shopify customer by email and return id and tags</description>
+
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="email" required="true"/>
+        </in-parameters>
+
+        <out-parameters>
+            <parameter name="id"/>
+            <parameter name="tags" type="List"/>
+        </out-parameters>
+
+        <actions>
+            <set field="tags" from="[]"/>
+
+            <script><![CDATA[
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/getCustomerByEmail.ftl", "")
+                variables = [query: "email:${email}"]
+            ]]></script>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
+                          out-map="responseMap"/>
+
+            <if condition="responseMap.response?.customers?.edges?.size()">
+                <script><![CDATA[
+                    def node = responseMap.response.customers.edges[0].node
+                    id = node?.id
+                    tags = (node?.tags ?: []) as List
+                ]]></script>
+            </if>
+
+            <if condition="!id">
+                <message type="warning" message="No Shopify customer found with email ${email}"/>
+            </if>
+        </actions>
+    </service>
+</services>
