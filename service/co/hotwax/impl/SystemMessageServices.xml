@@ -17,6 +17,7 @@ under the License.
 -->
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <!-- Deprecated : Use maarg-util service clean#SystemMessage-->
     <service verb="purge" noun="OldSystemMessages" authenticate="anonymous-all">
         <description>
             Purge all old system message and related entities. Not adding any status condition as ideally
@@ -38,7 +39,13 @@ under the License.
                 <use-iterator/>
             </entity-find>
             <iterate list="systemMessages" entry="systemMessage">
+                <entity-find-count entity-name="moqui.service.message.SystemMessage" count-field="referencedMsgCount">
+                    <econdition field-name="initDate" operator="greater-equals" from="purgeDate"/>
+                    <econdition field-name="parentMessageId" from="systemMessages.systemMessageId"/>
+                </entity-find-count>
+                <if condition="referencedMsgCount == 0">
                 <service-call name="co.hotwax.impl.SystemMessageServices.delete#SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId]" transaction="force-new" ignore-error="true"/>
+                </if>
             </iterate>
         </actions>
     </service>
