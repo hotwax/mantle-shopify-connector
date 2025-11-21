@@ -27,9 +27,10 @@
                 def terms = []
                 if (email) terms << "email:${email}"
                 if (phoneNumber) terms << "phone:${phoneNumber}"
-                def query = terms.join(" OR ")
-                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/getCustomerByEmail.ftl", "")
-                variables = [query: query]
+                def queryString = terms.join(" OR ")
+
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/getCustomer.ftl", "")
+                variables = [query: queryString]
             ]]></script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
@@ -68,25 +69,19 @@
 
         <actions>
 
-            <set field="variables" from="[:]"/>
-            <set field="variables.input" from="[:]"/>
-            <set field="variables.input.email" from="email"/>
-            <if condition="phoneNumber">
-                <set field="variables.input.phone" from="phoneNumber"/>
-            </if>
-            <if condition="firstName">
-                <set field="variables.input.firstName" from="firstName"/>
-            </if>
-            <if condition="marketingState">
-                <set field="variables.input.smsMarketingConsent" from="[:]"/>
-                <set field="variables.input.smsMarketingConsent.marketingState" from="marketingState"/>
-            </if>
-            <if condition="tags">
-                <script>variables.input.tags = tags.join(", ")</script>
-            </if>
-
             <script><![CDATA[
-                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/CreateShopifyCustomer.ftl", "")
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/createCustomer.ftl", "")
+                def input = [:]
+                input.email = email
+                if (phoneNumber) input.phone = phoneNumber
+                if (firstName) input.firstName = firstName
+                if (marketingState) {
+                    input.defaultPhoneNumber = [phoneNumber: phoneNumber, marketingState: marketingState]
+                }
+                if (tags) {
+                    input.tags = tags.join(", ")
+                }
+                variables = [input: input]
             ]]></script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
