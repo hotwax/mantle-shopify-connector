@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
-    <service verb="get" noun="CustomerByEmail" authenticate="anonymous-all">
-        <description>Get Shopify customer by email and return id and tags</description>
+
+    <service verb="get" noun="CustomerInShopify" authenticate="anonymous-all">
+        <description>Get Shopify customer by email or phone number.</description>
 
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="email" required="true"/>
+            <parameter name="email"/>
+            <parameter name="phoneNumber"/>
         </in-parameters>
 
         <out-parameters>
@@ -15,11 +17,19 @@
         </out-parameters>
 
         <actions>
+            <if condition="!email &amp;&amp; !phoneNumber">
+                <return error="true" message="Provide either email or phoneNumber to find a Shopify customer"/>
+            </if>
+
             <set field="tags" from="[]"/>
 
             <script><![CDATA[
+                def terms = []
+                if (email) terms << "email:${email}"
+                if (phoneNumber) terms << "phone:${phoneNumber}"
+                def query = terms.join(" OR ")
                 queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/getCustomerByEmail.ftl", "")
-                variables = [query: "email:${email}"]
+                variables = [query: query]
             ]]></script>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
@@ -35,7 +45,74 @@
             </if>
 
             <if condition="!id">
-                <message type="warning" message="No Shopify customer found with email ${email}"/>
+                <message type="warning" message="No Shopify customer found for ${email ?: phoneNumber}"/>
+            </if>
+        </actions>
+    </service>
+
+    <service verb="create" noun="Customer" authenticate="anonymous-all">
+        <description>Create a customer on Shopify using GraphQL mutation.</description>
+
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="email" required="true"/>
+            <parameter name="phoneNumber"/>
+            <parameter name="firstName"/>
+            <parameter name="marketingState"/>
+            <parameter name="tags" type="List"/>
+        </in-parameters>
+
+        <out-parameters>
+            <parameter name="customerId"/>
+        </out-parameters>
+
+        <actions>
+
+            <set field="variables" from="[:]"/>
+            <set field="variables.input" from="[:]"/>
+            <set field="variables.input.email" from="email"/>
+            <if condition="phoneNumber">
+                <set field="variables.input.phone" from="phoneNumber"/>
+            </if>
+            <if condition="firstName">
+                <set field="variables.input.firstName" from="firstName"/>
+            </if>
+            <if condition="marketingState">
+                <set field="variables.input.smsMarketingConsent" from="[:]"/>
+                <set field="variables.input.smsMarketingConsent.marketingState" from="marketingState"/>
+            </if>
+            <if condition="tags">
+                <script>variables.input.tags = tags.join(", ")</script>
+            </if>
+
+            <script><![CDATA[
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/CreateShopifyCustomer.ftl", "")
+            ]]></script>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
+                          out-map="customerCreateResponse"/>
+
+            <if condition="!customerCreateResponse.response">
+                <return error="true" message="Error in creating customer on Shopify. Email: ${email}"/>
+            </if>
+
+            <set field="customerCreate" from="customerCreateResponse.response.customerCreate"/>
+
+            <if condition="!customerCreate">
+                <return error="true" message="Error in creating customer on Shopify. Email: ${email}"/>
+            </if>
+
+            <if condition="customerCreate.userErrors">
+                <return error="true" message="Error in creating customer on Shopify ${customerCreate.userErrors}"/>
+            </if>
+
+            <if condition="customerCreate.customer">
+                <set field="customerId" from="customerCreate.customer.id"/>
+            </if>
+
+            <if condition="!customerId">
+                <message type="warning" message="Shopify did not return the customer id for email ${email}"/>
             </if>
         </actions>
     </service>
