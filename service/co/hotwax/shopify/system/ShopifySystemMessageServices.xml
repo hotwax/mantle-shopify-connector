@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all" transaction-timeout="7200">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
@@ -2356,8 +2356,10 @@ under the License.
             </while>
         </actions>
     </service>
+
+    <!-- New implementation with Shopify GraphQL and OMS Data Manager -->
     <service verb="get" noun="OrdersFromShopify" authenticate="anonymous-all" transaction-timeout="1800">
-        <description>Generate Order Ids feed from Shopify and store output in DataManager.</description>
+        <description>Generate Orders feed from Shopify and store output in DataManager.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
         <actions>
             <!-- Fetch system message -->
@@ -2367,97 +2369,96 @@ under the License.
             <set field="queryParams"
                  from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
 
-            <!-- Imports for scripts -->
-            <script>
-                import com.fasterxml.jackson.core.JsonGenerator
-                import com.fasterxml.jackson.core.JsonFactory
-                import com.fasterxml.jackson.databind.ObjectMapper
-                import java.nio.charset.StandardCharsets
-                import org.apache.commons.fileupload.disk.DiskFileItem
-                import org.apache.commons.io.IOUtils
-            </script>
-
             <!-- Initialize pagination -->
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="cursor" from="null"/>
 
+            <set field="pageNumber" from="1" type="Integer"/>
             <while condition="hasNextPage">
-                <!-- Load GraphQL query template -->
-                <script>
-                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
-                </script>
+                <log message="=== Fetching Page ${pageNumber} with cursor: ${cursor} ==="/>
 
-                <!-- Call Shopify GraphQL API -->
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
-                              in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
-                              out-map="ordersResponse"/>
+                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.upload#ShopifyOrdersResponse"
+                          in-map="[systemMessageId:systemMessageId, queryParams:queryParams,
+                          cursor:cursor, pageNumber:pageNumber]"  out-map="pageResult" transaction="force-new"/>
 
-                <!-- Check for null or empty orders -->
-                <if condition="!ordersResponse.response.orders.edges">
-                    <return message="No orders found between ${queryParams.fromDate} and ${queryParams.thruDate}"/>
-                </if>
+                <set field="hasNextPage" from="pageResult.hasNextPage"/>
+                <set field="cursor" from="pageResult.endCursor"/>
 
-                <!-- Prepare file path -->
-                <set field="nowDate" from="ec.user.nowTimestamp"/>
-            <set field="jsonFilePathRef" from="ec.resource.expand(systemMessage.receivePath, null,
-                                               [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
-            <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-
-                <!-- Write JSON File -->
-                <script>
-                    try {
-                        File feedFile = new File(jsonFilePath)
-                        if (!feedFile.parentFile.exists()) feedFile.parentFile.mkdirs()
-                        JsonFactory jfactory = new JsonFactory()
-
-                        /* Declaring the PrintWriter and JsonGenerator resources in the try statement,
-                        so that they are automatically closed regardless of whether the try statement completes normally or abruptly. */
-                        try (PrintWriter pw = new PrintWriter(StandardCharsets.UTF_8,feedFile);
-                             JsonGenerator jGenerator = jfactory.createGenerator(pw)) {
-                            jGenerator.writeStartArray()
-                </script>
-                <set field="orderIds" from="ordersResponse.response.orders.edges.node"/>
-                <iterate list="orderIds" entry="orderMap">
-                    <set field="orderMap" from="orderMap + queryParams"/>
-                    <script>
-                        new ObjectMapper()
-                                .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
-                                .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderMap)
-                    </script>
-                </iterate>
-                <script>
-                    jGenerator.writeEndArray()
-                    }
-                    } catch (IOException e) {
-                        logger.error("Error preparing UpdatedOrderIds Feed file", e)
-                    }
-                </script>
-                <script>
-                    // Convert the file to FileItem for upload service
-                    File file = new File(jsonFilePath)
-                    DiskFileItem fileItem = new DiskFileItem("contentFile", "application/json", false, file.getName(), (int) file.length(), file.getParentFile())
-                    try (InputStream input = new FileInputStream(file);
-                         OutputStream os = fileItem.getOutputStream()) {
-                        IOUtils.copy(input, os)
-                    }
-
-                    context.fileItem = fileItem
-                </script>
-                <!-- Upload file to DataManager -->
-                <service-call name="co.hotwax.util.UtilityServices.upload#DataManagerFile"
-                              in-map="[configId:'imp_test', contentFile:fileItem]"/>
-
-                <!-- Pagination handling -->
-                <if condition="ordersResponse.response.orders.pageInfo">
-                    <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
-                    <log message="==${hasNextPage}"/>
-                    <set field="cursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
-                </if>
-                <else>
-                    <set field="hasNextPage" value="false"/>
-                </else>
+                <set field="pageNumber" from="pageNumber + 1"/>
             </while>
         </actions>
     </service>
 
+    <service verb="upload" noun="ShopifyOrdersResponse">
+        <description>Fetch a single page of orders from Shopify and save to JSON file.</description>
+        <in-parameters>
+            <parameter name="systemMessageId" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+            <parameter name="cursor"/>
+            <parameter name="pageNumber" type="Integer"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="hasNextPage" type="Boolean"/>
+            <parameter name="endCursor"/>
+        </out-parameters>
+        <actions>
+            <!-- Fetch system message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <script>
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import com.fasterxml.jackson.core.JsonFactory
+                import org.apache.commons.fileupload.disk.DiskFileItem
+                import org.apache.commons.io.IOUtils
+                import java.nio.charset.StandardCharsets
+            </script>
+
+            <!-- Load query template -->
+            <script>
+                queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+            </script>
+
+            <!-- Call GraphQL -->
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                    in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
+                    out-map="ordersResponse"/>
+
+            <if condition="!ordersResponse?.response?.orders?.edges">
+                <set field="hasNextPage" value="false"/>
+                <return message="No orders found for page ${pageNumber}"/>
+            </if>
+
+            <log message="===== ordersResponse.response.orders.edges.size(): ${ordersResponse.response.orders.edges.size()} ====="/>
+
+            <!-- Convert response to JSON string -->
+            <script>
+                def mapper = new ObjectMapper(new JsonFactory())
+
+                // Extract orders.edges array (default empty list if not found)
+                def edges = ordersResponse?.response?.orders?.edges ?: []
+
+                def jsonBytes = mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(edges)
+
+                // Create in-memory FileItem (no physical file)
+                DiskFileItem fileItem = new DiskFileItem("contentFile", "application/json", false,
+                    "ShopifyOrdersFeed-${pageNumber}.json", jsonBytes.length, null)
+
+                try (OutputStream os = fileItem.getOutputStream()) {
+                    IOUtils.copy(new ByteArrayInputStream(jsonBytes), os)
+                }
+
+                //context.contentFile = fileItem
+            </script>
+
+            <!-- Upload immediately to DataManager -->
+            <service-call name="co.hotwax.util.UtilityServices.upload#DataManagerFile"
+                          in-map="[configId:'SHOPIFY_ORDER_IMPORT', contentFile:fileItem]"/>
+
+            <!-- Pagination Info -->
+            <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
+            <set field="endCursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
+
+            <log message="=== Completed Page ${pageNumber} | hasNextPage: ${hasNextPage} | endCursor: ${endCursor} ==="/>
+        </actions>
+    </service>
 </services>

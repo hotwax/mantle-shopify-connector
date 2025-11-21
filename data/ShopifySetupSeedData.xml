@@ -719,10 +719,10 @@ under the License.
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.message.SystemMessageType>
 
-    <!-- SystemMessageType for generating orders -->
+    <!-- SystemMessageType for creating orders from Shopify in OMS -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="GetOrdersFromShopify"
             description="Generate Order Id's Feed"
             sendPath="dbresource://shopify/template/graphQL/OrdersQuery.ftl"
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.get#OrdersFromShopify"
-            receivePath="${contentRoot}/ParnikaTest/orders/OrdersFeed-${dateTime}-${systemMessageId}.json"/>
+            receivePath="${contentRoot}/shopify/orders/NewOrdersFeed/OrdersFeed-${dateTime}-${systemMessageId}.json"/>
 </entity-facade-xml>

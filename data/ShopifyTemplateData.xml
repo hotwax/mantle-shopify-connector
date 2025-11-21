@@ -1906,27 +1906,33 @@
             </#if>
 
             query {
-              orders(first: 2<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
-                pageInfo {
-                  hasNextPage
-                  endCursor
-                  startCursor
-                }
+              orders(first: 50<#if cursor?has_content>, after: "${cursor}"</#if><#if filterQuery?has_content>, query: "${filterQuery}"</#if>) {
                 edges {
                   node {
-                    legacyResourceId
                     id
-                    name
-                    createdAt
-                    cancelledAt
-                    phone
-                    email
+                    legacyResourceId
                     tags
-                    note
-                    currencyCode
+                    totalPriceSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
+                    }
                     sourceName
-
                     shippingAddress {
+                        name
+                        address1
+                        address2
+                        city
+                        country
+                        zip
+                        provinceCode
+                        countryCodeV2
+                        latitude
+                        longitude
+                        phone
+                    }
+                    billingAddress {
                       firstName
                       lastName
                       phone
@@ -1940,133 +1946,157 @@
                       zip
                       countryCode
                     }
-
-                    discountCodes
-                    discountApplications(first: 10) {
-                      edges {
-                        node {
-                          targetType
-                          ... on DiscountCodeApplication {
-                            index
-                            code
-                            targetType
-                            value {
-                              __typename
-                              ... on MoneyV2 {
-                                amount
-                                currencyCode
-                              }
-                            }
-                          }
-                          value {
-                            __typename
-                            ... on MoneyV2 {
-                              amount
-                            }
-                          }
-                        }
-                      }
-                    }
-
+                    phone
+                    email
+                    displayFulfillmentStatus
                     retailLocation {
                       id
+                      legacyResourceId
                     }
-
-                    shippingLine {
-                      price
-                      title
-                      discountAllocations {
-                        allocatedAmountSet {
-                          presentmentMoney {
-                            amount
-                            currencyCode
-                          }
-                          shopMoney {
-                            amount
-                            currencyCode
-                          }
-                        }
-                        discountApplication {
-                          index
-                        }
-                      }
-                      taxLines {
-                        title
-                        priceSet {
-                          presentmentMoney {
-                            amount
-                            currencyCode
-                          }
-                          shopMoney {
-                            amount
-                            currencyCode
-                          }
-                        }
-                        rate
-                      }
-                    }
-
                     customer {
                       legacyResourceId
                       id
                       firstName
                       lastName
-                      state
-                      email
-                      phone
                     }
-
+                    customAttributes {
+                        key
+                        value
+                    }
+                    note
+                    createdAt
+                    cancelledAt
+                    closedAt
+                    currencyCode
+                    presentmentCurrencyCode
+                    name
+                    shippingLines (first: 5) {
+                        edges {
+                            node {
+                                title
+                                originalPriceSet {
+                                    shopMoney {
+                                        amount
+                                        currencyCode
+                                    }
+                                }
+                                taxLines {
+                                    title
+                                    priceSet {
+                                        shopMoney {
+                                            amount
+                                            currencyCode
+                                        }
+                                    }
+                                    rate
+                                }
+                                discountAllocations {
+                                    allocatedAmountSet {
+                                        shopMoney {
+                                            amount
+                                        }
+                                    }
+                                    discountApplication {
+                                        __typename
+                                        ... on DiscountCodeApplication {
+                                            code
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     lineItems(first: 50) {
+                        pageInfo {
+                            hasNextPage
+                        }
                       edges {
                         node {
                           id
+                          title
+                          name
                           quantity
                           variant {
-                            id
                             legacyResourceId
                             title
-                          }
-                          discountAllocations {
-                            allocatedAmountSet {
-                              presentmentMoney {
-                                amount
-                                currencyCode
-                              }
-                              shopMoney {
-                                amount
-                                currencyCode
-                              }
+                            inventoryItem {
+                                id
+                                tracked
                             }
                           }
+                          customAttributes {
+                            key
+                            value
+                          }
+                          originalUnitPriceSet {
+                            shopMoney {
+                              amount
+                            }
+                          }
+                          requiresShipping
+                          isGiftCard
+                          discountAllocations {
+                            allocatedAmountSet {
+                              shopMoney {
+                                amount
+                              }
+                            }
+                            discountApplication {
+                                __typename
+                                ... on DiscountCodeApplication {
+                                    code
+                                }
+                            }
+                          }
+                          nonFulfillableQuantity
                           taxLines {
                             title
                             rate
                             priceSet {
-                              presentmentMoney {
-                                amount
-                                currencyCode
-                              }
                               shopMoney {
                                 amount
-                                currencyCode
                               }
                             }
                           }
                         }
                       }
                     }
-
-                    totalPriceSet {
-                      presentmentMoney {
-                        amount
-                        currencyCode
-                      }
-                      shopMoney {
-                        amount
-                        currencyCode
-                      }
+                    customerLocale
+                    totalTipReceivedSet {
+                        shopMoney {
+                            amount
+                        }
+                    }
+                    fulfillments{
+                        status
+                        location{
+                            legacyResourceId
+                        }
+                        trackingInfo {
+                            number
+                            company
+                        }
+                        fulfillmentLineItems(first:10){
+                            edges{
+                                node{
+                                    lineItem{
+                                        id
+                                        quantity
+                                        customAttributes{
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                   }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                  startCursor
                 }
               }
             }
