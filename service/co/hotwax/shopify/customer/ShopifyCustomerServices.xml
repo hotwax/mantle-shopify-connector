@@ -37,6 +37,10 @@
                           in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
                           out-map="responseMap"/>
 
+            <if condition="responseMap.statusCode &lt; 200 || responseMap.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${responseMap.statusCode} while fetching customer for ${email ?: phoneNumber}"/>
+            </if>
+
             <if condition="responseMap.response?.customers?.edges?.size()">
                 <script><![CDATA[
                     def node = responseMap.response.customers.edges[0].node
@@ -87,6 +91,10 @@
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
                           in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
                           out-map="customerCreateResponse"/>
+
+            <if condition="customerCreateResponse.statusCode &lt; 200 || customerCreateResponse.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${customerCreateResponse.statusCode} while creating customer for email ${email}"/>
+            </if>
 
             <if condition="!customerCreateResponse.response">
                 <return error="true" message="Error in creating customer on Shopify. Email: ${email}"/>
@@ -145,8 +153,8 @@
                           in-map="[systemMessageRemoteId:shopifyConfigId, queryText:queryText, variables:variables]"
                           out-map="giftCardCreateResponse"/>
 
-            <if condition="!giftCardCreateResponse.response.giftCard">
-                <return error="true" message="Error issuing gift card in Shopify for customer ${customerId}"/>
+            <if condition="giftCardCreateResponse.statusCode &lt; 200 || giftCardCreateResponse.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${giftCardCreateResponse.statusCode} while issuing gift card for customer ${customerId}"/>
             </if>
 
             <set field="giftCardCreate" from="giftCardCreateResponse.response.giftCardCreate"/>
@@ -158,6 +166,8 @@
             <if condition="giftCardCreate.userErrors">
                 <return error="true" message="Error issuing gift card in Shopify ${giftCardCreate.userErrors}"/>
             </if>
+
+            <set field="giftCard" from="giftCardCreate.giftCard"/>
 
             <if condition="!giftCard">
                 <message type="warning">Shopify did not return gift card details for customer ${customerId}</message>
