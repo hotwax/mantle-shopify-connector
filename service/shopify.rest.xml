@@ -48,4 +48,16 @@ under the License.
             </method>
         </resource>
     </resource>
+    <resource name="customer" require-authentication="anonymous-all">
+        <resource name="get" require-authentication="anonymous-all">
+            <method type="get">
+                <service name="co.hotwax.shopify.customer.ShopifyCustomerServices.get#CustomerInShopify"/>
+            </method>
+        </resource>
+        <resource name="create" require-authentication="anonymous-all">
+            <method type="post">
+                <service name="co.hotwax.shopify.customer.ShopifyCustomerServices.create#CustomerInShopify"/>
+            </method>
+        </resource>
+    </resource>
 </resource>

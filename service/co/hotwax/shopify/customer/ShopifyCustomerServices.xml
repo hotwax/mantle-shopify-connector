@@ -37,6 +37,10 @@
                           in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
                           out-map="responseMap"/>
 
+            <if condition="responseMap.statusCode &lt; 200 || responseMap.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${responseMap.statusCode} while fetching customer for ${email ?: phoneNumber}"/>
+            </if>
+
             <if condition="responseMap.response?.customers?.edges?.size()">
                 <script><![CDATA[
                     def node = responseMap.response.customers.edges[0].node
@@ -46,12 +50,12 @@
             </if>
 
             <if condition="!id">
-                <message type="warning" message="No Shopify customer found for ${email ?: phoneNumber}"/>
+                <message type="warning">No Shopify customer found for ${email ?: phoneNumber}</message>
             </if>
         </actions>
     </service>
 
-    <service verb="create" noun="Customer" authenticate="anonymous-all">
+    <service verb="create" noun="CustomerInShopify" authenticate="anonymous-all">
         <description>Create a customer on Shopify using GraphQL mutation.</description>
 
         <in-parameters>
@@ -88,6 +92,10 @@
                           in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
                           out-map="customerCreateResponse"/>
 
+            <if condition="customerCreateResponse.statusCode &lt; 200 || customerCreateResponse.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${customerCreateResponse.statusCode} while creating customer for email ${email}"/>
+            </if>
+
             <if condition="!customerCreateResponse.response">
                 <return error="true" message="Error in creating customer on Shopify. Email: ${email}"/>
             </if>
@@ -107,8 +115,64 @@
             </if>
 
             <if condition="!customerId">
-                <message type="warning" message="Shopify did not return the customer id for email ${email}"/>
+                <message type="warning">Shopify did not return the customer id for email ${email}</message>
             </if>
+        </actions>
+    </service>
+
+    <service verb="issue" noun="GiftCardInShopify" authenticate="anonymous-all">
+        <description>Issue a gift card to a Shopify customer using the giftCardCreate GraphQL mutation.</description>
+
+        <in-parameters>
+            <parameter name="shopifyConfigId" required="true"/>
+            <parameter name="customerId" required="true"/>
+            <parameter name="initialValue" required="true"/>
+            <parameter name="note"/>
+            <parameter name="expiresOn"/>
+        </in-parameters>
+
+        <actions>
+            <if condition="initialValue == null || (initialValue instanceof String &amp;&amp; !initialValue)">
+                <return error="true" message="Provide initialValue to issue a gift card"/>
+            </if>
+
+            <script><![CDATA[
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/issueGiftCard.ftl", "")
+
+                def input = [initialValue: initialValue.toString()]
+                def recipientAttributes = [id: customerId]
+
+                if (note) recipientAttributes.message = note
+                input.recipientAttributes = recipientAttributes
+                if (expiresOn) input.expiresOn = expiresOn
+
+                variables = [input: input]
+            ]]></script>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map="[systemMessageRemoteId:shopifyConfigId, queryText:queryText, variables:variables]"
+                          out-map="giftCardCreateResponse"/>
+
+            <if condition="giftCardCreateResponse.statusCode &lt; 200 || giftCardCreateResponse.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${giftCardCreateResponse.statusCode} while issuing gift card for customer ${customerId}"/>
+            </if>
+
+            <set field="giftCardCreate" from="giftCardCreateResponse.response.giftCardCreate"/>
+
+            <if condition="!giftCardCreate">
+                <return error="true" message="Error issuing gift card in Shopify for customer ${customerId}"/>
+            </if>
+
+            <if condition="giftCardCreate.userErrors">
+                <return error="true" message="Error issuing gift card in Shopify ${giftCardCreate.userErrors}"/>
+            </if>
+
+            <set field="giftCard" from="giftCardCreate.giftCard"/>
+
+            <if condition="!giftCard">
+                <message type="warning">Shopify did not return gift card details for customer ${customerId}</message>
+            </if>
+            <return type="success"/>
         </actions>
     </service>
 </services>
