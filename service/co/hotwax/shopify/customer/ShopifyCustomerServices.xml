@@ -123,10 +123,6 @@
             <parameter name="expiresOn"/>
         </in-parameters>
 
-        <out-parameters>
-            <parameter name="giftCard" type="Map"/>
-        </out-parameters>
-
         <actions>
             <if condition="initialValue == null || (initialValue instanceof String &amp;&amp; !initialValue)">
                 <return error="true" message="Provide initialValue to issue a gift card"/>
@@ -149,7 +145,7 @@
                           in-map="[systemMessageRemoteId:shopifyConfigId, queryText:queryText, variables:variables]"
                           out-map="giftCardCreateResponse"/>
 
-            <if condition="!giftCardCreateResponse.response">
+            <if condition="!giftCardCreateResponse.response.giftCard">
                 <return error="true" message="Error issuing gift card in Shopify for customer ${customerId}"/>
             </if>
 
@@ -163,11 +159,10 @@
                 <return error="true" message="Error issuing gift card in Shopify ${giftCardCreate.userErrors}"/>
             </if>
 
-            <set field="giftCard" from="giftCardCreate.giftCard"/>
-
             <if condition="!giftCard">
                 <message type="warning">Shopify did not return gift card details for customer ${customerId}</message>
             </if>
+            <return type="success"/>
         </actions>
     </service>
 </services>
