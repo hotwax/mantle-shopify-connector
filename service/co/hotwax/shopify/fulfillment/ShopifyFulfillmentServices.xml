@@ -367,6 +367,8 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
             <parameter name="includeFulfillmentLineItems" type="Boolean" default-value="true"/>
+            <parameter name="excludedStatus" type="List"/>
+            <parameter name="assignedLocationId"/>
         </in-parameters>
         <out-parameters>
             <parameter name="fulfillmentOrdersByOrderId"/>
@@ -375,6 +377,7 @@ under the License.
             <set field="fulfillmentOrdersByOrderId" from="[:]"/>
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="fulfillmentOrders" from="[]"/>
+            <set field="assignedLocationId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(assignedLocationId)"/>
             <while condition="hasNextPage">
                 <script>
                     queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/FulfillmentOrdersByOrderIdQuery.ftl", "")
