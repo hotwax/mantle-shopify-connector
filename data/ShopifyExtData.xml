@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- No copyright or license for configuration file, details here are not considered a creative work. -->
+
+<entity-facade-xml type="ext">
+
+    <!-- TODO add in upgrade data -->
+    <co.hotwax.datamanager.DataManagerConfig configId="SHOPIFY_ORDER_IMPORT" importServiceName="co.hotwax.shopify.order.ShopifyOrderServices.process#ShopifyOrders" description="Create New Orders from Shopify using GraphQL in OMS"/>
+</entity-facade-xml>
