@@ -161,11 +161,13 @@ under the License.
                 filePath = ec.resource.getLocationReference(fileLocation).getUri().getPath()
                 try {
                     RestClient.RestResponse restResponse = restClient.call()
+                    restResponse.checkError()
                     File file = new File(filePath)
                     if (!file.parentFile.exists()) file.parentFile.mkdirs()
                     FileUtils.writeByteArrayToFile(file, restResponse.bytes());
                 } catch (Exception e) {
-                    ec.logger.error("Error in API call Error: ${e.getMessage()}")
+                    ec.message.addError("Failed to download bulk operation result file from Shopify at URL: ${downloadUrl}, Error: ${e.getMessage()}")
+                    return;
                 }
             </script>
         </actions>
