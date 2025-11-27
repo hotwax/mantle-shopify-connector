@@ -120,6 +120,82 @@
         </actions>
     </service>
 
+    <service verb="update" noun="CustomerTagsInShopify" authenticate="anonymous-all">
+        <description>Add or remove tags for a Shopify customer using GraphQL mutations.</description>
+
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="customerId" required="true"/>
+            <parameter name="tagsToAdd"/>
+            <parameter name="tagsToRemove"/>
+        </in-parameters>
+
+        <out-parameters>
+            <parameter name="updatedTags" type="List"/>
+        </out-parameters>
+
+        <actions>
+            <set field="updatedTags" from="[]"/>
+
+            <if condition="!tagsToAdd &amp;&amp; !tagsToRemove">
+                <return error="true" message="Provide tagsToAdd or tagsToRemove to update Shopify customer tags"/>
+            </if>
+
+            <if condition="tagsToAdd &amp;&amp; tagsToRemove">
+                <return error="true" message="Provide either tagsToAdd or tagsToRemove, not both"/>
+            </if>
+
+            <set field="tagMutationText"/>
+            <set field="tagMutationVariables" from="[:]"/>
+            <set field="tagResponseKey"/>
+            <set field="tagActionLabel"/>
+
+            <if condition="tagsToAdd">
+                <set field="tagMutationText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/addCustomerTags.ftl', '')"/>
+                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToAdd]"/>
+                <set field="tagResponseKey" value="tagsAdd"/>
+                <set field="tagActionLabel" value="adding"/>
+            </if>
+
+            <if condition="tagsToRemove">
+                <set field="tagMutationText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/removeCustomerTags.ftl', '')"/>
+                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToRemove]"/>
+                <set field="tagResponseKey" value="tagsRemove"/>
+                <set field="tagActionLabel" value="removing"/>
+            </if>
+
+            <if condition="!tagMutationText">
+                <return error="true" message="Unable to determine Shopify tag mutation for customer ${customerId}"/>
+            </if>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:tagMutationText, variables:tagMutationVariables]"
+                          out-map="tagMutationResponse"/>
+
+            <if condition="!tagMutationResponse || tagMutationResponse.statusCode == null">
+                <return error="true" message="Failed to call Shopify while ${tagActionLabel ?: 'updating'} tags for customer ${customerId}"/>
+            </if>
+
+            <if condition="tagMutationResponse.statusCode &lt; 200 || tagMutationResponse.statusCode &gt;= 300">
+                <return error="true" message="Shopify returned status ${tagMutationResponse.statusCode} while ${tagActionLabel} tags for customer ${customerId}"/>
+            </if>
+
+            <set field="tagMutationPayload" from="tagMutationResponse.response?.get(tagResponseKey)"/>
+
+            <if condition="!tagMutationPayload">
+                <return error="true" message="Shopify did not return ${tagResponseKey ?: 'tag update'} payload for customer ${customerId}"/>
+            </if>
+
+            <if condition="tagMutationPayload.userErrors">
+                <return error="true" message="Error while ${tagActionLabel} tags for customer ${customerId} ${tagMutationPayload.userErrors}"/>
+            </if>
+
+            <if condition="tagMutationPayload.node?.tags">
+                <set field="updatedTags" from="tagMutationPayload.node.tags"/>
+            </if>
+        </actions>
+    </service>
+
     <service verb="issue" noun="GiftCardInShopify" authenticate="anonymous-all">
         <description>Issue a gift card to a Shopify customer using the giftCardCreate GraphQL mutation.</description>
 
