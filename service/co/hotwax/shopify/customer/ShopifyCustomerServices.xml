@@ -122,7 +122,6 @@
 
     <service verb="update" noun="CustomerTagsInShopify" authenticate="anonymous-all">
         <description>Add or remove tags for a Shopify customer using GraphQL mutations.</description>
-
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="customerId" required="true"/>
