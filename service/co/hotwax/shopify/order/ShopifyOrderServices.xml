@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="get" noun="OrderCount" authenticate="anonymous-all">
         <description>Get Shopify Order Count on given parameters</description>
         <in-parameters>
@@ -188,6 +188,24 @@ under the License.
                 <set field="hasNextPage" from="agreementsResponse.response.node.agreements.pageInfo.hasNextPage"/>
                 <set field="cursor" from="agreementsResponse.response.node.agreements.pageInfo.endCursor"/>
             </while>
+        </actions>
+    </service>
+
+    <service verb="process" noun="ShopifyOrders">
+        <in-parameters>
+            <parameter name="node" type="Map"/>
+        </in-parameters>
+        <actions>
+            <log message="==== node: ${node} ======"/>
+
+            <if condition="'7091361415332'.equals(node.legacyResourceId)">
+                <return error="true" message="Manually thrown error for Shopify Order 7091361415332"/>
+            </if>
+
+            <set field="payload" from="[externalId:node.legacyResourceId, orderTypeId:'SALES_ORDER', orderName:node.name, statusId:'ORDER_CREATED']"/>
+
+            <!--Calling the OOTB transfer order service -->
+            <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="payload" out-map="orderOut"/>
         </actions>
     </service>
 </services>

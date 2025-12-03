@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="send" noun="ShopifyRequest" authenticate="anonymous-all">
         <description>
             This is a generic service which will be used to make all types of Shopify REST API calls.
@@ -37,6 +37,7 @@ under the License.
             <parameter name="nextLink"/>
         </out-parameters>
         <actions>
+            <log message="=============ssr"/>
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
             <if condition="systemMessageRemote == null"><return error="true" message="Could not find SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
             <if condition="systemMessageRemote.sendUrl == null"><return error="true" message="Could not find SystemMessageRemote.sendUrl in SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
@@ -178,6 +179,7 @@ under the License.
             <parameter name="response" type="Map"/>
         </out-parameters>
         <actions>
+            <log message="====== inside send#ShopifyGraphqlRequest service ======"/>
             <set field="queryText" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryText)"/>
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote"/>
             <if condition="systemMessageRemote == null"><return error="true" message="Could not find SystemMessageRemote with ID ${systemMessageRemote.systemMessageRemoteId}"/></if>
@@ -247,9 +249,11 @@ under the License.
                 <return error="true" message="${gqlResponse.errors}"/>
             </if>
             <set field="response" from="gqlResponse.data"/>
+            <set field="extensions" from="gqlResponse.extensions"/>
+            <log message="======= extensions: ${extensions} ======"/>
             <if condition="gqlResponse.extensions &amp;&amp; gqlResponse.extensions.cost">
-                <log level="debug" message="GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
-                <log level="debug" message="GraphQL actual query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
+                <log level="debug" message="========= GraphQL requested query cost: ${gqlResponse.extensions.cost.requestedQueryCost}"/>
+                <log level="debug" message="========= GraphQL actual query cost: ${gqlResponse.extensions.cost.actualQueryCost}"/>
                 <log level="debug" message="GraphQL available limit: ${gqlResponse.extensions.cost.throttleStatus.currentlyAvailable}"/>
             </if>
         </actions>

@@ -16,7 +16,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="consume" noun="FulfillmentFeed" authenticate="anonymous-all" transaction-timeout="7200">
         <description>
             Consume Fulfillment Feed JSON System Message and produce 'CreateShopifyFulfillment' System Message for each record.
@@ -2354,6 +2354,111 @@ under the License.
                 <set field="hasNextPage" from="updatedProductVariantsResponse.response.productVariants.pageInfo.hasNextPage"/>
                 <set field="cursor" from="updatedProductVariantsResponse.response.productVariants.pageInfo.endCursor"/>
             </while>
+        </actions>
+    </service>
+
+    <!-- New implementation with Shopify GraphQL and OMS Data Manager -->
+    <service verb="get" noun="OrdersFromShopify" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate Orders feed from Shopify and store output in DataManager.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <!-- Fetch system message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Parse input parameters -->
+            <set field="queryParams"
+                 from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <!-- Initialize pagination -->
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="cursor" from="null"/>
+
+            <set field="pageNumber" from="1" type="Integer"/>
+            <while condition="hasNextPage">
+                <log message="=== Fetching Page ${pageNumber} with cursor: ${cursor} ==="/>
+
+                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.upload#ShopifyOrdersResponse"
+                          in-map="[systemMessageId:systemMessageId, queryParams:queryParams,
+                          cursor:cursor, pageNumber:pageNumber]"  out-map="pageResult" transaction="force-new"/>
+
+                <set field="hasNextPage" from="pageResult.hasNextPage"/>
+                <set field="cursor" from="pageResult.endCursor"/>
+
+                <set field="pageNumber" from="pageNumber + 1"/>
+            </while>
+        </actions>
+    </service>
+
+    <service verb="upload" noun="ShopifyOrdersResponse">
+        <description>Fetch a single page of orders from Shopify and save to JSON file.</description>
+        <in-parameters>
+            <parameter name="systemMessageId" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+            <parameter name="cursor"/>
+            <parameter name="pageNumber" type="Integer"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="hasNextPage" type="Boolean"/>
+            <parameter name="endCursor"/>
+        </out-parameters>
+        <actions>
+            <!-- Fetch system message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <script>
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import com.fasterxml.jackson.core.JsonFactory
+                import org.apache.commons.fileupload.disk.DiskFileItem
+                import org.apache.commons.io.IOUtils
+                import java.nio.charset.StandardCharsets
+            </script>
+
+            <!-- Load query template -->
+            <script>
+                queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+            </script>
+
+            <!-- Call GraphQL -->
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                    in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
+                    out-map="ordersResponse"/>
+
+            <if condition="!ordersResponse?.response?.orders?.edges">
+                <set field="hasNextPage" value="false"/>
+                <return message="No orders found for page ${pageNumber}"/>
+            </if>
+
+            <log message="===== ordersResponse.response.orders.edges.size(): ${ordersResponse.response.orders.edges.size()} ====="/>
+
+            <!-- Convert response to JSON string -->
+            <script>
+                def mapper = new ObjectMapper(new JsonFactory())
+
+                // Extract orders.edges array (default empty list if not found)
+                def edges = ordersResponse?.response?.orders?.edges ?: []
+
+                def jsonBytes = mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(edges)
+
+                // Create in-memory FileItem (no physical file)
+                DiskFileItem fileItem = new DiskFileItem("contentFile", "application/json", false,
+                    "ShopifyOrdersFeed-${pageNumber}.json", jsonBytes.length, null)
+
+                try (OutputStream os = fileItem.getOutputStream()) {
+                    IOUtils.copy(new ByteArrayInputStream(jsonBytes), os)
+                }
+
+                //context.contentFile = fileItem
+            </script>
+
+            <!-- Upload immediately to DataManager -->
+            <service-call name="co.hotwax.util.UtilityServices.upload#DataManagerFile"
+                          in-map="[configId:'SHOPIFY_ORDER_IMPORT', contentFile:fileItem]"/>
+
+            <!-- Pagination Info -->
+            <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
+            <set field="endCursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
+
+            <log message="=== Completed Page ${pageNumber} | hasNextPage: ${hasNextPage} | endCursor: ${endCursor} ==="/>
         </actions>
     </service>
 </services>
