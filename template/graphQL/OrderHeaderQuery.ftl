@@ -17,13 +17,13 @@ under the License.
 -->
             <@compress single_line=true>
             <#if queryParams.fromDate?has_content && !queryParams.thruDate?has_content>
-                <#assign filterQuery = "updated_at:>'${queryParams.fromDate}'"/>
+                <#assign filterQuery = "created_at:>'${queryParams.fromDate}'"/>
             </#if>
             <#if queryParams.thruDate?has_content && !queryParams.fromDate?has_content>
-                <#assign filterQuery = "updated_at:<'${queryParams.thruDate}'"/>
+                <#assign filterQuery = "created_at:<'${queryParams.thruDate}'"/>
             </#if>
             <#if queryParams.fromDate?has_content && queryParams.thruDate?has_content>
-                <#assign filterQuery = "updated_at:>'${queryParams.fromDate}' AND updated_at:<'${queryParams.thruDate}'"/>
+                <#assign filterQuery = "created_at:>'${queryParams.fromDate}' AND created_at:<'${queryParams.thruDate}'"/>
             </#if>
 
             query {

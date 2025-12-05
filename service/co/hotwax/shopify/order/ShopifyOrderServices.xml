@@ -16,7 +16,8 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns=""
+          xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
     <service verb="get" noun="OrderCount" authenticate="anonymous-all">
         <description>Get Shopify Order Count on given parameters</description>
         <in-parameters>
@@ -133,10 +134,11 @@ under the License.
             </while>
 
             <set field="orderDetail.lineItems" from="orderLineItems"/>
+            <log message="orderDetail.lineItems: ${orderDetail.lineItems}"/>
 
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="shippingLines" from="[]"/>
-            <set field="cursor" value="null"/>
+            <set field="cursor" from="null"/>
             <while condition="hasNextPage">
                 <script>
                     queryText = ec.resourceFacade.template(
@@ -160,6 +162,7 @@ under the License.
             </while>
 
             <set field="orderDetail.shippingLines" from="shippingLines"/>
+            <log message="orderDetail.shippingLines: ${orderDetail.shippingLines}"/>
 
             <set field="transactions" from="[]"/>
              <script>
@@ -287,8 +290,10 @@ under the License.
             <parameter name="customer" type="Map"/>
             <parameter name="sourceName"/>
             <parameter name="phone"/>
-
-
+            <parameter name="email"/>
+            <parameter name="lineItems" type="Map"/>
+            <parameter name="shippingAddress" type="Map"/>
+            <parameter name="customArttributes" type="Map"/>
             <parameter name="id" type="String"/>
             <parameter name="shopifyConfigId" type="String"/>
 
@@ -298,7 +303,6 @@ under the License.
             <script>
                 import co.hotwax.shopify.ShopifyMappingWorker
             </script>
-            <set field="order" from="orderDetail"/>
             <entity-find-count entity-name="co.hotwax.order.OrderIdentification" count-field="orderCount">
                 <econdition field-name="orderIdentificationTypeId" value="SHOPIFY_ORD_ID"/>
                 <econdition field-name="idValue" from="legacyResourceId"/>
@@ -372,9 +376,9 @@ under the License.
                     <set field="shippingAddress" from="shippingAddress"/>
                     <set field="isShippingAddressEmpty" from="(shippingAddress == null || shippingAddress.isEmpty())"/>
                     <!-- Order which is fulfilled in store and no item for shipping. -->
-                    <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; orders.channelId=='POS_SALES_CHANNEL')"/>
+                    <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; orders.salesChannelEnumId=='POS_SALES_CHANNEL')"/>
                     <!-- Mixed Cart POS Orders will have partially fulfilled items as some items are already fulfilled and rest needs to be fulfilled i.e they are pos and send sale. -->
-                    <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; orders.channelId=='POS_SALES_CHANNEL' &amp;&amp; displayFulfillmentStatus =='PARTIALLY_FULFILLED')"/>
+                    <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; orders.salesChannelEnumId=='POS_SALES_CHANNEL' &amp;&amp; displayFulfillmentStatus =='PARTIALLY_FULFILLED')"/>
                     <log message="isShippingAddressEmpty: ${isShippingAddressEmpty}, isPosCompletedOrder: ${isPosCompletedOrder}, isMixedCartPosOrder: ${isMixedCartPosOrder}"/>
                     <if condition="shopifyConfigs.productStoreId[0]&amp;&amp;productStore.reserveInventory[0] == 'Y'&amp;&amp; productStore.inventoryFacilityId[0]">
                         <set field="defaultFacility" from="productStore.inventoryFacilityId[0]"/>
@@ -406,29 +410,295 @@ under the License.
 //                        if(order.number) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NO",idValue:order.number])
                     </script>
                     <set field="orders.identifications" from="orderIdentifications"/>
-<!--                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.map#OrderContactMech" in-map="[phone:phone]" out-map="context"/>-->
-<!--                    <set field="orders.contactMechs" from="orderContactMech"/>-->
+                    <!-- Create order contact mechs -->
+                    <set field="orderContacts" from="[email:email, phone:phone,shipToMap:shipToMap]"/>
+                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.map#OrderContactMech" in-map="[orderContacts:orderContacts]" out-map="context"/>
+                    <set field="orders.contactMechs" from="orderContactMech"/>
+                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.create#ShipGroup" in-map="[lineItems:lineItems,
+                        isPosCompletedOrder:isPosCompletedOrder,
+                        isMixedCartPosOrder:isMixedCartPosOrder,
+                        shippingLines:shippingLines,
+                        retailLocation:retailLocation
+                        ]" out-map="shipGroupOut"/>
+                    <set field="orders.shipGroups" from="shipGroupOut.shipGroupList"/>
+                    <!-- Create order attributes-->
+<!--                    <set field="orderAttributes" from="[:]"/>-->
+<!--                    <if condition="customAttributes">-->
+<!--                        <iterate list="customAttributes" entry="attr">-->
+<!--                            <if condition="attr.key &amp;&amp; attr.value">-->
+<!--                                <set field="orderAttributes" from="orderAttributes + [{-->
+<!--                                'attrName': attr.key.substring(0, attr.key.length() > 59 ? 59 : attr.key.length()),-->
+<!--                                'attrValue': attr.value.substring(0, attr.value.length() > 999 ? 999 : attr.value.length())-->
+<!--                                 }]"/>-->
+<!--                            </if>-->
+<!--                        </iterate>-->
+<!--                    </if>-->
+
+<!--                    <if condition="staffMember.id">-->
+<!--                        <set field="orderAttributes" from="orderAttributes + [{-->
+<!--                        'attrName': 'shopify_user_id',-->
+<!--                        'attrValue': order.staffMember.id,-->
+<!--                        'attrDescription': 'Shopify User Id'-->
+<!--                        }]"/>-->
+<!--                    </if>-->
+
+<!--                    <set field="orders.attributes" from="orderAttributes"/>-->
+                    
                     <log message="----------order: ${orders} ----------"/>
-                    <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="orders" out-map="orderOut"/>
-                    <set field="orderId" from="orderOut.orderId"/>
+<!--                    <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="orders" out-map="orderOut"/>-->
+<!--                    <set field="orderId" from="orderOut.orderId"/>-->
                 </if>
             </if>
         </actions>
     </service>
     <service verb="map" noun="OrderContactMech">
         <in-parameters>
-            <parameter name="phone" required="false"/>
+            <parameter name="orderContacts"  type="Map" required="false"/>
         </in-parameters>
         <out-parameters>
             <parameter name="orderContactMech" type="List"/>
         </out-parameters>
         <actions>
-            <if condition="order.phone">
+            <if condition="orderContacts.phone">
                 <service-call name="co.hotwax.oms.contact.ContactMechServices.create#TelecomNumber" in-map="[contactNumber:phone]" out-map="TelecomNumberOut"/>
                 <if condition="TelecomNumberOut.contactMechId">
                     <set field="orderContactMech" from="(orderContactMech ?: []) + [['contactMechId': TelecomNumberOut.contactMechId,'contactMechPurposeTypeId': 'PHONE_SHIPPING']]"/>
                 </if>
             </if>
+            <if condition="orderContacts.email">
+                <service-call name="create#org.apache.ofbiz.party.contact.ContactMech" in-map="context +[contactMechTypeId:'EMAIL_ADDRESS']" out-map="emailContactMechOut"/>
+                <if condition="emailContactMechOut.contactMechId">
+                    <set field="orderContactMech" from="(orderContactMech ?: []) + [['contactMechId': emailContactMechOut.contactMechId,'contactMechPurposeTypeId': 'ORDER_EMAIL']]"/>
+                </if>
+            </if>
+        </actions>
+    </service>
+    <service verb="create" noun="ShipGroup">
+        <in-parameters>
+            <parameter name="lineItems" type="List" required="true"/>
+            <parameter name="isPosCompletedOrder" type="Boolean" required="true"/>
+            <parameter name="isMixedCartPosOrder" type="Boolean" required="true"/>
+            <parameter name="retailLocation" type="Map"/>
+            <parameter name="shippingLines" type="List"/>
+        </in-parameters>
+
+        <out-parameters>
+            <parameter name="shipGroupList" type="List"/>
+        </out-parameters>
+
+        <actions>
+
+            <set field="shipGroupList" from="[]"/>
+            <!-- handle web orders -->
+            <if condition="!isPosCompletedOrder &amp;&amp; !isMixedCartPosOrder">
+                <set field="shipGroups" from="[]"/>
+                <iterate list="lineItems" entry="lineItem">
+                    <!-- default -->
+                    <set field="shipmentMethodTypeIdForItem" value="STANDARD"/>
+                    <!--TODO: Handle other shipment methods like EXPRESS based on shippingLines-->
+                    <set field="fromFacilityId" value="_NA_"/>
+                    <!-- custom attributes -->
+                    <set field="customAttrs" from="lineItem.customAttributes"/>
+                    <if condition="customAttrs">
+                        <iterate list="customAttrs" entry="attr">
+                            <if condition="attr.key == '_pickupstore' &amp;&amp; attr.value">
+                                <!--TODO:set facility id of hotwax-->
+                                <set field="fromFacilityId" from="attr.value"/>
+                                <set field="shipmentMethodTypeIdForItem" value="STOREPICKUP"/>
+                            </if>
+                        </iterate>
+                    </if>
+                    <!-- find existing ship group -->
+                    <set field="matchedGroup" from="null"/>
+                    <iterate list="shipGroups" entry="grp">
+                        <if condition="grp.facilityId == fromFacilityId &amp;&amp; grp.shipmentMethodTypeId == shipmentMethodTypeIdForItem">
+                            <set field="matchedGroup" from="grp"/>
+                        </if>
+                    </iterate>
+                    <!-- CASE 1: matchedGroup exists → append item -->
+                    <if condition="matchedGroup">
+                        <set field="updatedItems" from="matchedGroup.items + [lineItem]"/>
+
+                        <!-- rebuild shipGroups replacing matchedGroup -->
+                        <set field="newShipGroups" from="[]"/>
+                        <iterate list="shipGroups" entry="grp">
+                            <if condition="grp == matchedGroup">
+                                <set field="newShipGroups"
+                                     from="newShipGroups + [[facilityId: grp.facilityId, shipmentMethodTypeId: grp.shipmentMethodTypeId, items: updatedItems]]"/>
+                            </if>
+                            <if condition="grp != matchedGroup">
+                                <set field="newShipGroups" from="newShipGroups + [grp]"/>
+                            </if>
+                        </iterate>
+                        <set field="shipGroups" from="newShipGroups"/>
+                    </if>
+                    <!-- CASE 2: matchedGroup not found → create new one -->
+                    <if condition="!matchedGroup">
+                        <set field="newGroup"
+                             from="[facilityId: fromFacilityId, shipmentMethodTypeId: shipmentMethodTypeIdForItem, items: [lineItem]]"/>
+                        <set field="shipGroups" from="shipGroups + [newGroup]"/>
+                    </if>
+                </iterate>
+            </if>
+            <if condition="isMixedCartPosOrder">
+                <set field="shipGroups" from="[]"/>
+                <iterate list="lineItems" entry="lineItem">
+
+                    <!-- compute fulfilled quantity -->
+                    <set field="quantity" from="lineItem.quantity"/>
+                    <set field="unfulfilledQty" from="lineItem.unfulfilledQuantity"/>
+                    <set field="fulfilledQty" from="quantity - unfulfilledQty"/>
+
+                    <!-- default values -->
+                    <set field="shipmentMethodTypeIdForItem" value="STANDARD"/>
+                    <set field="fromFacilityId" value="_NA_"/>
+                    <log message="======================================================fulfilledQty: ${fulfilledQty}, quantity: ${quantity} for line item ${lineItem.id}"/>
+
+                    <!-- CASE 1: fully fulfilled → POS_COMPLETED -->
+                    <if condition="fulfilledQty == quantity">
+                        <set field="shipmentMethodTypeIdForItem" value="POS_COMPLETED"/>
+                        <set field="fromFacilityId" from="retailLocation.legacyResourceId"/>
+                    </if>
+
+                    <!-- CASE 2: not fully fulfilled -->
+                    <if condition="fulfilledQty != quantity">
+
+                        <!-- check pickupstore custom attribute -->
+                        <set field="customAttrs" from="lineItem.customAttributes"/>
+                        <if condition="customAttrs">
+                            <iterate list="customAttrs" entry="attr">
+                                <if condition="attr.key == '_pickupstore' &amp;&amp; attr.value">
+                                    <set field="shipmentMethodTypeIdForItem" value="STOREPICKUP"/>
+                                    <set field="fromFacilityId" from="attr.value"/>
+                                </if>
+                            </iterate>
+                        </if>
+
+                        <!-- if still standard → facility = _NA_ -->
+                        <if condition="shipmentMethodTypeIdForItem == 'STANDARD'">
+                            <set field="fromFacilityId" value="_NA_"/>
+                        </if>
+                    </if>
+
+                    <!-- find existing ship group for this combination -->
+                    <set field="matchedGroup" from="null"/>
+                    <iterate list="shipGroups" entry="grp">
+                        <if condition="grp.facilityId == fromFacilityId
+                       &amp;&amp; grp.shipmentMethodTypeId == shipmentMethodTypeIdForItem">
+                            <set field="matchedGroup" from="grp"/>
+                        </if>
+                    </iterate>
+
+                    <!-- CASE A: matchedGroup exists → append item -->
+                    <if condition="matchedGroup">
+                        <set field="updatedItems" from="matchedGroup.items + [lineItem]"/>
+
+                        <set field="newShipGroups" from="[]"/>
+                        <iterate list="shipGroups" entry="grp">
+                            <if condition="grp == matchedGroup">
+                                <set field="newShipGroups"
+                                     from="newShipGroups + [[facilityId: grp.facilityId,
+                                                 shipmentMethodTypeId: grp.shipmentMethodTypeId,
+                                                 items: updatedItems]]"/>
+                            </if>
+
+                            <if condition="grp != matchedGroup">
+                                <set field="newShipGroups" from="newShipGroups + [grp]"/>
+                            </if>
+                        </iterate>
+
+                        <set field="shipGroups" from="newShipGroups"/>
+                    </if>
+
+                    <!-- CASE B: no matched group → create new group -->
+                    <if condition="!matchedGroup">
+                        <set field="newGroup"
+                             from="[facilityId: fromFacilityId,
+                        shipmentMethodTypeId: shipmentMethodTypeIdForItem,
+                        items: [lineItem]]"/>
+
+                        <set field="shipGroups" from="shipGroups + [newGroup]"/>
+                    </if>
+                </iterate>
+                <set field="shipGroupList" from="shipGroups"/>
+            </if>
+            <if condition="isPosCompletedOrder">
+                <log message="=================Handling POS Completed Items==================="/>
+                <set field="shipGroups" from="[]"/>
+
+                <!-- All POS-completed items belong to one ship group -->
+                <set field="facilityIdForGroup" from="retailLocation.id"/>
+                <set field="newGroup"
+                     from="[facilityId: facilityIdForGroup,
+                                shipmentMethodTypeId: 'POS_COMPLETED',
+                                items: lineItems]"/>
+                <if condition="shipGroupList == null">
+                    <set field="shipGroupList" from="[newGroup]"/>
+                </if>
+            </if>
+            <else>
+                <set field="shipGroupList" from="shipGroupList + [newGroup]"/>
+            </else>
+
+            <log message="=========shipGroupList: ${shipGroupList} ========="/>
+<!--            <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.create#ShipGroupItems" in-map="[shipGroupList:shipGroupList]" out-map="shipGroupItemsOut"/>-->
+            <set field="shipGroupList" from="shipGroupItemsOut.createdShipGroupItems"/>
+
+        </actions>
+    </service>
+    <service verb="create" noun="ShipGroupItems">
+        <in-parameters>
+            <parameter name="shipGroupList" type="List"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="createdShipGroupItems" type="List"/>
+        </out-parameters>
+        <actions>
+            <script>
+                import co.hotwax.shopify.ShopifyMappingWorker
+            </script>
+            <set field="shopifyConfigId" value="10010"/>
+            <iterate list="shipGroupList" entry="shipGroup">
+                <iterate list="shipGroup.items" entry="item">
+                    <if condition="item.variant.legacyResourceId">
+                        <set field="variantId" from="item.variant.legacyResourceId"/>
+                    </if>
+                    <if condition="variantId">
+                        <set field="variantProductId" from="ShopifyMappingWorker.getProductId(ec, shopifyConfigId,variantId)"/>
+                        <entity-find-one entity-name="org.apache.ofbiz.product.product.Product" value-field="product">
+                            <field-map field-name="productId" from="variantProductId"/>
+                        </entity-find-one>
+                        <if condition="product">
+                            <set field="productId" value="product.productId"/>
+                            <set field="productTypeId" value="product.productTypeId"/>
+                        </if>
+                    </if>
+                    <!--TODO: Handle case when product is not found-->
+                    <if condition="productId">
+                        <set field="orderItemMap" from="[:]"/>
+                        <set field="quantity" from="item.quantity"/>
+                        <set field="itemExternalId" from="item.legacyResourceId"/>
+                        <set field="cancelledQuantity" from="item.unfulfillableQuantity"/>
+                        <set field="remainingQuantity" value="quantity - cancelledQuantity"/>
+                        <if condition="remainingQuantity &gt; 0">
+                            <set field="orderItemMap.quantity" from="remainingQuantity"/>
+                            <else>
+                                <set field="orderItemMap.quantity" value="quantity"/>
+                            </else>
+                        </if>
+                        <!-- if price exists -->
+                        <if condition="item.originalUnitPriceSet.shopMoney.amount">
+                            <set field="unitPrice"
+                                 from="ec.l10n.parseNumber(item.originalUnitPriceSet.shopMoney.amount.toString())"/>
+                        </if>
+                        <set field="orderItemMap.productId" from="productId"/>
+                        <set field="orderItemMap.externalId" from="itemExternalId"/>
+                        <set field="orderItemMap.unitPrice" from="unitPrice"/>
+
+                    </if>
+
+                </iterate>
+            </iterate>
         </actions>
     </service>
 </services>

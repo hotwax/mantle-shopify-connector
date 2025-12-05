@@ -34,5 +34,21 @@ class ShopifyMappingWorker {
         return shopifyLocation?.facilityId
     }
 
+    static String getProductId(ExecutionContext ec, String shopifyConfigId, String shopifyProductId) {
+        EntityValue shopifyProduct
+
+        try {
+            shopifyProduct = ec.entity.find("ShopifyShopProductAndConfig")
+                    .condition("shopifyConfigId", shopifyConfigId)
+                    .condition("shopifyProductId", shopifyProductId)
+                    .one()
+        } catch (Exception e) {
+            ec.logger.error(
+                    "Error fetching ShopifyShopProductAndConfig for shopifyConfigId=${shopifyConfigId}, " + "shopifyProductId=${shopifyProductId}: ${e.message}", e)
+            return null
+        }
+
+        return shopifyProduct?.productId
+    }
 
 }

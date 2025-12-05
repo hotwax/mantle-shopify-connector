@@ -2422,7 +2422,8 @@ under the License.
                           in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
                           out-map="ordersResponse"/>
 
-            <if condition="!ordersResponse?.response?.orders?.edges">
+            <if condition="ordersResponse?.response?.orders?.edges?.isEmpty()">
+                <log message="No orders found for the given criteria."/>
                 <set field="hasNextPage" value="false"/>
                 <return/>
             </if>
@@ -2444,6 +2445,7 @@ under the License.
                     if (orderDetailsResponse?.orderDetail != null) orderMap.putAll(orderDetailsResponse.orderDetail)
                     ordersList.add(orderMap)
                 </script>
+                <log message="============= Added Order ID: ${order.id} to ordersList"/>
             </iterate>
             <script>
                 def mapper = new ObjectMapper(new JsonFactory())
