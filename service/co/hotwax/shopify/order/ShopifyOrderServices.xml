@@ -190,4 +190,52 @@ under the License.
             </while>
         </actions>
     </service>
+
+    <service verb="get" noun="OrdersInDateRange" authenticate="anonymous-all">
+        <description>Return Shopify order legacy IDs created within the given date window.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="fromTs" required="true" type="Timestamp"/>
+            <parameter name="thruTs" required="true" type="Timestamp"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shopifyOrderIds" type="List"/>
+        </out-parameters>
+        <actions>
+            <set field="shopifyOrderIds" from="[]"/>
+            <set field="utcZone" from="java.util.TimeZone.getTimeZone('UTC')"/>
+            <set field="queryText" from="ec.resourceFacade.template('component://mantle-shopify-connector/template/order/OrderReconciliationSearchQuery.ftl', '')"/>
+            <set field="searchQuery" from="'created_at:&gt;=' + ec.l10n.formatTimestamp(fromTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, utcZone) + ' created_at:&lt;' + ec.l10n.formatTimestamp(thruTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, utcZone) + ' -channel:pos -status:cancelled'"/>
+
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="afterCursor"/>
+            <while condition="hasNextPage">
+                <set field="variables" from="[search:searchQuery]"/>
+                <if condition="afterCursor"><set field="variables" from="variables + [after:afterCursor]"/></if>
+
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
+                              out-map="shopifyGqlResult"/>
+
+                <if condition="shopifyGqlResult.statusCode != 200">
+                    <return error="true" message="Shopify GraphQL request failed for orders search; status: ${shopifyGqlResult.statusCode}"/>
+                </if>
+                <set field="ordersNode" from="shopifyGqlResult.response?.orders"/>
+                <if condition="!ordersNode">
+                    <return error="true" message="Shopify GraphQL response did not include order data."/>
+                </if>
+
+                <if condition="ordersNode.edges">
+                    <iterate list="ordersNode.edges" entry="edge">
+                        <if condition="edge?.node?.legacyResourceId != null">
+                            <set field="shopifyOrderIds" from="shopifyOrderIds + [String.valueOf(edge.node.legacyResourceId)]"/>
+                        </if>
+                    </iterate>
+                </if>
+
+                <set field="hasNextPage" from="ordersNode.pageInfo?.hasNextPage" type="Boolean"/>
+                <set field="afterCursor" from="ordersNode.pageInfo?.endCursor"/>
+            </while>
+        </actions>
+    </service>
 </services>
