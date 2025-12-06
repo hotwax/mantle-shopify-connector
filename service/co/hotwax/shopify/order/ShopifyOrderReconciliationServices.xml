@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="generate" noun="OrderReconciliationReport" authenticate="anonymous-all" transaction-timeout="7200">
+        <description>Reconcile Shopify and OMS orders for a date window and produce a CSV report of real mismatches.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="fromDate" required="true"/>
+            <parameter name="thruDate" required="true"/>
+            <parameter name="timeZoneId"/>
+            <parameter name="shopId"/>
+            <parameter name="outputLocation"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="reportLocation"/>
+            <parameter name="missingInOMSCount" type="Integer"/>
+        </out-parameters>
+        <actions>
+            <set field="reportRows" from="[]"/>
+            <set field="boundaryBufferMs" value="3600000" type="Long"/>
+
+            <set field="zone" from="timeZoneId ? java.util.TimeZone.getTimeZone(timeZoneId) : (ec.user.timeZone ?: java.util.TimeZone.getTimeZone('UTC'))"/>
+            <set field="startTs" from="ec.l10n.parseTimestamp(fromDate, null, null, zone)"/>
+            <set field="endTs" from="ec.l10n.parseTimestamp(thruDate, null, null, zone)"/>
+            <if condition="!startTs || !endTs">
+                <message error="true">fromDate and thruDate must be valid timestamps.</message>
+                <return/>
+            </if>
+            <if condition="!startTs.before(endTs)">
+                <message error="true">fromDate must be before thruDate.</message>
+                <return/>
+            </if>
+            <set field="boundaryStartInstant" from="startTs.toInstant()"/>
+            <set field="boundaryEndInstant" from="endTs.toInstant()"/>
+            <entity-delete-by-condition entity-name="co.hotwax.shopify.ShopifyOrderReconShopify">
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
+                <econdition field-name="shopId" operator="equals" from="shopId" ignore-if-empty="true"/>
+            </entity-delete-by-condition>
+            <set field="shopifySavedIds" from="new java.util.HashSet()"/>
+
+            <set field="queryText" from="'''query ($search: String, $after: String) { orders(first: 100, after: $after, query: $search) { edges { node { id legacyResourceId createdAt } } pageInfo { hasNextPage endCursor } } }'''"/>
+            <set field="searchQuery" from="'created_at:&gt;=' + ec.l10n.formatTimestamp(startTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, null, java.util.TimeZone.getTimeZone('UTC')) + ' created_at:&lt;' + ec.l10n.formatTimestamp(endTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, null, java.util.TimeZone.getTimeZone('UTC')) + ' -channel:pos -status:cancelled'"/>
+
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="afterCursor"/>
+            <while condition="hasNextPage">
+                <set field="variables" from="[search:searchQuery]"/>
+                <if condition="afterCursor"><set field="variables" from="variables + [after:afterCursor]"/></if>
+
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
+                              out-map="shopifyGqlResult"/>
+
+                <if condition="shopifyGqlResult.statusCode != 200">
+                    <return error="true" message="Shopify GraphQL request failed for orders search; status: ${shopifyGqlResult.statusCode}"/>
+                </if>
+                <set field="ordersNode" from="shopifyGqlResult.response?.orders"/>
+                <if condition="!ordersNode">
+                    <return error="true" message="Shopify GraphQL response did not include order data."/>
+                </if>
+
+                <if condition="ordersNode.edges">
+                    <iterate list="ordersNode.edges" entry="edge">
+                        <set field="legacyId" from="edge?.node?.legacyResourceId"/>
+                        <if condition="legacyId == null"><continue/></if>
+
+                        <set field="shopifyId" from="String.valueOf(legacyId)"/>
+                        <set field="shopifyIdLong" from="(legacyId instanceof java.lang.Number) ? ((java.lang.Number) legacyId).longValue() : Long.valueOf(String.valueOf(legacyId))"/>
+                        <set field="shopifyGraphqlId" from="edge?.node?.id ?: ('gid://shopify/Order/' + shopifyId)"/>
+                        <if condition="!shopifySavedIds.add(shopifyId)"><continue/></if>
+                        <set field="orderCreatedAt" from="edge?.node?.createdAt ? java.sql.Timestamp.from(java.time.OffsetDateTime.parse(String.valueOf(edge.node.createdAt)).toInstant()) : null"/>
+                        <entity-make-value entity-name="co.hotwax.shopify.ShopifyOrderReconShopify"
+                                           value-field="shopifyReconShopify"
+                                           map="[systemMessageRemoteId:systemMessageRemoteId,
+                                                 shopifyOrderId:shopifyIdLong,
+                                                 shopId:shopId,
+                                                 orderCreatedAt:orderCreatedAt]"/>
+                        <entity-create value-field="shopifyReconShopify"/>
+                    </iterate>
+                </if>
+
+                <set field="hasNextPage" from="ordersNode.pageInfo?.hasNextPage" type="Boolean"/>
+                <set field="afterCursor" from="ordersNode.pageInfo?.endCursor"/>
+            </while>
+
+            <set field="missingInOMSCount" value="0" type="Integer"/>
+
+            <entity-find entity-name="co.hotwax.shopify.ShopifyOrderReconShopifyGapView" list="shopifyGapList" use-cache="false">
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
+                <econdition field-name="omsOrderId" operator="is-null"/>
+                <econdition field-name="shopId" operator="equals" from="shopId" ignore-if-empty="true"/>
+                <use-iterator/>
+            </entity-find>
+
+            <iterate list="shopifyGapList" entry="shopifyGap">
+                <set field="shopifyId" from="String.valueOf(shopifyGap.shopifyOrderId)"/>
+                <set field="shopifyGraphqlId" from="'gid://shopify/Order/' + shopifyId"/>
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyGraphqlId,
+                                       includeLineItems:false, includeFulfillmentOrders:false, includeShippingLines:true]"
+                              out-map="orderDetailResp"
+                              ignore-error="true"/>
+                <set field="order" from="orderDetailResp.orderDetail ?: [:]"/>
+
+                <set field="skipOrder" from="order.createdAt ? { def inst = java.time.OffsetDateTime.parse(String.valueOf(order.createdAt)).toInstant(); def within = !inst.isBefore(boundaryStartInstant) &amp;&amp; inst.isBefore(boundaryEndInstant); if (within) return false; def startDelta = Math.abs(java.time.Duration.between(boundaryStartInstant, inst).toMillis()); def endDelta = Math.abs(java.time.Duration.between(boundaryEndInstant, inst).toMillis()); (startDelta &lt;= boundaryBufferMs) || (endDelta &lt;= boundaryBufferMs) }() : false"/>
+                <if condition="skipOrder"><continue/></if>
+
+                <set field="shippingMethod" from="(order.shippingLines instanceof List &amp;&amp; !order.shippingLines.isEmpty()) ? (order.shippingLines[0].title ?: order.shippingLines[0].code ?: (order.shippingLines[0].source ?: '')) : ''"/>
+                <set field="statusSummary" from="[(order.financialStatus ?: null), (order.displayFulfillmentStatus ?: order.fulfillmentStatus ?: null)].findAll { it }.join(' | ')"/>
+                <set field="reasonText" from="order.cancelledAt ? 'Cancellation not synced to OMS' : 'Missing in OMS — needs investigation'"/>
+                <set field="reportRows" from="reportRows + [[
+                        order_id       : shopifyId,
+                        source         : 'ShopifyOnly',
+                        reason         : reasonText,
+                        order_date     : order.createdAt ?: '',
+                        amount         : order.totalPrice ?: '',
+                        status         : statusSummary,
+                        shipping_method: shippingMethod
+                ]]"/>
+                <set field="missingInOMSCount" from="missingInOMSCount + 1"/>
+            </iterate>
+
+            <set field="reportRows" from="reportRows.sort { String.valueOf(it.order_date ?: '') }"/>
+            <set field="headers" from="['order_id', 'source', 'reason', 'order_date', 'amount', 'status', 'shipping_method']"/>
+            <set field="escapeCsv" from='{ val -> if (val == null) return ""; def text = String.valueOf(val); def needsQuotes = text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r"); if (text.contains("\"")) text = text.replace("\"", "\"\""); return needsQuotes ? "\"" + text + "\"" : text }'/>
+            <set field="csvBuilder" from="new StringBuilder(headers.join(','))"/>
+            <set field="csvBuilder" from="csvBuilder.append('\n')"/>
+            <iterate list="reportRows" entry="row">
+                <set field="rowValues" from="headers.collect { field -> escapeCsv(row[field]) }"/>
+                <set field="csvBuilder" from="csvBuilder.append(rowValues.join(',')).append('\n')"/>
+            </iterate>
+            <set field="csvText" from="csvBuilder.toString()"/>
+
+            <set field="reportPathRef" from="outputLocation ?: 'runtime://tmp/order_reconciliation_report.csv'"/>
+            <set field="reportRef" from="ec.resource.getLocationReference(reportPathRef)"/>
+            <set field="reportUri" from="reportRef.getUri()"/>
+            <set field="reportFile" from="(reportUri &amp;&amp; reportUri.getPath()) ? new File(reportUri.getPath()) : null"/>
+            <if condition="reportFile &amp;&amp; reportFile.parentFile &amp;&amp; !reportFile.parentFile.exists()">
+                <set field="ignored" from="reportFile.parentFile.mkdirs()"/>
+            </if>
+            <set field="writeReport" from="reportRef.putText(csvText)"/>
+
+            <set field="reportLocation" from="reportPathRef"/>
+        </actions>
+    </service>
+</services>
