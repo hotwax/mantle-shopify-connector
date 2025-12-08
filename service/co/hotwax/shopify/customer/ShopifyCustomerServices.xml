@@ -63,6 +63,7 @@
             <parameter name="email" required="true"/>
             <parameter name="phoneNumber"/>
             <parameter name="firstName"/>
+            <parameter name="lastName"/>
             <parameter name="marketingState"/>
             <parameter name="tags" type="List"/>
         </in-parameters>
@@ -79,6 +80,7 @@
                 input.email = email
                 if (phoneNumber) input.phone = phoneNumber
                 if (firstName) input.firstName = firstName
+                if (lastName) input.lastName = lastName
                 if (marketingState) {
                     input.defaultPhoneNumber = [phoneNumber: phoneNumber, marketingState: marketingState]
                 }
@@ -132,25 +134,28 @@
         <actions>
             <set field="updatedTags" from="[]"/>
 
-            <if condition="!tagsToAdd &amp;&amp; !tagsToRemove">
+            <set field="tagsToAddList" from="tagsToAdd instanceof Collection ? tagsToAdd : (tagsToAdd ? [tagsToAdd] : [])"/>
+            <set field="tagsToRemoveList" from="tagsToRemove instanceof Collection ? tagsToRemove : (tagsToRemove ? [tagsToRemove] : [])"/>
+
+            <if condition="!tagsToAddList &amp;&amp; !tagsToRemoveList">
                 <return message="Provide tagsToAdd or tagsToRemove to update Shopify customer tags"/>
             </if>
 
-            <if condition="tagsToAdd &amp;&amp; tagsToRemove">
+            <if condition="tagsToAddList &amp;&amp; tagsToRemoveList">
                 <return message="Provide either tagsToAdd or tagsToRemove, not both"/>
             </if>
 
             <set field="tagMutationText"/>
             <set field="tagMutationVariables" from="[:]"/>
 
-            <if condition="tagsToAdd">
+            <if condition="tagsToAddList">
                 <set field="tagMutationText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/addCustomerTags.ftl', '')"/>
-                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToAdd]"/>
+                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToAddList]"/>
             </if>
 
-            <if condition="tagsToRemove">
+            <if condition="tagsToRemoveList">
                 <set field="tagMutationText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/removeCustomerTags.ftl', '')"/>
-                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToRemove]"/>
+                <set field="tagMutationVariables" from="[id: customerId, tags: tagsToRemoveList]"/>
             </if>
 
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
