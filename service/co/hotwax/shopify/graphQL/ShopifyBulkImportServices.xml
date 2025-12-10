@@ -59,7 +59,9 @@ under the License.
             <script><![CDATA[
                 import org.moqui.util.RestClient
                 import org.moqui.impl.context.ContextJavaUtil
-                import org.json.XML
+                import com.fasterxml.jackson.databind.JsonNode;
+                import com.fasterxml.jackson.databind.ObjectMapper;
+                import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
                 RestClient restClient = ec.service.rest()
                 restClient.method("POST")
@@ -77,7 +79,13 @@ under the License.
 
                 try {
                     RestClient.RestResponse restResponse = restClient.call()
-                    response = ContextJavaUtil.jacksonMapper.readValue(XML.toJSONObject(restResponse.text()).toString(), Map.class)
+                    String xmlTextResponse = restResponse.text();
+                    XmlMapper xmlMapper = new XmlMapper();
+                    ObjectMapper jsonMapper = new ObjectMapper();
+                    JsonNode node = xmlMapper.readTree(xmlTextResponse.getBytes());
+                    String json = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(node);
+
+                    response = ContextJavaUtil.jacksonMapper.readValue(json, Map.class)
                 } catch (Exception e) {
                     ec.logger.error("Error in API call, Error: ${e.getMessage()}")
                 }
@@ -87,7 +95,7 @@ under the License.
                     return
                 }
 
-                stagedUploadPath = response.PostResponse.Key
+                stagedUploadPath = response.Key
             ]]></script>
         </actions>
     </service>
