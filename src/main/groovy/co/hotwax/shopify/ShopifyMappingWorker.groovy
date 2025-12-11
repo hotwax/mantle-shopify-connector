@@ -38,7 +38,7 @@ class ShopifyMappingWorker {
         EntityValue shopifyProduct
 
         try {
-            shopifyProduct = ec.entity.find("ShopifyShopProductAndConfig")
+            shopifyProduct = ec.entity.find("co.hotwax.shopify.ShopifyShopProductAndConfig")
                     .condition("shopifyConfigId", shopifyConfigId)
                     .condition("shopifyProductId", shopifyProductId)
                     .one()
@@ -50,5 +50,25 @@ class ShopifyMappingWorker {
 
         return shopifyProduct?.productId
     }
+    static String getFacilityContactId(ExecutionContext ec, String facilityId, String contactMechTypeId, String contactMechPurposeTypeId)
+    {
+        EntityValue facilityContactDetails
+
+        try {
+            facilityContactDetails = ec.entity.find("FacilityContactDetailByPurpose")
+                    .condition("facilityId", facilityId)
+                    .condition("contactMechTypeId", contactMechTypeId)
+                    .condition("contactMechPurposeTypeId", contactMechPurposeTypeId)
+                    .orderBy("fromDate DESC")
+                    .one()
+        }
+        catch (Exception e){
+            ec.logger.error("Error fetching FacilityContactDetailByPurpose for facilityId=${facilityId}, " +
+                    "contactMechTypeId=${contactMechTypeId}, contactMechPurposeTypeId=${contactMechPurposeTypeId}: ${e.message}", e)
+            return null
+        }
+        return facilityContactDetails?.contactMechId
+    }
+
 
 }
