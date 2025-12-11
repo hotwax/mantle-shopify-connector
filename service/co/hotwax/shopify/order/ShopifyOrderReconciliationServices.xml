@@ -113,31 +113,35 @@ under the License.
                 <set field="shopifyGraphqlId" from="'gid://shopify/Order/' + shopifyId"/>
                 <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"
                               in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyGraphqlId,
-                                       includeLineItems:false, includeFulfillmentOrders:false, includeShippingLines:true]"
+                                       includeLineItems:true, includeFulfillmentOrders:false, includeShippingLines:true]"
                               out-map="orderDetailResp"
                               ignore-error="true"/>
                 <set field="order" from="orderDetailResp.orderDetail ?: [:]"/>
+                <set field="orderCreatedInstant" from="order.createdAt ? java.time.OffsetDateTime.parse(String.valueOf(order.createdAt)).toInstant() : null"/>
 
-                <set field="skipOrder" from="order.createdAt ? { def inst = java.time.OffsetDateTime.parse(String.valueOf(order.createdAt)).toInstant(); def within = !inst.isBefore(boundaryStartInstant) &amp;&amp; inst.isBefore(boundaryEndInstant); if (within) return false; def startDelta = Math.abs(java.time.Duration.between(boundaryStartInstant, inst).toMillis()); def endDelta = Math.abs(java.time.Duration.between(boundaryEndInstant, inst).toMillis()); (startDelta &lt;= boundaryBufferMs) || (endDelta &lt;= boundaryBufferMs) }() : false"/>
+                <set field="skipOrder" from="orderCreatedInstant ? { def inst = orderCreatedInstant; def within = !inst.isBefore(boundaryStartInstant) &amp;&amp; inst.isBefore(boundaryEndInstant); if (within) return false; def startDelta = Math.abs(java.time.Duration.between(boundaryStartInstant, inst).toMillis()); def endDelta = Math.abs(java.time.Duration.between(boundaryEndInstant, inst).toMillis()); (startDelta &lt;= boundaryBufferMs) || (endDelta &lt;= boundaryBufferMs) }() : false"/>
                 <if condition="skipOrder"><continue/></if>
 
+                <set field="orderDatePretty" from="orderCreatedInstant ? ec.l10n.formatTimestamp(java.sql.Timestamp.from(orderCreatedInstant), 'yyyy-MM-dd HH:mm:ss z', null, zone) : (order.createdAt ?: '')"/>
                 <set field="shippingMethod" from="(order.shippingLines instanceof List &amp;&amp; !order.shippingLines.isEmpty()) ? (order.shippingLines[0].title ?: order.shippingLines[0].code ?: (order.shippingLines[0].source ?: '')) : ''"/>
                 <set field="statusSummary" from="[(order.financialStatus ?: null), (order.displayFulfillmentStatus ?: order.fulfillmentStatus ?: null)].findAll { it }.join(' | ')"/>
                 <set field="reasonText" from="order.cancelledAt ? 'Cancellation not synced to OMS' : 'Missing in OMS — needs investigation'"/>
+                <set field="salesChannel" from="order.sourceName ?: order.source_name ?: order.channelInformation?.channelDefinition?.handle ?: order.channelInformation?.channelId ?: ''"/>
+                <log level="info" message="salesChannel=${salesChannel} order=${order}"/>
                 <set field="reportRows" from="reportRows + [[
-                        order_id       : shopifyId,
-                        source         : 'ShopifyOnly',
-                        reason         : reasonText,
-                        order_date     : order.createdAt ?: '',
-                        amount         : order.totalPrice ?: '',
-                        status         : statusSummary,
-                        shipping_method: shippingMethod
+                        'Shopify Order ID': shopifyId,
+                        'Sales Channel'   : salesChannel,
+                        'Reason'          : reasonText,
+                        'Order Date'      : orderDatePretty,
+                        order_date_sort   : orderCreatedInstant ? orderCreatedInstant.toEpochMilli() : null,
+                        'Status'          : statusSummary,
+                        'Shipping Method' : shippingMethod
                 ]]"/>
                 <set field="missingInOMSCount" from="missingInOMSCount + 1"/>
             </iterate>
 
-            <set field="reportRows" from="reportRows.sort { String.valueOf(it.order_date ?: '') }"/>
-            <set field="headers" from="['order_id', 'source', 'reason', 'order_date', 'amount', 'status', 'shipping_method']"/>
+            <set field="reportRows" from="reportRows.sort { it.order_date_sort ?: Long.MAX_VALUE }"/>
+            <set field="headers" from="['Shopify Order ID', 'Sales Channel', 'Reason', 'Order Date', 'Status', 'Shipping Method']"/>
             <set field="escapeCsv" from='{ val -> if (val == null) return ""; def text = String.valueOf(val); def needsQuotes = text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r"); if (text.contains("\"")) text = text.replace("\"", "\"\""); return needsQuotes ? "\"" + text + "\"" : text }'/>
             <set field="csvBuilder" from="new StringBuilder(headers.join(','))"/>
             <set field="csvBuilder" from="csvBuilder.append('\n')"/>
@@ -157,6 +161,7 @@ under the License.
             <set field="writeReport" from="reportRef.putText(csvText)"/>
 
             <set field="reportLocation" from="reportPathRef"/>
+
         </actions>
     </service>
 </services>
