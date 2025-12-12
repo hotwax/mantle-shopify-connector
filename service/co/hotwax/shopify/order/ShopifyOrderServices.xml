@@ -339,40 +339,40 @@ under the License.
                 <if condition="!skipOrder">
                     <log message="====no skip tags found in order tags, proceeding with order import===="/>
                     <log message="Processing Shopify Order with ID: ${legacyResourceId}"/>
-                    <set field="orders" type="NewMap" from="[:]"/>
-                    <set field="orders.externalId" from="legacyResourceId"/>
-                    <set field="orders.grandTotal" from="totalPriceSet.shopMoney.amount"/>
-                    <set field="orders.currencyUom" from="totalPriceSet.shopMoney.currencyCode"/>
-                    <set field="orders.orderTypeId" value="SALES_ORDER"/>
+                    <set field="order" from="[:]"/>
+                    <set field="order.externalId" from="legacyResourceId"/>
+                    <set field="order.grandTotal" from="totalPriceSet.shopMoney.amount"/>
+                    <set field="order.currencyUom" from="totalPriceSet.shopMoney.currencyCode"/>
+                    <set field="order.orderTypeId" value="SALES_ORDER"/>
                     <set field="Timezone" from="TimeZone.getDefault()"/>
-                    <set field="orders.orderDate"
+                    <set field="order.orderDate"
                          from="co.hotwax.common.CommerceUtil.getOffsetDateTimeInPattern(
                           createdAt,
                           ec.l10n.timeZone,
                           'yyyy-MM-dd HH:mm:ss.SSS'
                            )"/>
-                    <set field="orders.productStoreId" from="shopifyConfigs.productStoreId[0]"/>
-                    <set field="orders.entryDate" from="ec.user.nowTimestamp"/>
-                    <set field="orders.name" from="name"/>
-                    <set field="orders.salesChannelEnumId" from="ShopifyMappingWorker.getShopifyTypeMappedValue(ec,shopifyConfigs[0].shopId,SHOPIFY_ORDER_SOURCE,sourceName)"/>
-                    <if condition="!orders.salesChannelEnumId">
-                        <set field="orders.salesChannelEnumId" value="UNKNWN_SALES_CHANNEL"/>
+                    <set field="order.productStoreId" from="shopifyConfigs.productStoreId[0]"/>
+                    <set field="order.entryDate" from="ec.user.nowTimestamp"/>
+                    <set field="order.name" from="name"/>
+                    <set field="order.salesChannelEnumId" from="ShopifyMappingWorker.getShopifyTypeMappedValue(ec,shopifyConfigs[0].shopId,SHOPIFY_ORDER_SOURCE,sourceName)"/>
+                    <if condition="!order.salesChannelEnumId">
+                        <set field="order.salesChannelEnumId" value="UNKNWN_SALES_CHANNEL"/>
                         <service-call name="create#org.apache.ofbiz.party.communication.CommunicationEvent"
-                                      in-map="[content:'Sales channel set to default: ' + orders.channelId, communicationEventTypeId:'COMMENT_NOTE']"
+                                      in-map="[content:'Sales channel set to default: ' + order.channelId, communicationEventTypeId:'COMMENT_NOTE']"
                                       out-map="createCommEventResult"/>
                         <log message="------result: ${createCommEventResult} ---------"/>
                         <if condition="createCommEventResult?.communicationEventId">
                             <set field="orderCommunicationList"
                                  from="(orderCommunicationList ?: []) + [['communicationEventId': createCommEventResult.communicationEventId]]"/>
-                            <log message="Created Communication Event for Order ${orders.externalId} with ID: ${orderCommunicationList}"/>
+                            <log message="Created Communication Event for Order ${order.externalId} with ID: ${orderCommunicationList}"/>
                         </if>
                     </if>
                     <set field="shippingAddress" from="shippingAddress"/>
                     <set field="isShippingAddressEmpty" from="(shippingAddress == null || shippingAddress.isEmpty())"/>
                     <!-- Order which is fulfilled in store and no item for shipping. -->
-                    <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; orders.salesChannelEnumId=='POS_SALES_CHANNEL')"/>
+                    <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; order.salesChannelEnumId=='POS_SALES_CHANNEL')"/>
                     <!-- Mixed Cart POS Orders will have partially fulfilled items as some items are already fulfilled and rest needs to be fulfilled i.e they are pos and send sale. -->
-                    <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; orders.salesChannelEnumId=='POS_SALES_CHANNEL' &amp;&amp; displayFulfillmentStatus =='PARTIALLY_FULFILLED')"/>
+                    <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; order.salesChannelEnumId=='POS_SALES_CHANNEL' &amp;&amp; displayFulfillmentStatus =='PARTIALLY_FULFILLED')"/>
                     <log message="isShippingAddressEmpty: ${isShippingAddressEmpty}, isPosCompletedOrder: ${isPosCompletedOrder}, isMixedCartPosOrder: ${isMixedCartPosOrder}"/>
                     <if condition="shopifyConfigs.productStoreId[0]&amp;&amp;productStore.reserveInventory[0] == 'Y'&amp;&amp; productStore.inventoryFacilityId[0]">
                         <set field="defaultFacility" from="productStore.inventoryFacilityId[0]"/>
@@ -403,11 +403,11 @@ under the License.
                         if(name) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NAME",idValue:name])
                         if(number) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NO",idValue:order.number])
                     </script>
-                    <set field="orders.identifications" from="orderIdentifications"/>
+                    <set field="order.identifications" from="orderIdentifications"/>
                     <!-- Create order contact mechs -->
                     <set field="orderContacts" from="[email:email, phone:phone,shipToMap:shippingAddress]"/>
                     <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.map#OrderContactMech" in-map="[orderContacts:orderContacts,facilityId:facilityId]" out-map="context"/>
-                    <set field="orders.contactMechs" from="orderContactMech"/>
+                    <set field="order.contactMechs" from="orderContactMech"/>
                     <log message="==========orderContactMech : ${orderContactMech} =========="/>
                     <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.create#ShipGroup" in-map="[lineItems:lineItems,
                         isPosCompletedOrder:isPosCompletedOrder,
@@ -420,29 +420,27 @@ under the License.
                         facilityTelecomContactMech: orderContactMech.find{ it.contactMechPurposeTypeId == 'PRIMARY_PHONE' }?.contactMechId,
                         shopifyConfigId:shopifyConfigId
                         ]" out-map="shipGroupOut"/>
-                    <set field="orders.shipGroups" from="shipGroupOut.shipGroupList"/>
+                    <set field="order.shipGroups" from="shipGroupOut.shipGroupList"/>
                     <!-- Create order attributes-->
-<!--                    <set field="orderAttributes" from="[:]"/>-->
-<!--                    <if condition="customAttributes">-->
-<!--                        <iterate list="customAttributes" entry="attr">-->
-<!--                            <if condition="attr.key &amp;&amp; attr.value">-->
-<!--                                <set field="orderAttributes" from="orderAttributes + [{-->
-<!--                                'attrName': attr.key.substring(0, attr.key.length() > 59 ? 59 : attr.key.length()),-->
-<!--                                'attrValue': attr.value.substring(0, attr.value.length() > 999 ? 999 : attr.value.length())-->
-<!--                                 }]"/>-->
-<!--                            </if>-->
-<!--                        </iterate>-->
-<!--                    </if>-->
-
-<!--                    <if condition="staffMember.id">-->
-<!--                        <set field="orderAttributes" from="orderAttributes + [{-->
-<!--                        'attrName': 'shopify_user_id',-->
-<!--                        'attrValue': order.staffMember.id,-->
-<!--                        'attrDescription': 'Shopify User Id'-->
-<!--                        }]"/>-->
-<!--                    </if>-->
-
-<!--                    <set field="orders.attributes" from="orderAttributes"/>-->
+                    <set field="orderAttributes" from="[:]"/>
+                    <if condition="customAttributes">
+                        <iterate list="customAttributes" entry="attr">
+                            <if condition="attr.key &amp;&amp; attr.value">
+                                <set field="orderAttributes" from="orderAttributes + [[
+                                'attrName': attr.key.substring(0, attr.key.length() > 59 ? 59 : attr.key.length()),
+                                'attrValue': attr.value.substring(0, attr.value.length() > 999 ? 999 : attr.value.length())
+                                 ]]"/>
+                            </if>
+                        </iterate>
+                    </if>
+                    <if condition="staffMember?.id">
+                        <set field="orderAttributes" from="orderAttributes + [[
+                        'attrName': 'shopify_user_id',
+                        'attrValue': order.staffMember.id,
+                        'attrDescription': 'Shopify User Id'
+                        ]]"/>
+                    </if>
+                    <set field="order.attributes" from="orderAttributes"/>
                     
                     <log message="----------order: ${orders} ----------"/>
                     <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="orders" out-map="orderOut"/>
@@ -746,35 +744,34 @@ under the License.
                         <set field="unfulfilledQty" from="(item.unfulfilledQuantity ?: 0).toString().toInteger()"/>
                         <set field="canceledQty" from="(item.nonFulfillableQuantity ?: 0).toString().toInteger()"/>
                         <set field="fulfilledQty" from="totalQty - unfulfilledQty - canceledQty"/>
+                        <set field="refundedQty" from="totalQty - (unfulfilledQty + canceledQty)"/>
 
                         <!-- Initialize adjustments -->
                         <set field="adjustments" from="[]"/>
-
                         <!-- Discount allocations -->
                         <iterate list="item.discountAllocations" entry="itemDiscount">
                             <set field="allocatedAmount" from="itemDiscount.allocatedAmountSet?.shopMoney?.amount?.toString()?.toBigDecimal()"/>
                             <if condition="allocatedAmount != null &amp;&amp; allocatedAmount != 0">
-                                <set field="adjustment" from="[:]"/>
-                                <set field="adjustment.type" value="EXT_PROMO_ADJUSTMENT"/>
+                                <set field="discountAdjustment" from="[:]"/>
+                                <set field="discountAdjustment.orderAdjustmentTypeId" value="EXT_PROMO_ADJUSTMENT"/>
                                 <set field="discountCode" from="itemDiscount.discountApplication?.code"/>
                                 <if condition="discountCode">
-                                    <set field="adjustment.adj_attr_name" value="discount_code"/>
-                                    <set field="adjustment.adj_attr_value" from="discountCode"/>
+                                    <set field="discountAdjustment.adj_attr_name" value="discount_code"/>
+                                    <set field="discountAdjustment.adj_attr_value" from="discountCode"/>
                                 </if>
-                                <set field="adjustment.comments" from="'External Discount' + (discountCode ? ': ' + discountCode : '')"/>
-                                <set field="adjustment.amount" from="-1 * allocatedAmount"/>
-                                <set field="adjustment.setShipGroup" value="N"/>
-                                <set field="adjustments" from="adjustments + [adjustment]"/>
-                                <log message="Added discount adjustment: ${adjustment} for item: ${item.id}"/>
+                                <set field="discountAdjustment.comments" from="'External Discount' + (discountCode ? ': ' + discountCode : '')"/>
+                                <set field="discountAdjustment.amount" from="-1 * allocatedAmount"/>
+                                <set field="discountAdjustment.setShipGroup" value="N"/>
+                                <set field="discountAdjustment" from="adjustments + [discountAdjustment]"/>
+                                <log message="Added discount adjustment: ${discountAdjustment} for item: ${item.id}"/>
                             </if>
                         </iterate>
-
                         <!-- Tax lines -->
                         <iterate list="item.taxLines" entry="itemTax">
                             <set field="taxAmount" from="itemTax.priceSet?.shopMoney?.amount?.toString()?.toBigDecimal()"/>
                             <if condition="taxAmount != null &amp;&amp; taxAmount != 0">
                                 <set field="taxAdjustment" from="[:]"/>
-                                <set field="taxAdjustment.type" value="SALES_TAX"/>
+                                <set field="taxAdjustment.orderAdjustmentTypeId" value="SALES_TAX"/>
                                 <set field="taxAdjustment.comments" from="itemTax.title"/>
                                 <set field="taxAdjustment.amount" from="taxAmount"/>
                                 <set field="taxAdjustment.sourcePercentage" from="itemTax.rate"/>
@@ -789,82 +786,80 @@ under the License.
                         <!-- ALL CANCELED -->
                         <if condition="canceledQty == totalQty">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': canceledQty,
-                    'statusId': 'ITEM_CANCELLED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': canceledQty,
+                                'statusId': 'ITEM_CANCELLED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                             <continue/>
                         </if>
 
                         <!-- ALL FULFILLED -->
                         <if condition="fulfilledQty == totalQty">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': fulfilledQty,
-                    'statusId': 'ITEM_COMPLETED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': fulfilledQty,
+                                'statusId': 'ITEM_COMPLETED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                             <continue/>
                         </if>
 
                         <!-- ALL UNFULFILLED -->
                         <if condition="unfulfilledQty == totalQty">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': unfulfilledQty,
-                    'statusId': 'ITEM_CREATED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': unfulfilledQty,
+                                'statusId': 'ITEM_CREATED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                             <continue/>
                         </if>
 
                         <!-- PARTIAL → create multiple items -->
                         <if condition="unfulfilledQty > 0">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': unfulfilledQty,
-                    'statusId': 'ITEM_CREATED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': unfulfilledQty,
+                                'statusId': 'ITEM_CREATED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                         </if>
 
                         <if condition="fulfilledQty > 0">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': fulfilledQty,
-                    'statusId': 'ITEM_COMPLETED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': fulfilledQty,
+                                'statusId': 'ITEM_COMPLETED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                         </if>
 
                         <if condition="canceledQty > 0">
                             <set field="shipGroupItemList" from="shipGroupItemList + [[
-                    'productId': product.productId,
-                    'externalId': item.id,
-                    'quantity': canceledQty,
-                    'statusId': 'ITEM_CANCELLED',
-                    'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                    'Adjustments': adjustments
-                ]]"/>
+                                'productId': product.productId,
+                                'externalId': item.id,
+                                'quantity': canceledQty,
+                                'statusId': 'ITEM_CANCELLED',
+                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
+                                'adjustments': adjustments
+                            ]]"/>
                         </if>
 
                     </iterate>
                 </if>
-
                 <!-- Attach updated items back to shipGroup -->
-                <set field="shipGroup.items" from="shipGroupItemList"/>
-
+                <set field="shipGroup.items" from="ShopifyMappingWorker.explodeOrderItems(shipGroupItemList,ec)"/>
             </iterate>
             <!-- return updated list to caller -->
             <set field="shipGroupList" from="shipGroupList"/>

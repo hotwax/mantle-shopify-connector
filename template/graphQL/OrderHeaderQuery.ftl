@@ -97,6 +97,35 @@ under the License.
                            closedAt
                            currencyCode
                            presentmentCurrencyCode
+                               transactions{
+                                       kind
+                                       status
+                                       gateway
+                                       id
+                                       paymentDetails{
+                                           ... on CardPaymentDetails {
+                                             company
+                                           }
+                                       }
+                                       amountSet{
+                                           presentmentMoney{
+                                               amount
+                                           }
+                                       }
+                                       receiptJson
+                                       settlementCurrency
+                                       order{
+                                           id
+                                       }
+                                       parentTransaction{
+                                           id
+                                           paymentDetails{
+                                               ... on CardPaymentDetails {
+                                             company
+                                           }
+                                           }
+                                       }
+                                       }
                   }
                 }
             }}
