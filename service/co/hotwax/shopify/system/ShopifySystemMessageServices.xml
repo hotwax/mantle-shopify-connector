@@ -2356,4 +2356,125 @@ under the License.
             </while>
         </actions>
     </service>
+    <!-- New implementation with Shopify GraphQL and OMS Data Manager -->
+    <service verb="get" noun="OrdersFromShopify" authenticate="anonymous-all" transaction-timeout="1800">
+        <description>Generate Orders feed from Shopify and store output in DataManager.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <!-- Fetch system message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+
+            <!-- Parse input parameters -->
+            <set field="queryParams"
+                 from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+
+            <!-- Initialize pagination -->
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="cursor" from="null"/>
+
+            <set field="pageNumber" from="1" type="Integer"/>
+            <while condition="hasNextPage">
+                <log message="=== Fetching Page ${pageNumber} with cursor: ${cursor} ==="/>
+
+                <service-call name="co.hotwax.shopify.system.ShopifySystemMessageServices.upload#ShopifyOrdersResponse"
+                              in-map="[systemMessageId:systemMessageId, queryParams:queryParams,
+                          cursor:cursor, pageNumber:pageNumber]"  out-map="pageResult" transaction="force-new"/>
+
+                <set field="hasNextPage" from="pageResult.hasNextPage"/>
+                <set field="cursor" from="pageResult.endCursor"/>
+
+                <set field="pageNumber" from="pageNumber + 1"/>
+            </while>
+        </actions>
+    </service>
+
+    <service verb="upload" noun="ShopifyOrdersResponse">
+        <in-parameters>
+            <parameter name="systemMessageId" required="true"/>
+            <parameter name="queryParams" type="Map"/>
+            <parameter name="cursor"/>
+            <parameter name="pageNumber" type="Integer"/>
+        </in-parameters>
+
+        <out-parameters>
+            <parameter name="hasNextPage" type="Boolean"/>
+            <parameter name="endCursor"/>
+        </out-parameters>
+
+        <actions>
+
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType"
+                             value-field="systemMessage"/>
+
+            <script>
+                import com.fasterxml.jackson.databind.ObjectMapper
+                import com.fasterxml.jackson.databind.SerializationFeature
+                import com.fasterxml.jackson.core.JsonFactory
+                import org.apache.commons.fileupload.disk.DiskFileItem
+                import org.apache.commons.io.IOUtils
+            </script>
+
+            <script>
+                queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderHeaderQuery.ftl", "")
+            </script>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]"
+                          out-map="ordersResponse"/>
+
+            <if condition="ordersResponse?.response?.orders?.edges?.isEmpty()">
+                <log message="No orders found for the given criteria."/>
+                <set field="hasNextPage" value="false"/>
+                <return/>
+            </if>
+
+            <set field="ordersList" from="[]"/>
+
+            <iterate list="ordersResponse.response.orders.edges" entry="edge">
+                <script> order = edge?.node </script>
+
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderLevelDetails"
+                              in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                              out-map="orderDetailsResponse"
+                              ignore-error="true"
+                              transaction="force-new"/>
+
+                <script>
+                    orderMap = [:]
+                    if (order != null) orderMap.putAll(order)
+                    if (orderDetailsResponse?.orderDetail != null) orderMap.putAll(orderDetailsResponse.orderDetail)
+                    ordersList.add(orderMap)
+                </script>
+                <log message="============= Added Order ID: ${order.id} to ordersList"/>
+            </iterate>
+            <script>
+                def mapper = new ObjectMapper(new JsonFactory())
+                mapper.enable(SerializationFeature.INDENT_OUTPUT)
+
+                def jsonBytes = mapper.writeValueAsBytes(ordersList)
+
+                DiskFileItem fileItem = new DiskFileItem(
+                        "contentFile",
+                        "application/json",
+                        false,
+                        "ShopifyOrdersFeed-${pageNumber}.json",
+                        jsonBytes.length,
+                        null
+                )
+
+                try (OutputStream os = fileItem.getOutputStream()) {
+                    IOUtils.copy(new ByteArrayInputStream(jsonBytes), os)
+                }
+            </script>
+
+            <service-call name="co.hotwax.util.UtilityServices.upload#DataManagerFile"
+                          in-map="[configId:'IMP_SHOPIFY_ORD', contentFile:fileItem]"
+                          transaction="force-new"/>
+
+            <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
+            <set field="endCursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
+
+        </actions>
+    </service>
+
 </services>

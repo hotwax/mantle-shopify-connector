@@ -172,6 +172,39 @@ under the License.
             </script>
         </actions>
     </service>
+    <service verb="store" noun="BulkOperationResultFileOrders" authenticate="anonymous-all">
+        <description>
+            Download bulk operation result file from Shopify for Orders flow.
+            Unlike Products flow, this version does NOT write the file to disk.
+            The service returns raw bytes for direct upload to the DataManager.
+        </description>
+        <in-parameters>
+            <parameter name="downloadUrl" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="fileBytes"/>
+        </out-parameters>
+
+        <actions>
+            <script>
+                import org.moqui.util.RestClient
+
+                RestClient restClient = ec.service.rest()
+                restClient.method("GET")
+                restClient.uri(downloadUrl)
+                restClient.maxResponseSize(4 * 1024 * 1024 * 10) // 40 MB
+
+                try {
+                RestClient.RestResponse restResponse = restClient.call()
+                restResponse.checkError()
+                fileBytes = restResponse.bytes
+                } catch (Exception e) {
+                ec.message.addError("Failed to download bulk order result file from Shopify URL: ${downloadUrl}, Error: ${e.message}")
+                return
+                }
+            </script>
+        </actions>
+    </service>
     <service verb="run" noun="BulkOperationQuery" authenticate="anonymous-all">
         <description>
             Run the bulk query defined in 'queryTemplateLocation' with optional filter query.
