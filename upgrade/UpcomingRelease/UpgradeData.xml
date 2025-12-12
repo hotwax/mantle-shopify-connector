@@ -1,3 +1,142 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResourceFile resourceId="ReturnLineItemByIdQuery">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
+                        id
+                        ... on
+                        Return{
+                            id
+                            returnLineItems (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        ... on ReturnLineItem {
+                                            id
+                                            returnReason
+                                            returnReasonNote
+                                            fulfillmentLineItem {
+                                                lineItem {
+                                                    id
+                                                    isGiftCard
+                                                    sku
+                                                    quantity
+                                                    product {
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            quantity
+                                            withCodeDiscountedTotalPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="RefundLineItemsByIdQuery">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                lineItem {
+                                                    id
+                                                    isGiftCard
+                                                    variant {
+                                                        id
+                                                    }
+                                                    discountAllocations{
+                                                        allocatedAmountSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                    }
+                                                    taxLines{
+                                                        priceSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                        rate
+                                                        title
+                                                    }
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                priceSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                restockType
+                                                quantity
+                                                subtotalSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                    }
+                                                }
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
 </entity-facade-xml>
