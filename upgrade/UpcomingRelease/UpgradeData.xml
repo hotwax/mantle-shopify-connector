@@ -51,8 +51,7 @@
     </moqui.resource.DbResourceFile>
     <moqui.resource.DbResourceFile resourceId="RefundLineItemsByIdQuery">
         <fileData>
-            <![CDATA[
-                    <#ftl output_format="HTML">
+            <![CDATA[<#ftl output_format="HTML">
                     <@compress single_line=true>
                         query {
                             node(id: "${shopifyRefundId}") {
@@ -137,8 +136,7 @@
                                 }
                             }
                         }
-                    </@compress>
-                ]]>
+                    </@compress>]]>
         </fileData>
     </moqui.resource.DbResourceFile>
 </entity-facade-xml>
