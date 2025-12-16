@@ -596,9 +596,9 @@ You could configure following default parameters and any additional parameters a
 Set of services and configuration to integrate with Shopify Webhook GraphQL API.  
 This integration enables you to configure a shopify webhook topic, subscribe/unsubscribe to it, receive payload from the subscribed webhook topic and consume the payload to further process it.
 
-### Webhook Filter
+### Request Filter
 
-**co.hotwax.shopify.ShopifyWebhookFilter**: A filter to verify HMAC for all incoming webhook payloads and set the required attributes on HTTP request upon successful verification.
+**co.hotwax.shopify.filter.ShopifyRequestFilter**: A filter to verify HMAC for all incoming shopify request payloads and set the required attributes on HTTP request upon successful verification.
 
 #### Configuration
 
@@ -610,7 +610,7 @@ Folliowing configuration is added to MoquiConf.xml,
 <webapp-list>
     <webapp name="webroot">
         <!-- Shopify Webhook Request Filter  -->
-        <filter name="ShopifyWebhookFilter" class="co.hotwax.shopify.ShopifyWebhookFilter" async-supported="true">
+        <filter name="ShopifyRequestFilter" class="co.hotwax.shopify.filter.ShopifyRequestFilter" async-supported="true">
             <url-pattern>/rest/s1/shopify/webhook/*</url-pattern>
         </filter>
     </webapp>
