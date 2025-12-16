@@ -267,6 +267,7 @@ under the License.
             <set field="messageDate" from="nowDate"/>
             <set field="reportDate" from="ec.l10n.format(messageDate, 'yyyy-MM-dd')"/>
             <set field="reportDateTime" from="ec.l10n.format(messageDate, 'yyyy-MM-dd-HH-mm-ss')"/>
+            <set field="reportMonthFolder" from="ec.l10n.format(messageDate, 'MM-yy')"/>
             <set field="reportSystemMessageId" from="ec.entityFacade.sequencedIdPrimaryEd(ec.entity.getEntityDefinition('moqui.service.message.SystemMessage'))"/>
 
             <set field="pathContext"
@@ -277,7 +278,7 @@ under the License.
 
             <set field="stagingRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
             <set field="defaultReportPath"
-                 from="stagingRoot + '/shopify/reconciliation/' + (shopId ?: 'default') + '/' + reportSystemMessageId + '-' + reportDateTime + '.csv'"/>
+                 from="stagingRoot + '/shopify/order/reconciliation/' + reportMonthFolder + '/' + (shopId ?: 'default') + '/' + reportSystemMessageId + '-' + reportDateTime + '.csv'"/>
 
             <set field="reportPathRef" from="outputLocation ?: defaultReportPath"/>
             <set field="reportRef" from="ec.resource.getLocationReference(reportPathRef)"/>

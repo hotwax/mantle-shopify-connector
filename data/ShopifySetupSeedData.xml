@@ -719,8 +719,8 @@ under the License.
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.message.SystemMessageType>
 
-    <moqui.service.message.SystemMessageType systemMessageTypeId="ExportOrderReconciliationReport"
+<moqui.service.message.SystemMessageType systemMessageTypeId="ExportOrderReconciliationReport"
             description="Export order reconciliation report to SFTP"
-            sendPath="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+            sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
 </entity-facade-xml>
