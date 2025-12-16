@@ -298,7 +298,8 @@ under the License.
                     calculatedHmac = org.apache.commons.codec.binary.Hex.encodeHexString(bytes)
                 }
             ]]></script>
-            <set field="isValidWebhook" from="calculatedHmac.equals(hmac)"/>
+            <!-- FIXME: equals is not safe for hmac verification, use MessageDigest.isEqual method -->
+            <set field="isValidRequest" from="calculatedHmac.equals(hmac)"/>
         </actions>
     </service>
 </services>
