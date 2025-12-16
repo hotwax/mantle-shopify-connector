@@ -245,6 +245,7 @@
                                             fulfillmentLineItem {
                                                 lineItem {
                                                     id
+                                                    isGiftCard
                                                     sku
                                                     quantity
                                                     product {
@@ -696,6 +697,7 @@
                                                 id
                                                 lineItem {
                                                     id
+                                                    isGiftCard
                                                     variant {
                                                         id
                                                     }
