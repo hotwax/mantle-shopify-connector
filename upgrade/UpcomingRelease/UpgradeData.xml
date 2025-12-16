@@ -1,3 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ExportOrderReconciliationReport"
+                description="Export order reconciliation report to SFTP"
+                sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
+                sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+    </entity-facade-xml>
 </entity-facade-xml>
