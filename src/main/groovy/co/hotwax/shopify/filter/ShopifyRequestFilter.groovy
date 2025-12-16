@@ -88,13 +88,43 @@ class ShopifyRequestFilter implements Filter {
 
     void verifyIncomingRequest(HttpServletRequest request, HttpServletResponse response, ExecutionContextImpl ec) {
 
+        String digest = "Base64";
         String hmac = request.getHeader("X-Shopify-Hmac-SHA256")
         String shopDomain = request.getHeader("X-Shopify-Shop-Domain")
         String webhookTopic = request.getHeader("X-Shopify-Topic")
         String webhookId = request.getHeader("X-Shopify-Webhook-Id")
         String pathInfo = request.getPathInfo();
         String requestBody = IOUtils.toString(request.getReader());
-        if (requestBody.length() == 0) {
+
+        String message = requestBody;
+        Map<String, Object> requestQueryParamMap = new TreeMap(org.moqui.util.WebUtilities.simplifyRequestParameters(request, false))
+        if (!hmac) {
+            //https://shopify.dev/docs/apps/build/online-store/app-proxies/authenticate-app-proxies
+            /*
+              Added support to verify Shopify requests sent via the Shopify App Proxy.
+              This implementation extracts the signature parameters and validates
+              the HMAC signature as per Shopify documentation.
+             */
+            hmac = requestQueryParamMap.remove("signature")
+            if (hmac) {
+                digest = "Hex"
+                // Verify Shopify App Proxy request by validating HMAC signature
+                message = requestQueryParamMap
+                        .collect { String k, Object v ->
+                            if (v instanceof String[]) {
+                                return k + "=" + ((String[]) v).join(',')
+                            }
+                            return k + "=" + String.valueOf(v)
+                        }
+                        .sort()
+                        .join("")
+                if (!shopDomain) {
+                    shopDomain = requestQueryParamMap.get("shop")
+                }
+            }
+        }
+
+        if (message.length() == 0) {
             logger.warn("The shopify request body is empty for Shopify ${shopDomain}, cannot verify request ${pathInfo}")
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The request body is empty for Shopify request ${pathInfo}")
             return
@@ -111,7 +141,7 @@ class ShopifyRequestFilter implements Filter {
         for (EntityValue systemMessageRemote in systemMessageRemoteList) {
             // Call service to verify Hmac
             Map result = ec.serviceFacade.sync().name("co.hotwax.shopify.common.ShopifyHelperServices.verify#Hmac")
-                    .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.sharedSecret])
+                    .parameters([message:message, hmac:hmac, sharedSecret:systemMessageRemote.sharedSecret, digest: digest])
                     .disableAuthz().call()
             // TODO: Remove `verifyHmac` with `sendSharedSecret` fallback handling.
             // This is temporary logic for backward compatibility.
@@ -120,13 +150,13 @@ class ShopifyRequestFilter implements Filter {
             //===========fallback code start=============
             if (!result.isValidRequest) {
                 result = ec.serviceFacade.sync().name("co.hotwax.shopify.common.ShopifyHelperServices.verify#Hmac")
-                        .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.sendSharedSecret])
+                        .parameters([message:message, hmac:hmac, sharedSecret:systemMessageRemote.sendSharedSecret, digest: digest])
                         .disableAuthz().call()
             }
             //===========fallback code end=============
             if (!result.isValidRequest && systemMessageRemote.oldSharedSecret) {
                 result = ec.serviceFacade.sync().name("co.hotwax.shopify.common.ShopifyHelperServices.verify#Hmac")
-                        .parameters([message:requestBody, hmac:hmac, sharedSecret:systemMessageRemote.oldSharedSecret])
+                        .parameters([message:message, hmac:hmac, sharedSecret:systemMessageRemote.oldSharedSecret, digest: digest])
                         .disableAuthz().call()
             }
             // If the hmac matched with the calculated Hmac, break the loop and return
