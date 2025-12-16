@@ -88,6 +88,7 @@ under the License.
             <set field="deletedWebhookSubscriptionId" from="deleteWebhookSubscriptionResponse.response.webhookSubscriptionDelete.deletedWebhookSubscriptionId"/>
         </actions>
     </service>
+    <!-- @Deprecated : Use ShopifyHelperServices.verify#Hmac -->
     <service verb="verify" noun="Hmac" authenticate="anonymous-all">
         <description>Verify hmac for the received webhook payload.</description>
         <in-parameters>
