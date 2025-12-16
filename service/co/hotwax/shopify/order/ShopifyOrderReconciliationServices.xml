@@ -21,12 +21,14 @@ under the License.
         <description>Reconcile Shopify and OMS orders for a date window and produce a CSV report of real mismatches.</description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="sftpSystemMessageRemoteId" required="true"/>
+            <parameter name="systemMessageTypeId" default-value="ExportOrderReconciliationReport"/>
             <parameter name="fromDate" required="true"/>
             <parameter name="thruDate" required="true"/>
             <parameter name="timeZoneId"/>
             <parameter name="shopId"/>
             <parameter name="additionalSearchFilters"><description>Optional Shopify order search filters (string or list) appended to the default date/channel/status filters.</description></parameter>
-            <parameter name="additionalDbFilters"><description>Optional DB filters (string where clause or list of maps with field/op/value) applied to ShopifyOrderReconShopifyGapView.</description></parameter>
+            <parameter name="additionalDbFilters"><description>Optional DB filters (string where clause or list of maps with field/op/value) applied to ShopifyOmsOrderReconView.</description></parameter>
             <parameter name="outputLocation"/>
         </in-parameters>
         <out-parameters>
@@ -50,35 +52,35 @@ under the License.
             </if>
             <set field="boundaryStartInstant" from="startTs.toInstant()"/>
             <set field="boundaryEndInstant" from="endTs.toInstant()"/>
-            <entity-delete-by-condition entity-name="co.hotwax.shopify.ShopifyOrderReconShopify">
+            <entity-delete-by-condition entity-name="co.hotwax.shopify.ShopifyOmsOrderRecon">
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
                 <econdition field-name="shopId" operator="equals" from="shopId" ignore-if-empty="true"/>
             </entity-delete-by-condition>
             <set field="shopifySavedIds" from="new java.util.HashSet()"/>
 
-            <set field="queryText" from="ec.resourceFacade.template('component://mantle-shopify-connector/template/graphQL/OrderReconciliationSearchQuery.ftl', '')"/>
+            <set field="queryText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/OrderReconciliationSearchQuery.ftl', '')"/>
             <set field="utcZone" from="java.util.TimeZone.getTimeZone('UTC')"/>
-            <script>
+            <script><![CDATA[
                 String startIso = ec.l10n.formatTimestamp(startTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
                 String endIso = ec.l10n.formatTimestamp(endTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
                 List filters = [
-                "created_at:>=" + startIso,
-                "created_at:<" + endIso,
-                "-channel:pos",
-                "-status:cancelled"
+                        "created_at:>=" + startIso,
+                        "created_at:<" + endIso,
+                        "-channel:pos",
+                        "-status:cancelled"
                 ]
 
                 def extraFilters = additionalSearchFilters
                 if (extraFilters) {
-                if (extraFilters instanceof Collection) {
-                extraFilters.each { if (it) { String f = String.valueOf(it).trim(); if (f) filters.add(f) } }
-                } else {
-                String f = String.valueOf(extraFilters).trim()
-                if (f) filters.add(f)
-                }
+                    if (extraFilters instanceof Collection) {
+                        extraFilters.each { if (it) { String f = String.valueOf(it).trim(); if (f) filters.add(f) } }
+                    } else {
+                        String f = String.valueOf(extraFilters).trim()
+                        if (f) filters.add(f)
+                    }
                 }
                 context.searchQuery = filters.join(' ')
-            </script>
+            ]]></script>
 
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="afterCursor"/>
@@ -125,13 +127,13 @@ under the License.
                             context.orderCreatedAt = createdAtTs
                         </script>
                         <if condition="skipEdge"><continue/></if>
-                        <entity-make-value entity-name="co.hotwax.shopify.ShopifyOrderReconShopify"
-                                           value-field="shopifyReconShopify"
+                        <entity-make-value entity-name="co.hotwax.shopify.ShopifyOmsOrderRecon"
+                                           value-field="ShopifyOmsOrderRecon"
                                            map="[systemMessageRemoteId:systemMessageRemoteId,
                                                  shopifyOrderId:shopifyIdLong,
                                                  shopId:shopId,
                                                  orderCreatedAt:orderCreatedAt]"/>
-                        <entity-create value-field="shopifyReconShopify"/>
+                        <entity-create value-field="ShopifyOmsOrderRecon"/>
                     </iterate>
                 </if>
 
@@ -142,7 +144,7 @@ under the License.
             <set field="missingInOMSCount" value="0" type="Integer"/>
 
             <script>
-                def dbFind = ec.entity.find("co.hotwax.shopify.ShopifyOrderReconShopifyGapView")
+                def dbFind = ec.entity.find("co.hotwax.shopify.ShopifyOmsOrderReconView")
                 dbFind.condition("systemMessageRemoteId", systemMessageRemoteId)
                 if (shopId) dbFind.condition("shopId", shopId)
 
@@ -229,7 +231,23 @@ under the License.
                 <if condition="skipRow"><continue/></if>
             </iterate>
 
-            <script>
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" from="systemMessageTypeId"/>
+            </entity-find-one>
+            <if condition="!systemMessageType">
+                <message error="true">Could not find SystemMessageType with ID ${systemMessageTypeId}</message>
+                <return/>
+            </if>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="sftpSystemMessageRemote">
+                <field-map field-name="systemMessageRemoteId" from="sftpSystemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!sftpSystemMessageRemote">
+                <message error="true">Could not find SystemMessageRemote with ID ${sftpSystemMessageRemoteId}</message>
+                <return/>
+            </if>
+
+            <script><![CDATA[
                 reportRows.sort { it.orderDateSort ?: Long.MAX_VALUE }
                 List headers = ['Shopify Order ID', 'Sales Channel', 'Reason', 'Order Date', 'Status', 'Shipping Method']
                 def escapeCsv = { val ->
@@ -237,26 +255,67 @@ under the License.
                     String text = String.valueOf(val)
                     boolean needsQuotes = text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")
                     if (text.contains("\"")) text = text.replace("\"", "\"\"")
-                    return needsQuotes ? "\"" + text + "\"" : text
+                    needsQuotes ? "\"${text}\"" : text
                 }
 
-                StringBuilder csvBuilder = new StringBuilder(headers.join(',')).append('\n')
-                reportRows.each { row ->
-                    def rowValues = headers.collect { field -> escapeCsv(row[field]) }
-                    csvBuilder.append(rowValues.join(',')).append('\n')
-                }
-                String csvText = csvBuilder.toString()
+                String csvBody = reportRows.collect { row ->
+                    headers.collect { field -> escapeCsv(row[field]) }.join(',')
+                }.join('\n')
+                context.csvText = headers.join(',') + '\n' + (csvBody ? csvBody + '\n' : '')
+            ]]></script>
 
-                String reportPathRef = outputLocation ?: 'runtime://tmp/order_reconciliation_report.csv'
-                def reportRef = ec.resource.getLocationReference(reportPathRef)
-                def reportUri = reportRef.getUri()
-                File reportFile = (reportUri &amp;&amp; reportUri.getPath()) ? new File(reportUri.getPath()) : null
-                if (reportFile &amp;&amp; reportFile.parentFile &amp;&amp; !reportFile.parentFile.exists()) {
-                    reportFile.parentFile.mkdirs()
-                }
+            <set field="messageDate" from="nowDate"/>
+            <set field="reportDate" from="ec.l10n.format(messageDate, 'yyyy-MM-dd')"/>
+            <set field="reportDateTime" from="ec.l10n.format(messageDate, 'yyyy-MM-dd-HH-mm-ss')"/>
+            <set field="reportSystemMessageId" from="ec.entityFacade.sequencedIdPrimaryEd(ec.entity.getEntityDefinition('moqui.service.message.SystemMessage'))"/>
+
+            <set field="pathContext"
+                 from="[contentRoot:(ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'),
+                        date:reportDate, dateTime:reportDateTime, shopId:shopId, productStoreId:context.productStoreId,
+                        systemMessageId:reportSystemMessageId, systemMessageTypeId:systemMessageTypeId,
+                        systemMessageRemoteId:sftpSystemMessageRemoteId, sftpUsername:sftpSystemMessageRemote?.username]"/>
+
+            <set field="stagingRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
+            <set field="defaultReportPath"
+                 from="stagingRoot + '/shopify/reconciliation/' + (shopId ?: 'default') + '/' + reportSystemMessageId + '-' + reportDateTime + '.csv'"/>
+
+            <set field="reportPathRef" from="outputLocation ?: defaultReportPath"/>
+            <set field="reportRef" from="ec.resource.getLocationReference(reportPathRef)"/>
+            <set field="reportUri" from="reportRef.getUri()"/>
+
+            <script><![CDATA[
+                String reportFileName = reportRef.getFileName() ?:
+                        reportUri?.getPath()?.tokenize("/")?.last() ?:
+                        reportSystemMessageId
+
+                File reportFile = (reportUri && reportUri.getPath()) ? new File(reportUri.getPath()) : null
+                if (reportFile?.parentFile && !reportFile.parentFile.exists()) reportFile.parentFile.mkdirs()
+
                 reportRef.putText(csvText)
-                context.reportLocation = reportPathRef
-            </script>
+                context.putAll([
+                        reportLocation       : reportPathRef,
+                        reportPathRef        : reportPathRef,
+                        reportSystemMessageId: reportSystemMessageId,
+                        reportRemoteMessageId: reportFileName,
+                        messageDate          : messageDate
+                ])
+            ]]></script>
+
+            <log message="Reconciliation CSV report generated at ${reportPathRef} with ${reportRows.size()} rows; ${missingInOMSCount} orders missing in OMS."/>
+
+            <service-call name="create#moqui.service.message.SystemMessage" transaction="force-new"
+                          in-map="[systemMessageTypeId : 'ExportOrderReconciliationReport', 
+                          systemMessageRemoteId: sftpSystemMessageRemoteId, statusId:'SmsgProduced', 
+                          isOutgoing:'Y', messageText: reportPathRef, initDate:ec.user.nowTimestamp]"
+                          out-map="result"/>
+            <set field="systemMessageId" from="result.systemMessageId"/>
+            <service-call name="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp" transaction="force-new"
+                          in-map="[systemMessageId : systemMessageId]"
+                          out-map="result"/>
+            <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
+                          in-map="[systemMessageId : systemMessageId, statusId: 'SmsgSent']"
+                          out-map="result"/>
+            <log message="CSV file uploaded successfully."/>
 
         </actions>
     </service>
