@@ -25,6 +25,8 @@ under the License.
             <parameter name="thruDate" required="true"/>
             <parameter name="timeZoneId"/>
             <parameter name="shopId"/>
+            <parameter name="additionalSearchFilters"><description>Optional Shopify order search filters (string or list) appended to the default date/channel/status filters.</description></parameter>
+            <parameter name="additionalDbFilters"><description>Optional DB filters (string where clause or list of maps with field/op/value) applied to ShopifyOrderReconShopifyGapView.</description></parameter>
             <parameter name="outputLocation"/>
             <parameter name="emailAddress"/>
             <parameter name="emailTenantPartyId"/>
@@ -59,8 +61,29 @@ under the License.
             </entity-delete-by-condition>
             <set field="shopifySavedIds" from="new java.util.HashSet()"/>
 
-            <set field="queryText" from="'''query ($search: String, $after: String) { orders(first: 100, after: $after, query: $search) { edges { node { id legacyResourceId createdAt } } pageInfo { hasNextPage endCursor } } }'''"/>
-            <set field="searchQuery" from="'created_at:&gt;=' + ec.l10n.formatTimestamp(startTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, null, java.util.TimeZone.getTimeZone('UTC')) + ' created_at:&lt;' + ec.l10n.formatTimestamp(endTs, &quot;yyyy-MM-dd'T'HH:mm:ssXXX&quot;, null, java.util.TimeZone.getTimeZone('UTC')) + ' -channel:pos -status:cancelled'"/>
+            <set field="queryText" from="ec.resourceFacade.template('component://mantle-shopify-connector/template/order/OrderReconciliationSearchQuery.ftl', '')"/>
+            <set field="utcZone" from="java.util.TimeZone.getTimeZone('UTC')"/>
+            <script>
+                String startIso = ec.l10n.formatTimestamp(startTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
+                String endIso = ec.l10n.formatTimestamp(endTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
+                List filters = [
+                    "created_at:>=" + startIso,
+                    "created_at:<" + endIso,
+                    "-channel:pos",
+                    "-status:cancelled"
+                ]
+
+                def extraFilters = additionalSearchFilters
+                if (extraFilters) {
+                    if (extraFilters instanceof Collection) {
+                        extraFilters.each { if (it) { String f = String.valueOf(it).trim(); if (f) filters.add(f) } }
+                    } else {
+                        String f = String.valueOf(extraFilters).trim()
+                        if (f) filters.add(f)
+                    }
+                }
+                context.searchQuery = filters.join(' ')
+            </script>
 
             <set field="hasNextPage" type="Boolean" value="true"/>
             <set field="afterCursor"/>
@@ -123,11 +146,29 @@ under the License.
 
             <set field="missingInOMSCount" value="0" type="Integer"/>
 
-            <entity-find entity-name="co.hotwax.shopify.ShopifyOrderReconShopifyGapView" list="shopifyReconList" use-cache="false">
-                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
-                <econdition field-name="shopId" operator="equals" from="shopId" ignore-if-empty="true"/>
-                <use-iterator/>
-            </entity-find>
+            <script>
+                def dbFind = ec.entity.find("co.hotwax.shopify.ShopifyOrderReconShopifyGapView")
+                dbFind.condition("systemMessageRemoteId", systemMessageRemoteId)
+                if (shopId) dbFind.condition("shopId", shopId)
+
+                def extraDbFilters = additionalDbFilters
+                if (extraDbFilters) {
+                    List conds = []
+                    def filterList = (extraDbFilters instanceof Collection) ? extraDbFilters : [extraDbFilters]
+                    filterList.each { f ->
+                        if (!f) return
+                        if (f instanceof Map &amp;&amp; f.field &amp;&amp; f.value != null) {
+                            String op = f.op ?: f.operator ?: "equals"
+                            conds.add(ec.entity.conditionFactory.makeCondition(f.field as String, op, f.value))
+                        } else if (f instanceof String &amp;&amp; f.trim()) {
+                            conds.add(ec.entity.conditionFactory.makeConditionWhere(f.trim()))
+                        }
+                    }
+                    if (conds) dbFind.condition(ec.entity.conditionFactory.makeCondition(conds, "AND"))
+                }
+
+                shopifyReconList = dbFind.useCache(false).list()
+            </script>
 
             <iterate list="shopifyReconList" entry="shopifyRecon">
                 <set field="shopifyId" from="String.valueOf(shopifyRecon.shopifyOrderId)"/>
