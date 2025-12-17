@@ -70,5 +70,95 @@ class ShopifyMappingWorker {
         return facilityContactDetails?.contactMechId
     }
 
+    static List<Map<String, Object>> explodeOrderItems(List<Map<String, Object>> items, ExecutionContext ec) {
 
-}
+        List<Map<String, Object>> orderItemList = []
+
+        try {
+            if (items) {
+                items.each { item ->
+                    orderItemList.addAll(explodeOrderItem(item, ec))
+                }
+            }
+        } catch (Throwable t) {
+        ec.logger.error("Error exploding order items: " + t.getMessage(), t)}
+        return orderItemList
+    }
+
+    static List<Map<String, Object>> explodeOrderItem(Map<String, Object> itemMap, ExecutionContext ec) {
+
+        def result = []
+
+        int origQty = (itemMap.quantity ?: 0) as int
+        if (origQty <= 0) return result
+
+        // ---- STATUS COUNTS ----
+        int fulfilledQty = (itemMap.fulfilledQty ?: 0) as int
+        int canceledQty  = (itemMap.canceledQty ?: 0) as int
+        int unfulfilledQty = origQty - fulfilledQty - canceledQty
+
+        int remainingCompleted = fulfilledQty
+        int remainingCancelled = canceledQty
+
+        def adjustments = (itemMap.adjustments instanceof List) ? itemMap.adjustments : []
+
+        for (int i = 1; i <= origQty; i++) {
+
+            def newItem = new HashMap(itemMap)
+            def newAdjList = []
+
+            // ---- SPLIT ADJUSTMENTS ----
+            adjustments.each { adj ->
+
+                BigDecimal total = (adj.amount ?: 0) as BigDecimal
+
+                BigDecimal perUnit =
+                        total.divide(
+                                new BigDecimal(origQty),
+                                8,
+                                java.math.RoundingMode.HALF_UP
+                        )
+
+                BigDecimal amount =
+                        (i < origQty)
+                                ? perUnit.setScale(2, java.math.RoundingMode.HALF_UP)
+                                : total.subtract(
+                                perUnit.multiply(new BigDecimal(origQty - 1))
+                        ).setScale(2, java.math.RoundingMode.HALF_UP)
+
+                def newAdj = new HashMap(adj)
+                newAdj.amount = amount
+                newAdjList.add(newAdj)
+            }
+//            Assign status
+            String statusId
+            if (remainingCompleted > 0) {
+                statusId = 'ITEM_COMPLETED'
+                remainingCompleted--
+            } else if (remainingCancelled > 0) {
+                statusId = 'ITEM_CANCELLED'
+                remainingCancelled--
+            } else {
+                statusId = 'ITEM_CREATED'
+            }
+
+            // ---- FINALIZE ITEM ----
+            newItem.quantity = BigDecimal.ONE
+            newItem.adjustments = newAdjList
+            newItem.statusId = statusId
+            newItem.statuses = [[
+                                        statusId: statusId,
+                                        statusDatetime: ec.user.nowTimestamp,
+                                        statusUserLogin: ec.user.userId
+                                ]]
+
+            result.add(newItem)
+        }
+
+        return result
+    }
+
+    }
+
+
+
