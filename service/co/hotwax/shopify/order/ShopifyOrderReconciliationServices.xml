@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://moqui.org/xsd/service-definition-3.xsd">
+    <service verb="generate" noun="OrderReconciliationReport" authenticate="anonymous-all" transaction-timeout="7200">
+        <description>Reconcile Shopify and OMS orders for a date window and produce a CSV report of real mismatches.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="sftpSystemMessageRemoteId" required="true"/>
+            <parameter name="systemMessageTypeId" default-value="ExportOrderReconciliationReport"/>
+            <parameter name="fromDate" required="true"/>
+            <parameter name="thruDate" required="true"/>
+            <parameter name="timeZoneId"/>
+            <parameter name="shopId"/>
+            <parameter name="additionalSearchFilters"><description>Optional Shopify order search filters (string or list) appended to the default date/channel/status filters.</description></parameter>
+            <parameter name="additionalDbFilters"><description>Optional DB filters (string where clause or list of maps with field/op/value) applied to ShopifyOmsOrderReconView.</description></parameter>
+            <parameter name="outputLocation"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="reportLocation"/>
+            <parameter name="missingInOMSCount" type="Integer"/>
+        </out-parameters>
+        <actions>
+            <set field="reportRows" from="[]"/>
+            <set field="boundaryBufferMs" value="3600000" type="Long"/>
+
+            <set field="zone" from="timeZoneId ? java.util.TimeZone.getTimeZone(timeZoneId) : (ec.user.timeZone ?: java.util.TimeZone.getTimeZone('UTC'))"/>
+            <set field="startTs" from="ec.l10n.parseTimestamp(fromDate, null, null, zone)"/>
+            <set field="endTs" from="ec.l10n.parseTimestamp(thruDate, null, null, zone)"/>
+            <if condition="!startTs || !endTs">
+                <message error="true">fromDate and thruDate must be valid timestamps.</message>
+                <return/>
+            </if>
+            <if condition="!startTs.before(endTs)">
+                <message error="true">fromDate must be before thruDate.</message>
+                <return/>
+            </if>
+            <set field="boundaryStartInstant" from="startTs.toInstant()"/>
+            <set field="boundaryEndInstant" from="endTs.toInstant()"/>
+            <entity-delete-by-condition entity-name="co.hotwax.shopify.ShopifyOmsOrderRecon">
+                <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessageRemoteId"/>
+                <econdition field-name="shopId" operator="equals" from="shopId" ignore-if-empty="true"/>
+            </entity-delete-by-condition>
+            <set field="shopifySavedIds" from="new java.util.HashSet()"/>
+
+            <set field="queryText" from="ec.resourceFacade.template('component://shopify-connector/template/graphQL/OrderReconciliationSearchQuery.ftl', '')"/>
+            <set field="utcZone" from="java.util.TimeZone.getTimeZone('UTC')"/>
+            <script><![CDATA[
+                String startIso = ec.l10n.formatTimestamp(startTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
+                String endIso = ec.l10n.formatTimestamp(endTs, "yyyy-MM-dd'T'HH:mm:ssXXX", null, utcZone)
+                List filters = [
+                        "created_at:>=" + startIso,
+                        "created_at:<" + endIso,
+                        "-channel:pos",
+                        "-status:cancelled"
+                ]
+
+                def extraFilters = additionalSearchFilters
+                if (extraFilters) {
+                    if (extraFilters instanceof Collection) {
+                        extraFilters.each { if (it) { String f = String.valueOf(it).trim(); if (f) filters.add(f) } }
+                    } else {
+                        String f = String.valueOf(extraFilters).trim()
+                        if (f) filters.add(f)
+                    }
+                }
+                context.searchQuery = filters.join(' ')
+            ]]></script>
+
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="afterCursor"/>
+            <while condition="hasNextPage">
+                <script>
+                    Map vars = [search: searchQuery]
+                    if (afterCursor) vars.after = afterCursor
+                    context.variables = vars
+                </script>
+
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:variables]"
+                              out-map="shopifyGqlResult"/>
+
+                <if condition="shopifyGqlResult.statusCode != 200">
+                    <return error="true" message="Shopify GraphQL request failed for orders search; status: ${shopifyGqlResult.statusCode}"/>
+                </if>
+                <set field="ordersNode" from="shopifyGqlResult.response?.orders"/>
+                <if condition="!ordersNode">
+                    <return error="true" message="Shopify GraphQL response did not include order data."/>
+                </if>
+
+                <if condition="ordersNode.edges">
+                    <iterate list="ordersNode.edges" entry="edge">
+                        <script>
+                            def legacyId = edge?.node?.legacyResourceId
+                            boolean localSkip = (legacyId == null)
+                            String idString = null
+                            Long idLong = null
+                            java.sql.Timestamp createdAtTs = null
+
+                            if (!localSkip) {
+                                idString = String.valueOf(legacyId)
+                                localSkip = !shopifySavedIds.add(idString)
+                            }
+                            if (!localSkip) {
+                                idLong = (legacyId instanceof java.lang.Number) ? ((java.lang.Number) legacyId).longValue() : Long.valueOf(idString)
+                                createdAtTs = edge?.node?.createdAt ? java.sql.Timestamp.from(java.time.OffsetDateTime.parse(String.valueOf(edge.node.createdAt)).toInstant()) : null
+                            }
+
+                            context.skipEdge = localSkip
+                            context.shopifyId = idString
+                            context.shopifyIdLong = idLong
+                            context.orderCreatedAt = createdAtTs
+                        </script>
+                        <if condition="skipEdge"><continue/></if>
+                        <entity-make-value entity-name="co.hotwax.shopify.ShopifyOmsOrderRecon"
+                                           value-field="ShopifyOmsOrderRecon"
+                                           map="[systemMessageRemoteId:systemMessageRemoteId,
+                                                 shopifyOrderId:shopifyIdLong,
+                                                 shopId:shopId,
+                                                 orderCreatedAt:orderCreatedAt]"/>
+                        <entity-create value-field="ShopifyOmsOrderRecon"/>
+                    </iterate>
+                </if>
+
+                <set field="hasNextPage" from="ordersNode.pageInfo?.hasNextPage" type="Boolean"/>
+                <set field="afterCursor" from="ordersNode.pageInfo?.endCursor"/>
+            </while>
+
+            <set field="missingInOMSCount" value="0" type="Integer"/>
+
+            <script>
+                def dbFind = ec.entity.find("co.hotwax.shopify.ShopifyOmsOrderReconView")
+                dbFind.condition("systemMessageRemoteId", systemMessageRemoteId)
+                if (shopId) dbFind.condition("shopId", shopId)
+
+                def extraDbFilters = additionalDbFilters
+                if (extraDbFilters) {
+                    List conds = []
+                    def filterList = (extraDbFilters instanceof Collection) ? extraDbFilters : [extraDbFilters]
+                    filterList.each { f ->
+                        if (!f) return
+                        if (f instanceof Map &amp;&amp; f.field &amp;&amp; f.value != null) {
+                            String op = f.op ?: f.operator ?: "equals"
+                            conds.add(ec.entity.conditionFactory.makeCondition(f.field as String, op, f.value))
+                        } else if (f instanceof String &amp;&amp; f.trim()) {
+                            conds.add(ec.entity.conditionFactory.makeConditionWhere(f.trim()))
+                        }
+                    }
+                    if (conds) dbFind.condition(ec.entity.conditionFactory.makeCondition(conds, "AND"))
+                }
+
+                shopifyReconList = dbFind.useCache(false).list()
+            </script>
+
+            <iterate list="shopifyReconList" entry="shopifyRecon">
+                <set field="shopifyId" from="String.valueOf(shopifyRecon.shopifyOrderId)"/>
+
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:('gid://shopify/Order/' + shopifyId),
+                                       includeLineItems:false, includeFulfillmentOrders:false, includeShippingLines:true]"
+                              out-map="orderDetailResp"
+                              ignore-error="true"/>
+                <script>
+                    Map order = orderDetailResp.orderDetail ?: [:]
+                    java.time.Instant createdInstant = order.createdAt ? java.time.OffsetDateTime.parse(String.valueOf(order.createdAt)).toInstant() : null
+                    context.order = order
+                    context.orderCreatedInstant = createdInstant
+                    context.orderCreatedMillis = createdInstant ? createdInstant.toEpochMilli() : null
+
+                    boolean skip = false
+                    if (createdInstant) {
+                        boolean withinWindow = !createdInstant.isBefore(boundaryStartInstant) &amp;&amp; createdInstant.isBefore(boundaryEndInstant)
+                        if (!withinWindow) {
+                            long startDelta = Math.abs(java.time.Duration.between(boundaryStartInstant, createdInstant).toMillis())
+                            long endDelta = Math.abs(java.time.Duration.between(boundaryEndInstant, createdInstant).toMillis())
+                            skip = (startDelta &lt;= boundaryBufferMs) || (endDelta &lt;= boundaryBufferMs)
+                        }
+                    }
+                    context.skipOrder = skip
+                </script>
+                <if condition="skipOrder"><continue/></if>
+
+                <script>
+                    boolean shopifyCancelled = order?.cancelledAt != null
+                    boolean omsCancelled = 'ORDER_CANCELLED'.equals(shopifyRecon.omsStatusId)
+                    String reasonText = null
+
+                    if (!shopifyRecon.omsOrderId) {
+                        reasonText = "Missing in OMS — needs investigation"
+                        missingInOMSCount = (missingInOMSCount as Integer) + 1
+                    } else if (shopifyCancelled &amp;&amp; !omsCancelled) {
+                        reasonText = "Cancelled in Shopify, not in OMS"
+                    } else if (!shopifyCancelled &amp;&amp; omsCancelled) {
+                        reasonText = "Cancelled in OMS, not in Shopify"
+                    }
+
+                    boolean skipRow = (reasonText == null)
+                    if (!skipRow) {
+                        String orderDatePretty = orderCreatedInstant ? ec.l10n.formatTimestamp(java.sql.Timestamp.from(orderCreatedInstant), 'yyyy-MM-dd HH:mm:ss z', null, zone) : (order.createdAt ?: '')
+                        String shippingMethod = (order.shippingLines instanceof List &amp;&amp; !order.shippingLines.isEmpty()) ? (order.shippingLines[0].title ?: order.shippingLines[0].code ?: (order.shippingLines[0].source ?: '')) : ''
+                        String statusSummary = [(order.financialStatus ?: null), (order.displayFulfillmentStatus ?: order.fulfillmentStatus ?: null)].findAll { it }.join(' | ')
+                        String salesChannel = order.sourceName ?: order.source_name ?: order.channelInformation?.channelDefinition?.handle ?: order.channelInformation?.channelId ?: ''
+
+                        reportRows.add([
+                                'Shopify Order ID': shopifyId,
+                                'Sales Channel'   : salesChannel,
+                                'Reason'          : reasonText,
+                                'Order Date'      : orderDatePretty,
+                                orderDateSort     : orderCreatedMillis,
+                                'Status'          : statusSummary,
+                                'Shipping Method' : shippingMethod
+                        ])
+                    }
+                    context.skipRow = skipRow
+                </script>
+                <if condition="skipRow"><continue/></if>
+            </iterate>
+
+            <set field="nowDate" from="ec.user.nowTimestamp"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
+                <field-map field-name="systemMessageTypeId" from="systemMessageTypeId"/>
+            </entity-find-one>
+            <if condition="!systemMessageType">
+                <message error="true">Could not find SystemMessageType with ID ${systemMessageTypeId}</message>
+                <return/>
+            </if>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="sftpSystemMessageRemote">
+                <field-map field-name="systemMessageRemoteId" from="sftpSystemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!sftpSystemMessageRemote">
+                <message error="true">Could not find SystemMessageRemote with ID ${sftpSystemMessageRemoteId}</message>
+                <return/>
+            </if>
+
+            <script><![CDATA[
+                reportRows.sort { it.orderDateSort ?: Long.MAX_VALUE }
+                List headers = ['Shopify Order ID', 'Sales Channel', 'Reason', 'Order Date', 'Status', 'Shipping Method']
+                def escapeCsv = { val ->
+                    if (val == null) return ""
+                    String text = String.valueOf(val)
+                    boolean needsQuotes = text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")
+                    if (text.contains("\"")) text = text.replace("\"", "\"\"")
+                    needsQuotes ? "\"${text}\"" : text
+                }
+
+                String csvBody = reportRows.collect { row ->
+                    headers.collect { field -> escapeCsv(row[field]) }.join(',')
+                }.join('\n')
+                context.csvText = headers.join(',') + '\n' + (csvBody ? csvBody + '\n' : '')
+            ]]></script>
+
+            <set field="messageDate" from="nowDate"/>
+            <set field="reportDate" from="ec.l10n.format(messageDate, 'yyyy-MM-dd')"/>
+            <set field="reportDateTime" from="ec.l10n.format(messageDate, 'yyyy-MM-dd-HH-mm-ss')"/>
+            <set field="reportMonthFolder" from="ec.l10n.format(messageDate, 'MM-yy')"/>
+            <set field="reportSystemMessageId" from="ec.entityFacade.sequencedIdPrimaryEd(ec.entity.getEntityDefinition('moqui.service.message.SystemMessage'))"/>
+
+            <set field="pathContext"
+                 from="[contentRoot:(ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'),
+                        date:reportDate, dateTime:reportDateTime, shopId:shopId, productStoreId:context.productStoreId,
+                        systemMessageId:reportSystemMessageId, systemMessageTypeId:systemMessageTypeId,
+                        systemMessageRemoteId:sftpSystemMessageRemoteId, sftpUsername:sftpSystemMessageRemote?.username]"/>
+
+            <set field="stagingRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
+            <set field="defaultReportPath"
+                 from="stagingRoot + '/shopify/order/reconciliation/' + reportMonthFolder + '/' + (shopId ?: 'default') + '/' + reportSystemMessageId + '-' + reportDateTime + '.csv'"/>
+
+            <set field="reportPathRef" from="outputLocation ?: defaultReportPath"/>
+            <set field="reportRef" from="ec.resource.getLocationReference(reportPathRef)"/>
+            <set field="reportUri" from="reportRef.getUri()"/>
+
+            <script><![CDATA[
+                String reportFileName = reportRef.getFileName() ?:
+                        reportUri?.getPath()?.tokenize("/")?.last() ?:
+                        reportSystemMessageId
+
+                File reportFile = (reportUri && reportUri.getPath()) ? new File(reportUri.getPath()) : null
+                if (reportFile?.parentFile && !reportFile.parentFile.exists()) reportFile.parentFile.mkdirs()
+
+                reportRef.putText(csvText)
+                context.putAll([
+                        reportLocation       : reportPathRef,
+                        reportPathRef        : reportPathRef,
+                        reportSystemMessageId: reportSystemMessageId,
+                        reportRemoteMessageId: reportFileName,
+                        messageDate          : messageDate
+                ])
+            ]]></script>
+
+            <log message="Reconciliation CSV report generated at ${reportPathRef} with ${reportRows.size()} rows; ${missingInOMSCount} orders missing in OMS."/>
+
+            <service-call name="create#moqui.service.message.SystemMessage" transaction="force-new"
+                          in-map="[systemMessageTypeId : 'ExportOrderReconciliationReport', 
+                          systemMessageRemoteId: sftpSystemMessageRemoteId, statusId:'SmsgProduced', 
+                          isOutgoing:'Y', messageText: reportPathRef, initDate:ec.user.nowTimestamp]"
+                          out-map="result"/>
+            <set field="systemMessageId" from="result.systemMessageId"/>
+            <service-call name="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp" transaction="force-new"
+                          in-map="[systemMessageId : systemMessageId]"
+                          out-map="result"/>
+            <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
+                          in-map="[systemMessageId : systemMessageId, statusId: 'SmsgSent']"
+                          out-map="result"/>
+            <log message="CSV file uploaded successfully."/>
+
+        </actions>
+    </service>
+</services>
