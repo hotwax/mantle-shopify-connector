@@ -723,4 +723,9 @@ under the License.
             description="Export order reconciliation report to SFTP"
             sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+
+    <!-- SystemMessageType for creating orders from Shopify in OMS -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GetOrdersFromShopify"
+            description="Generate Create New Shopify Orders Feed"
+            sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.get#OrdersFromShopify"/>
 </entity-facade-xml>

@@ -2356,7 +2356,8 @@ under the License.
             </while>
         </actions>
     </service>
-    <!-- New implementation with Shopify GraphQL and OMS Data Manager -->
+
+    <!-- New implementation with Shopify GraphQL and Moqui Data Manager -->
     <service verb="get" noun="OrdersFromShopify" authenticate="anonymous-all" transaction-timeout="1800">
         <description>Generate Orders feed from Shopify and store output in DataManager.</description>
         <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
@@ -2395,16 +2396,12 @@ under the License.
             <parameter name="cursor"/>
             <parameter name="pageNumber" type="Integer"/>
         </in-parameters>
-
         <out-parameters>
             <parameter name="hasNextPage" type="Boolean"/>
             <parameter name="endCursor"/>
         </out-parameters>
-
         <actions>
-
-            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType"
-                             value-field="systemMessage"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
 
             <script>
                 import com.fasterxml.jackson.databind.ObjectMapper
@@ -2449,9 +2446,8 @@ under the License.
             </iterate>
             <script>
                 def mapper = new ObjectMapper(new JsonFactory())
-                mapper.enable(SerializationFeature.INDENT_OUTPUT)
 
-                def jsonBytes = mapper.writeValueAsBytes(ordersList)
+                def jsonBytes = mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(ordersList)
 
                 DiskFileItem fileItem = new DiskFileItem(
                         "contentFile",
@@ -2473,7 +2469,6 @@ under the License.
 
             <set field="hasNextPage" from="ordersResponse.response.orders.pageInfo.hasNextPage"/>
             <set field="endCursor" from="ordersResponse.response.orders.pageInfo.endCursor"/>
-
         </actions>
     </service>
 

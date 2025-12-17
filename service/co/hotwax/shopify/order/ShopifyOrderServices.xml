@@ -96,74 +96,7 @@ under the License.
             </while>
         </actions>
     </service>
-    <service verb="get" noun="OrderLevelDetails" authenticate="anonymous-all">
-        <description>Get order level details for a given shopify orderId</description>
-        <in-parameters>
-            <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="shopifyOrderId" required="true"/>
-        </in-parameters>
-        <out-parameters>
-            <parameter name="orderDetail"/>
-        </out-parameters>
-        <actions>
-            <set field="orderDetail" from="[:]"/>
 
-            <set field="hasNextPage" type="Boolean" value="true"/>
-            <set field="orderLineItems" from="[]"/>
-
-            <while condition="hasNextPage">
-                <script>
-                    queryText = ec.resourceFacade.template(
-                            "component://shopify-connector/template/graphQL/OrderLineItemById.ftl", ""
-                    )
-                </script>
-
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
-                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
-                              out-map="orderLineItemResponse"/>
-
-                <if condition="orderLineItemResponse.response.node.lineItems.edges">
-                    <script>
-                        orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)
-                    </script>
-                </if>
-
-                <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
-                <set field="cursor"     from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
-            </while>
-
-            <set field="orderDetail.lineItems" from="orderLineItems"/>
-            <log message="orderDetail.lineItems: ${orderDetail.lineItems}"/>
-
-            <set field="hasNextPage" type="Boolean" value="true"/>
-            <set field="shippingLines" from="[]"/>
-            <set field="cursor" from="null"/>
-            <while condition="hasNextPage">
-                <script>
-                    queryText = ec.resourceFacade.template(
-                            "component://shopify-connector/template/graphQL/ShippingLinesByOrderIdQuery.ftl", ""
-                    )
-                </script>
-
-                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
-                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
-                              out-map="shippingLinesResponse"/>
-                <log message="shippingLinesResponse: ${shippingLinesResponse}"/>
-
-                <if condition="shippingLinesResponse.response.node.shippingLines.edges">
-                    <script>
-                        shippingLines.addAll(shippingLinesResponse.response.node.shippingLines.edges.node)
-                    </script>
-                </if>
-
-                <set field="hasNextPage" from="shippingLinesResponse.response.node.shippingLines.pageInfo.hasNextPage"/>
-                <set field="cursor"     from="shippingLinesResponse.response.node.shippingLines.pageInfo.endCursor"/>
-            </while>
-
-            <set field="orderDetail.shippingLines" from="shippingLines"/>
-            <log message="orderDetail.shippingLines: ${orderDetail.shippingLines}"/>
-        </actions>
-    </service>
     <service verb="get" noun="OrderDetails" authenticate="anonymous-all">
         <description>Get order details for a given shopify orderId</description>
         <in-parameters>
@@ -258,6 +191,76 @@ under the License.
             </while>
         </actions>
     </service>
+
+    <service verb="get" noun="OrderLevelDetails" authenticate="anonymous-all">
+        <description>Get order level details for a given shopify orderId</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="orderDetail"/>
+        </out-parameters>
+        <actions>
+            <set field="orderDetail" from="[:]"/>
+
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="orderLineItems" from="[]"/>
+
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(
+                            "component://shopify-connector/template/graphQL/OrderLineItemById.ftl", ""
+                    )
+                </script>
+
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
+                              out-map="orderLineItemResponse"/>
+
+                <if condition="orderLineItemResponse.response.node.lineItems.edges">
+                    <script>
+                        orderLineItems.addAll(orderLineItemResponse.response.node.lineItems.edges.node)
+                    </script>
+                </if>
+
+                <set field="hasNextPage" from="orderLineItemResponse.response.node.lineItems.pageInfo.hasNextPage"/>
+                <set field="cursor" from="orderLineItemResponse.response.node.lineItems.pageInfo.endCursor"/>
+            </while>
+
+            <set field="orderDetail.lineItems" from="orderLineItems"/>
+            <log message="orderDetail.lineItems: ${orderDetail.lineItems}"/>
+
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="shippingLines" from="[]"/>
+            <set field="cursor" from="null"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template(
+                            "component://shopify-connector/template/graphQL/ShippingLinesByOrderIdQuery.ftl", ""
+                    )
+                </script>
+
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                              in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
+                              out-map="shippingLinesResponse"/>
+                <log message="shippingLinesResponse: ${shippingLinesResponse}"/>
+
+                <if condition="shippingLinesResponse.response.node.shippingLines.edges">
+                    <script>
+                        shippingLines.addAll(shippingLinesResponse.response.node.shippingLines.edges.node)
+                    </script>
+                </if>
+
+                <set field="hasNextPage" from="shippingLinesResponse.response.node.shippingLines.pageInfo.hasNextPage"/>
+                <set field="cursor"     from="shippingLinesResponse.response.node.shippingLines.pageInfo.endCursor"/>
+            </while>
+
+            <set field="orderDetail.shippingLines" from="shippingLines"/>
+            <log message="orderDetail.shippingLines: ${orderDetail.shippingLines}"/>
+        </actions>
+    </service>
+
     <service verb="process" noun="ShopifyOrders">
         <in-parameters>
             <parameter name="tags"/>
@@ -271,15 +274,14 @@ under the License.
             <parameter name="shippingLines" type="List"/>
             <parameter name="phone"/>
             <parameter name="email"/>
-            <parameter name="lineItems" type="Map"/>
+            <parameter name="lineItems" type="Map" required="true"/>
             <parameter name="shippingAddress" type="Map"/>
-            <parameter name="customArttributes" type="Map"/>
+            <parameter name="customAttributes" type="Map"/>
             <parameter name="id" type="String"/>
             <parameter name="shopifyConfigId" type="String"/>
             <parameter name="name"/>
             <parameter name="number"/>
             <parameter name="createdAt"/>
-
         </in-parameters>
         <actions>
             <log message="----------- Starting Shopify Order Processing for order id: ${id} ----------"/>
