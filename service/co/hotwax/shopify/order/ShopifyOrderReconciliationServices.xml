@@ -22,7 +22,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="sftpSystemMessageRemoteId" required="true"/>
-            <parameter name="systemMessageTypeId" default-value="ExportOrderReconciliationReport"/>
+            <parameter name="filePathPattern" required="true" default-value="moqui/reconciliation/order"/>
             <parameter name="fromDate" required="true"/>
             <parameter name="thruDate" required="true"/>
             <parameter name="timeZoneId"/>
@@ -214,7 +214,7 @@ under the License.
                         String orderDatePretty = orderCreatedInstant ? ec.l10n.formatTimestamp(java.sql.Timestamp.from(orderCreatedInstant), 'yyyy-MM-dd HH:mm:ss z', null, zone) : (order.createdAt ?: '')
                         String shippingMethod = (order.shippingLines instanceof List &amp;&amp; !order.shippingLines.isEmpty()) ? (order.shippingLines[0].title ?: order.shippingLines[0].code ?: (order.shippingLines[0].source ?: '')) : ''
                         String statusSummary = [(order.financialStatus ?: null), (order.displayFulfillmentStatus ?: order.fulfillmentStatus ?: null)].findAll { it }.join(' | ')
-                        String salesChannel = order.sourceName ?: order.source_name ?: order.channelInformation?.channelDefinition?.handle ?: order.channelInformation?.channelId ?: ''
+                        String salesChannel = order.sourceName ?: order.source_name ?: order.cƒFhannelInformation?.channelDefinition?.handle ?: order.channelInformation?.channelId ?: ''
 
                         reportRows.add([
                                 'Shopify Order ID': shopifyId,
@@ -231,14 +231,17 @@ under the License.
                 <if condition="skipRow"><continue/></if>
             </iterate>
 
+            <log message="Generated Shopify order reconciliation report with ${reportRows} rows, ${missingInOMSCount} missing in OMS."/>
+
             <set field="nowDate" from="ec.user.nowTimestamp"/>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="systemMessageType">
-                <field-map field-name="systemMessageTypeId" from="systemMessageTypeId"/>
-            </entity-find-one>
-            <if condition="!systemMessageType">
-                <message error="true">Could not find SystemMessageType with ID ${systemMessageTypeId}</message>
-                <return/>
-            </if>
+            <log message="Current year is ${ec.l10n.format(nowDate, 'MM-yy')}"/>
+            <set field="baseFile" value="runtime://datamanager/${filePathPattern}/${ec.l10n.format(nowDate, 'MM-yy')}/Order_Reconciliation_${ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')}.csv"/>
+            
+            <log message="Preparing to write reconciliation report to ${baseFile}"/>
+            <set field="baseFilePath" from="ec.resource.getLocationReference(baseFile).getUri().getPath()"/>
+            <set field="sendPath" from="'/home/${sftpUsername}/' + filePathPattern + '/' + ec.l10n.format(nowDate, 'MM-yy') + '/' "/>
+
+
             <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="sftpSystemMessageRemote">
                 <field-map field-name="systemMessageRemoteId" from="sftpSystemMessageRemoteId"/>
             </entity-find-one>
@@ -246,77 +249,31 @@ under the License.
                 <message error="true">Could not find SystemMessageRemote with ID ${sftpSystemMessageRemoteId}</message>
                 <return/>
             </if>
+            <set field="recordLimitPerFeed" value="0" type="Integer"/>
+            <log message="Generating order reconciliation report CSV at ${baseFilePath} to send to SFTP at ${sendPath}"/>
+            <script>
+                import co.hotwax.util.CsvWriteHelper
+                
+                 try (CsvWriteHelper csvWriteHelper = new CsvWriteHelper(baseFilePath, null, recordLimitPerFeed) ) {
+                    for (row in reportRows) {
+                        System.out.println("Writing reconciliation report row: " + row)
+                        csvWriteHelper.writeToFile(row)
+                    }
+                    generatedFilePaths = csvWriteHelper.getGeneratedFilePaths()
+                 } catch (Exception e) {
+                    throw new RuntimeException("Error generating order reconciliation report CSV at ${baseFilePath}: " + e.toString(), e)
+                 }
+            </script>
 
-            <script><![CDATA[
-                reportRows.sort { it.orderDateSort ?: Long.MAX_VALUE }
-                List headers = ['Shopify Order ID', 'Sales Channel', 'Reason', 'Order Date', 'Status', 'Shipping Method']
-                def escapeCsv = { val ->
-                    if (val == null) return ""
-                    String text = String.valueOf(val)
-                    boolean needsQuotes = text.contains(",") || text.contains("\"") || text.contains("\n") || text.contains("\r")
-                    if (text.contains("\"")) text = text.replace("\"", "\"\"")
-                    needsQuotes ? "\"${text}\"" : text
-                }
+            <log message="Uploading ${generatedFilePaths.size()} reconciliation report files to SFTP at ${sendPath}"/>
 
-                String csvBody = reportRows.collect { row ->
-                    headers.collect { field -> escapeCsv(row[field]) }.join(',')
-                }.join('\n')
-                context.csvText = headers.join(',') + '\n' + (csvBody ? csvBody + '\n' : '')
-            ]]></script>
 
-            <set field="messageDate" from="nowDate"/>
-            <set field="reportDate" from="ec.l10n.format(messageDate, 'yyyy-MM-dd')"/>
-            <set field="reportDateTime" from="ec.l10n.format(messageDate, 'yyyy-MM-dd-HH-mm-ss')"/>
-            <set field="reportMonthFolder" from="ec.l10n.format(messageDate, 'MM-yy')"/>
-            <set field="reportSystemMessageId" from="ec.entityFacade.sequencedIdPrimaryEd(ec.entity.getEntityDefinition('moqui.service.message.SystemMessage'))"/>
+            <iterate list="generatedFilePaths" entry="generatedFilePath">
+                <service-call name="org.moqui.sftp.SftpMessageServices.put#FileOnSftp" in-map="[systemMessageRemoteId:sftpSystemMessageRemoteId, receivePath:generatedFilePath, sendPath:sendPath]"/>
+            </iterate>
 
-            <set field="pathContext"
-                 from="[contentRoot:(ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'),
-                        date:reportDate, dateTime:reportDateTime, shopId:shopId, productStoreId:context.productStoreId,
-                        systemMessageId:reportSystemMessageId, systemMessageTypeId:systemMessageTypeId,
-                        systemMessageRemoteId:sftpSystemMessageRemoteId, sftpUsername:sftpSystemMessageRemote?.username]"/>
-
-            <set field="stagingRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
-            <set field="defaultReportPath"
-                 from="stagingRoot + '/shopify/order/reconciliation/' + reportMonthFolder + '/' + (shopId ?: 'default') + '/' + reportSystemMessageId + '-' + reportDateTime + '.csv'"/>
-
-            <set field="reportPathRef" from="outputLocation ?: defaultReportPath"/>
-            <set field="reportRef" from="ec.resource.getLocationReference(reportPathRef)"/>
-            <set field="reportUri" from="reportRef.getUri()"/>
-
-            <script><![CDATA[
-                String reportFileName = reportRef.getFileName() ?:
-                        reportUri?.getPath()?.tokenize("/")?.last() ?:
-                        reportSystemMessageId
-
-                File reportFile = (reportUri && reportUri.getPath()) ? new File(reportUri.getPath()) : null
-                if (reportFile?.parentFile && !reportFile.parentFile.exists()) reportFile.parentFile.mkdirs()
-
-                reportRef.putText(csvText)
-                context.putAll([
-                        reportLocation       : reportPathRef,
-                        reportPathRef        : reportPathRef,
-                        reportSystemMessageId: reportSystemMessageId,
-                        reportRemoteMessageId: reportFileName,
-                        messageDate          : messageDate
-                ])
-            ]]></script>
-
-            <log message="Reconciliation CSV report generated at ${reportPathRef} with ${reportRows.size()} rows; ${missingInOMSCount} orders missing in OMS."/>
-
-            <service-call name="create#moqui.service.message.SystemMessage" transaction="force-new"
-                          in-map="[systemMessageTypeId : 'ExportOrderReconciliationReport', 
-                          systemMessageRemoteId: sftpSystemMessageRemoteId, statusId:'SmsgProduced', 
-                          isOutgoing:'Y', messageText: reportPathRef, initDate:ec.user.nowTimestamp]"
-                          out-map="result"/>
-            <set field="systemMessageId" from="result.systemMessageId"/>
-            <service-call name="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp" transaction="force-new"
-                          in-map="[systemMessageId : systemMessageId]"
-                          out-map="result"/>
-            <service-call name="update#moqui.service.message.SystemMessage" transaction="force-new"
-                          in-map="[systemMessageId : systemMessageId, statusId: 'SmsgSent']"
-                          out-map="result"/>
-            <log message="CSV file uploaded successfully."/>
+            <log message="Order reconciliation report upload to SFTP completed."/>
+            <set field="reportLocation" from="generatedFilePath"/>
 
         </actions>
     </service>
