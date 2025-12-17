@@ -136,7 +136,7 @@ class ShopifyRequestFilter implements Filter {
                         ec.entity.conditionFactory.makeCondition("accessScopeEnumId", EntityCondition.ComparisonOperator.NOT_EQUAL, "SHOP_NO_ACCESS"),
                         EntityCondition.OR,
                         ec.entity.conditionFactory.makeCondition("accessScopeEnumId", EntityCondition.ComparisonOperator.IS_NULL, null)))
-                .disableAuthz().list()
+                .disableAuthz().useCache(true).list()
 
         for (EntityValue systemMessageRemote in systemMessageRemoteList) {
             // Call service to verify Hmac
