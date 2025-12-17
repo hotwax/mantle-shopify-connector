@@ -129,7 +129,9 @@ class ShopifyRequestFilter implements Filter {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The request body is empty for Shopify request ${pathInfo}")
             return
         }
-        request.setAttribute("payload", ContextJavaUtil.jacksonMapper.readValue(requestBody, Map.class))
+        if (requestBody.length() > 0) {
+            request.setAttribute("payload", ContextJavaUtil.jacksonMapper.readValue(requestBody, Map.class))
+        }
         EntityList systemMessageRemoteList = ec.entityFacade.find("moqui.service.message.SystemMessageRemote")
                 .condition("sendUrl", EntityCondition.ComparisonOperator.LIKE, "%"+shopDomain+"%")
                 .condition(ec.entity.conditionFactory.makeCondition(
@@ -148,7 +150,7 @@ class ShopifyRequestFilter implements Filter {
             // Once all production instances are updated with the new `SystemMessageRemote` mapping,
             // this fallback should be removed to enforce the new verification flow.
             //===========fallback code start=============
-            if (!result.isValidRequest) {
+            if (!result.isValidRequest && systemMessageRemote.sendSharedSecret) {
                 result = ec.serviceFacade.sync().name("co.hotwax.shopify.common.ShopifyHelperServices.verify#Hmac")
                         .parameters([message:message, hmac:hmac, sharedSecret:systemMessageRemote.sendSharedSecret, digest: digest])
                         .disableAuthz().call()

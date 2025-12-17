@@ -279,7 +279,7 @@ under the License.
             <parameter name="digest" default-value="Base64"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="isValidWebhook" type="Boolean"/>
+            <parameter name="isValidRequest" type="Boolean"/>
         </out-parameters>
         <actions>
             <!-- Verifying hmac -->
