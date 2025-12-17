@@ -23,8 +23,8 @@ under the License.
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="sftpSystemMessageRemoteId" required="true"/>
             <parameter name="systemMessageTypeId" default-value="ExportOrderReconciliationReport"/>
-            <parameter name="fromDate" required="true"/>
-            <parameter name="thruDate" required="true"/>
+            <parameter name="fromDate"/>
+            <parameter name="thruDate"/>
             <parameter name="timeZoneId"/>
             <parameter name="shopId"/>
             <parameter name="additionalSearchFilters"><description>Optional Shopify order search filters (string or list) appended to the default date/channel/status filters.</description></parameter>
@@ -39,9 +39,40 @@ under the License.
             <set field="reportRows" from="[]"/>
             <set field="boundaryBufferMs" value="3600000" type="Long"/>
 
-            <set field="zone" from="timeZoneId ? java.util.TimeZone.getTimeZone(timeZoneId) : (ec.user.timeZone ?: java.util.TimeZone.getTimeZone('UTC'))"/>
-            <set field="startTs" from="ec.l10n.parseTimestamp(fromDate, null, null, zone)"/>
-            <set field="endTs" from="ec.l10n.parseTimestamp(thruDate, null, null, zone)"/>
+            <script>
+                String tzText = timeZoneId?.toString()?.trim()
+                java.util.TimeZone resolvedZone = tzText ? java.util.TimeZone.getTimeZone(tzText) : (ec.user.timeZone ?: java.util.TimeZone.getTimeZone('UTC'))
+                context.zone = resolvedZone
+                if (!tzText) context.timeZoneId = resolvedZone.getID()
+            </script>
+            <script>
+                java.time.ZoneId zoneId = zone.toZoneId()
+                def parseTs = { txt -> txt ? ec.l10n.parseTimestamp(txt, null, null, zone) : null }
+                def startOf = { java.time.LocalDate ld -> java.sql.Timestamp.from(ld.atStartOfDay(zoneId).toInstant()) }
+
+                String fromText = fromDate?.toString()?.trim() ?: ""
+                String thruText = thruDate?.toString()?.trim() ?: ""
+                boolean hasFrom = !fromText.isEmpty()
+                boolean hasThru = !thruText.isEmpty()
+
+                if (!hasFrom &amp;&amp; !hasThru) {
+                    java.time.LocalDate prevDate = ec.user.nowTimestamp.toInstant().atZone(zoneId).minusDays(1).toLocalDate()
+                    context.startTs = startOf(prevDate)
+                    context.endTs = startOf(prevDate.plusDays(1))
+                    context.fromDate = ec.l10n.formatTimestamp(context.startTs, "yyyy-MM-dd HH:mm:ss", null, zone)
+                    context.thruDate = ec.l10n.formatTimestamp(context.endTs, "yyyy-MM-dd HH:mm:ss", null, zone)
+                } else if (hasFrom &amp;&amp; hasThru) {
+                    context.startTs = parseTs(fromText)
+                    java.sql.Timestamp parsedThru = parseTs(thruText)
+                    context.endTs = parsedThru ? startOf(parsedThru.toInstant().atZone(zoneId).toLocalDate().plusDays(1)) : null
+                } else {
+                    context.errorMessage = "Provide both fromDate and thruDate together or omit both to default to the previous day."
+                }
+            </script>
+            <if condition="errorMessage">
+                <message error="true">${errorMessage}</message>
+                <return/>
+            </if>
             <if condition="!startTs || !endTs">
                 <message error="true">fromDate and thruDate must be valid timestamps.</message>
                 <return/>
