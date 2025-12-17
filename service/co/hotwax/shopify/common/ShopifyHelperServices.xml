@@ -270,4 +270,36 @@ under the License.
             <service-call name="moqui.aws.SqsServices.create#StandardQueue" in-map="context" out-map="context"/>
         </actions>
     </service>
+    <service verb="verify" noun="Hmac" authenticate="anonymous-all">
+        <description>Verify hmac for the received webhook payload.</description>
+        <in-parameters>
+            <parameter name="message" required="true"/>
+            <parameter name="hmac" required="true"/>
+            <parameter name="sharedSecret" required="true"/>
+            <parameter name="digest" default-value="Base64"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="isValidWebhook" type="Boolean"/>
+        </out-parameters>
+        <actions>
+            <!-- Verifying hmac -->
+            <!-- Calculate hmac using request body message and shared secret, and compare with the incoming hmac header -->
+            <script><![CDATA[
+                import javax.crypto.Mac
+                import javax.crypto.spec.SecretKeySpec
+
+                Mac hmacSha256 = Mac.getInstance("HmacSHA256")
+                hmacSha256.init(new SecretKeySpec(sharedSecret.getBytes("UTF-8"), "HmacSHA256"))
+                byte[] bytes = hmacSha256.doFinal(message.getBytes("UTF-8"));
+                String calculatedHmac = "";
+                if ("Base64".equals(digest)) {
+                    calculatedHmac = Base64.encoder.encodeToString(bytes)
+                } else if ("Hex".equals(digest)) {
+                    calculatedHmac = org.apache.commons.codec.binary.Hex.encodeHexString(bytes)
+                }
+            ]]></script>
+            <!-- FIXME: equals is not safe for hmac verification, use MessageDigest.isEqual method -->
+            <set field="isValidRequest" from="calculatedHmac.equals(hmac)"/>
+        </actions>
+    </service>
 </services>

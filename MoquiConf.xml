@@ -8,7 +8,7 @@
     <webapp-list>
         <webapp name="webroot">
             <!-- Shopify Webhook Request Filter  -->
-            <filter name="ShopifyWebhookFilter" class="co.hotwax.shopify.ShopifyWebhookFilter" async-supported="true">
+            <filter name="ShopifyRequestFilter" class="co.hotwax.shopify.ShopifyRequestFilter" async-supported="true">
                 <url-pattern>/rest/s1/shopify/webhook/*</url-pattern>
             </filter>
         </webapp>
