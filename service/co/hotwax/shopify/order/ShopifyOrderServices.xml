@@ -421,7 +421,23 @@ under the License.
                         shopifyConfigId:shopifyConfigId
                         ]" out-map="shipGroupOut"/>
                     <set field="order.shipGroups" from="shipGroupOut.shipGroupList"/>
-                    <!-- Create order attributes-->
+                    <!-- After setting each explodedItem.statusId -->
+                    <set field="allItemStatuses"
+                         from="order.shipGroups
+                        .collectMany{ it.items ?: [] }
+                        .collect{ it.statusId }"/>
+
+                    <if condition="allItemStatuses.every{ it == 'ITEM_CANCELLED' }">
+                        <set field="order.statusId" value="ORDER_CANCELLED"/>
+                        <else-if condition="allItemStatuses.every{ it == 'ITEM_COMPLETED' }">
+                            <set field="order.statusId" value="ORDER_COMPLETED"/>
+                        </else-if>
+                        <else>
+                            <set field="order.statusId" value="ORDER_CREATED"/>
+                        </else>
+                    </if>
+
+                        <!-- Create order attributes-->
                     <set field="orderAttributes" from="[:]"/>
                     <if condition="customAttributes">
                         <iterate list="customAttributes" entry="attr">
@@ -442,8 +458,8 @@ under the License.
                     </if>
                     <set field="order.attributes" from="orderAttributes"/>
                     
-                    <log message="----------order: ${orders} ----------"/>
-                    <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="orders" out-map="orderOut"/>
+                    <log message="----------order: ${order} ----------"/>
+                    <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="order" out-map="orderOut"/>
 <!--                    <set field="orderId" from="orderOut.orderId"/>-->
                 </if>
             </if>
@@ -714,7 +730,6 @@ under the License.
 
                 <!-- Only iterate if items exist -->
                 <if condition="shipGroup.items">
-
                     <iterate list="shipGroup.items" entry="item">
 
                         <!-- Skip null item -->
@@ -734,18 +749,72 @@ under the License.
                                 <field-map field-name="productId" from="variantProductId"/>
                             </entity-find-one>
                         </if>
+                        <entity-find-one entity-name="org.apache.ofbiz.common.property.SystemProperty" value-field="allowProductCreate" cache="true">
+                            <field-map field-name="systemResourceId" from="shopifyConfigId"/>
+                            <field-map field-name="systemPropertyId" value="import.order.allow.product.create"/>
+                        </entity-find-one>
+                        <log message="====allowProductCreate: ${allowProductCreate} for variantId: ${variantId} ======"/>
+                        <if condition="(!product) &amp;&amp; allowProductCreate &amp;&amp; allowProductCreate != 'N'">
+                            <!-- variantTitle -->
+                            <set field="variantTitle"
+                                 from="item.variant_title ?:
+                                (item.title ?: '')"/>
 
-                        <!--ToDo:handel case with no variant id or no product mapping found-->
-                        <if condition="!product">
-                            <continue/>
+                            <!-- productName -->
+                            <set field="productName" from="item.name"/>
+
+                            <!-- internalName -->
+                            <set field="internalName"
+                                 from="variantId ?:
+                                    (variantTitle ?: productName)"/>
+
+                            <!-- createProductCtx -->
+                            <set field="createProductCtx" from="[:]"/>
+                            <set field="createProductCtx.internalName" from="internalName"/>
+                            <set field="createProductCtx.productName"
+                                 from="variantTitle ?: productName"/>
+                            <set field="createProductCtx.comments"
+                                 value="Product does not exists on shopify, created while order import"/>
+                            <set field="createProductCtx.userLogin" from="ec.user.getUsername()"/>
+
+                            <!-- Variant handling -->
+                            <if condition="variantId">
+                                <set field="createProductCtx.isVariant" value="Y"/>
+                                <set field="createProductCtx.comments"
+                                     value="Product created while order import"/>
+                            </if>
+
+                            <!-- productTypeId -->
+                            <set field="productTypeId"
+                                 from="item.variant_inventory_management ? 'FINISHED_GOOD' : 'DIGITAL_GOOD'"/>
+                            <set field="createProductCtx.productTypeId" from="productTypeId"/>
+
+                            <!-- createProduct -->
+                            <service-call name="create#org.apache.ofbiz.product.product.Product"
+                                          in-map="createProductCtx"
+                                          out-map="product"/>
+
+<!--                             createShopifyShopProduct -->
+                            <if condition="variantId &amp;&amp; shopId">
+                                <set field="createShopifyShopProductCtx" from="[:]"/>
+                                <set field="createShopifyShopProductCtx.shopId" from="shopId"/>
+                                <set field="createShopifyShopProductCtx.productId" from="product.productId"/>
+                                <set field="createShopifyShopProductCtx.shopifyProductId" from="variantId"/>
+                                <set field="createShopifyShopProductCtx.userLogin" from="ec.user.userLogin"/>
+                                <service-call name="createShopifyShopProduct" in-map="createShopifyShopProductCtx" out-map="createShopifyShopProductResult"/>
+                            </if>
+
+                            <else-if condition="!product">
+                                <message error="true" > Product not found</message>
+                            </else-if>
+                            <set field="result" from="[:]"/>
                         </if>
+
                         <!-- Quantities -->
                         <set field="totalQty" from="(item.quantity ?: 0).toString().toInteger()"/>
                         <set field="unfulfilledQty" from="(item.unfulfilledQuantity ?: 0).toString().toInteger()"/>
                         <set field="canceledQty" from="(item.nonFulfillableQuantity ?: 0).toString().toInteger()"/>
                         <set field="fulfilledQty" from="totalQty - unfulfilledQty - canceledQty"/>
-                        <set field="refundedQty" from="totalQty - (unfulfilledQty + canceledQty)"/>
-
                         <!-- Initialize adjustments -->
                         <set field="adjustments" from="[]"/>
                         <!-- Discount allocations -->
@@ -762,8 +831,7 @@ under the License.
                                 <set field="discountAdjustment.comments" from="'External Discount' + (discountCode ? ': ' + discountCode : '')"/>
                                 <set field="discountAdjustment.amount" from="-1 * allocatedAmount"/>
                                 <set field="discountAdjustment.setShipGroup" value="N"/>
-                                <set field="discountAdjustment" from="adjustments + [discountAdjustment]"/>
-                                <log message="Added discount adjustment: ${discountAdjustment} for item: ${item.id}"/>
+                                <set field="adjustments" from="adjustments + [discountAdjustment]"/>
                             </if>
                         </iterate>
                         <!-- Tax lines -->
@@ -777,93 +845,28 @@ under the License.
                                 <set field="taxAdjustment.sourcePercentage" from="itemTax.rate"/>
                                 <set field="taxAdjustment.setShipGroup" value="N"/>
                                 <set field="adjustments" from="adjustments + [taxAdjustment]"/>
-                                <log message="Added tax adjustment: ${taxAdjustment} for item: ${item.id}"/>
                             </if>
                         </iterate>
-
-                        <!-- Determine item status -->
-
-                        <!-- ALL CANCELED -->
-                        <if condition="canceledQty == totalQty">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
+                        <set field="shipGroupItemList" from="shipGroupItemList + [[
+                                'productId': product?.productId,
                                 'externalId': item.id,
-                                'quantity': canceledQty,
-                                'statusId': 'ITEM_CANCELLED',
+                                'quantity': totalQty,
                                 'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
+                                'orderItemTypeId' : 'PRODUCT_ORDER_ITEM',
+                                'createdDate': ec.user.nowTimestamp,
+                                'adjustments': adjustments,
+                                'fulfilledQty': fulfilledQty,
+                                'canceledQty': canceledQty,
+                                'unfulfilledQty': unfulfilledQty
                             ]]"/>
-                            <continue/>
-                        </if>
-
-                        <!-- ALL FULFILLED -->
-                        <if condition="fulfilledQty == totalQty">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
-                                'externalId': item.id,
-                                'quantity': fulfilledQty,
-                                'statusId': 'ITEM_COMPLETED',
-                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
-                            ]]"/>
-                            <continue/>
-                        </if>
-
-                        <!-- ALL UNFULFILLED -->
-                        <if condition="unfulfilledQty == totalQty">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
-                                'externalId': item.id,
-                                'quantity': unfulfilledQty,
-                                'statusId': 'ITEM_CREATED',
-                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
-                            ]]"/>
-                            <continue/>
-                        </if>
-
-                        <!-- PARTIAL → create multiple items -->
-                        <if condition="unfulfilledQty > 0">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
-                                'externalId': item.id,
-                                'quantity': unfulfilledQty,
-                                'statusId': 'ITEM_CREATED',
-                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
-                            ]]"/>
-                        </if>
-
-                        <if condition="fulfilledQty > 0">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
-                                'externalId': item.id,
-                                'quantity': fulfilledQty,
-                                'statusId': 'ITEM_COMPLETED',
-                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
-                            ]]"/>
-                        </if>
-
-                        <if condition="canceledQty > 0">
-                            <set field="shipGroupItemList" from="shipGroupItemList + [[
-                                'productId': product.productId,
-                                'externalId': item.id,
-                                'quantity': canceledQty,
-                                'statusId': 'ITEM_CANCELLED',
-                                'unitPrice': item.originalUnitPriceSet?.shopMoney?.amount?.toString()?.toBigDecimal(),
-                                'adjustments': adjustments
-                            ]]"/>
-                        </if>
-
                     </iterate>
+                    <!-- Attach updated items back to shipGroup -->
+                    <set field="shipGroup.items" from="ShopifyMappingWorker.explodeOrderItems(shipGroupItemList,ec)"/>
                 </if>
-                <!-- Attach updated items back to shipGroup -->
-                <set field="shipGroup.items" from="ShopifyMappingWorker.explodeOrderItems(shipGroupItemList,ec)"/>
+
             </iterate>
             <!-- return updated list to caller -->
             <set field="shipGroupList" from="shipGroupList"/>
-            <log message="Processed group: ${shipGroup}"/>
         </actions>
     </service>
 </services>
