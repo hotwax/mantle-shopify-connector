@@ -263,207 +263,225 @@ under the License.
 
     <service verb="process" noun="ShopifyOrders">
         <in-parameters>
-            <parameter name="tags"/>
-            <parameter name="legacyResourceId" required="true"/>
-            <parameter name="sourceName"/>
-            <parameter name="shippingAddress" type="Map"/>
-            <parameter name="retailLocation" type="Map"/>
-            <parameter name="totalPriceSet" type="Map"/>
-            <parameter name="displayFulfillmentStatus"/>
-            <parameter name="customer" type="Map"/>
-            <parameter name="shippingLines" type="List"/>
-            <parameter name="phone"/>
-            <parameter name="email"/>
-            <parameter name="lineItems" type="Map" required="true"/>
-            <parameter name="shippingAddress" type="Map"/>
-            <parameter name="customAttributes" type="Map"/>
-            <parameter name="id" type="String"/>
-            <parameter name="shopifyConfigId" type="String"/>
             <parameter name="name"/>
+            <parameter name="id"/>
+            <parameter name="legacyResourceId" required="true"/>
             <parameter name="number"/>
             <parameter name="createdAt"/>
+            <parameter name="sourceName"/>
+            <parameter name="tags"/>
+            <parameter name="phone"/>
+            <parameter name="email"/>
+            <parameter name="totalPriceSet" type="Map"/>
+            <parameter name="retailLocation" type="Map"/>
+            <parameter name="shippingAddress" type="Map"/>
+            <parameter name="shippingLines" type="List"/>
+            <parameter name="displayFulfillmentStatus"/>
+            <parameter name="customer" type="Map"/>
+            <parameter name="customAttributes" type="Map"/>
+            <!-- TODO add the params of lineItem -->
+            <parameter name="lineItems" type="List" required="true">
+                <parameter name="lineItemMap" type="Map">
+                    <parameter name="id"/>
+                    <parameter name="quantity"/>
+                </parameter>
+            </parameter>
+            <!-- TODO how to pass the shopifyConfigId dynamically -->
+            <parameter name="shopifyConfigId"/>
         </in-parameters>
         <actions>
             <log message="----------- Starting Shopify Order Processing for order id: ${id} ----------"/>
+
             <script>
                 import co.hotwax.shopify.ShopifyMappingWorker
                 import co.hotwax.common.CommerceUtil
             </script>
+
             <entity-find-count entity-name="co.hotwax.order.OrderIdentification" count-field="orderCount">
                 <econdition field-name="orderIdentificationTypeId" value="SHOPIFY_ORD_ID"/>
                 <econdition field-name="idValue" from="legacyResourceId"/>
             </entity-find-count>
-            <log message="----------- Existing Order Count found: ${orderCount} ----------"/>
+            <if condition="orderCount &gt; 0">
+                <return error="true" message="Shopify Order [${legacyResourceId}] already exists."/>
+            </if>
+
+            <!-- TODO re-do, for now hard-coding to verify order transformation and creation in OMS -->
             <set field="shopifyConfigId" value="10010"/>
-            <if condition="orderCount == 0">
-                <log message="----------- New Shopify Order found with ID: ${legacyResourceId} ----------"/>
-                <!-- Fetch the shopifyConfig details from ShopifyConfig to get the productStoreId for the given shopId. -->
-                <entity-find entity-name="co.hotwax.shopify.ShopifyShopAndConfig" list="shopifyConfigs">
-                    <econdition field-name="shopifyConfigId" value="10010"/>
-                    <select-field field-name="shopifyConfigId,productStoreId,shopId"/>
-                </entity-find>
-                <entity-find entity-name="org.apache.ofbiz.product.store.ProductStore" list="productStore">
-                    <econdition field-name="productStoreId" from="shopifyConfigs.productStoreId"/>
-                </entity-find>
-                <if condition="!productStore">
-                    <log level="error" message="No ProductStore found for the productStoreId: ${shopifyShop.productStoreId}."/>
-                    <return message="No ProductStore found for the productStoreId: ${shopifyShop.productStoreId}."/>
-                </if>
-                <if condition="tags">
+            <!-- Fetch the shopifyConfig details from ShopifyConfig to get the productStoreId for the given shopId. -->
+            <entity-find-one entity-name="co.hotwax.shopify.ShopifyConfig" value-field="shopifyConfig">
+                <field-map field-name="shopifyConfigId"/>
+                <select-field field-name="shopifyConfigId,productStoreId,shopId"/>
+            </entity-find-one>
+            <set field="productStoreId" from="shopifyConfig.productStoreId"/>
+            <if condition="!productStoreId">
+                <return message="No ProductStore configured for the ShopifyConfig: ${shopifyConfigId}."/>
+            </if>
+            <entity-find-related-one value-field="shopifyConfig" relationship-name="org.apache.ofbiz.product.store.ProductStore" to-value-field="productStore"/>
+
+            <!-- Tags -->
+            <if condition="tags">
+                <script>
+                    <![CDATA[
+                    escapedTags = tags ? tags.toString().replaceAll(/<!--.*?-->/, '').replaceAll(/<.*?>/, '').replaceAll(/[\[\]]/, '') : null // remove any HTML comments or tags
+                    orderTags = escapedTags ? escapedTags.split(',').collect { it.trim() } : null
+                    ]]>
+                </script>
+                <set field="tags" from="orderTags"/>
+            </if>
+            <log message="------------ order tags: ${tags} ------------"/>
+            <if condition="tags">
+                <log message="------------checking skip order tags for productStoreId: ${shopifyConfig.productStoreId} ------------"/>
+                <entity-find-one entity-name="org.apache.ofbiz.common.property.SystemProperty" value-field="systemProperty" cache="true">
+                    <field-map field-name="systemResourceId" value="ShopifyServiceConfig"/>
+                    <field-map field-name="systemPropertyId" value="${shopifyConfig.productStoreId + '.skip.import.tags'}"/>
+                </entity-find-one>
+                <set field="skipOrdersTags" from="systemProperty?.systemPropertyValue"/>
+                <if condition="skipOrdersTags">
                     <script>
                         <![CDATA[
-                        escapedTags = tags ? tags.toString().replaceAll(/<!--.*?-->/, '').replaceAll(/<.*?>/, '').replaceAll(/[\[\]]/, '') : null // remove any HTML comments or tags
-                        orderTags = escapedTags ? escapedTags.split(',').collect { it.trim() } : null
+                        skipTagsList = skipOrdersTags ? skipOrdersTags.split(',').collect { it.trim() } : []
+                        skipMatch = (tags ?: []).intersect(skipTagsList)
+                        skipOrder = (skipMatch && skipMatch.size() > 0)
                         ]]>
                     </script>
-                    <set field="tags" from="orderTags"/>
                 </if>
-                <log message="------------order tags: ${tags} ------------"/>
-                <if condition="shopifyConfigs.productStoreId &amp;&amp; tags">
-                    <log message="------------checking skip order tags for productStoreId: ${shopifyConfigs[0].productStoreId} ------------"/>
-                    <entity-find-one entity-name="org.apache.ofbiz.common.property.SystemProperty" value-field="systemProperty" cache="true">
-                        <field-map field-name="systemResourceId" value="ShopifyServiceConfig"/>
-                        <field-map field-name="systemPropertyId" value="${shopifyConfigs[0].productStoreId + '.skip.import.tags'}"/>
-                    </entity-find-one>
-                    <if condition="systemProperty &amp;&amp; systemProperty.systemPropertyValue">
-                        <set field="skipOrdersTags" from="systemProperty.systemPropertyValue"/>
-                    </if>
-                    <if condition="skipOrdersTags">
-                        <script>
-                            <![CDATA[
-                            skipTagsList = skipOrdersTags ? skipOrdersTags.split(',').collect { it.trim() } : []
-                            skipMatch = (tags ?: []).intersect(skipTagsList)
-                            skipOrder = (skipMatch && skipMatch.size() > 0)
-                            ]]>
-                        </script>
+            </if>
+            <if condition="!skipOrder">
+                <log message="====no skip tags found in order tags, proceeding with order import===="/>
+                <log message="Processing Shopify Order with ID: ${legacyResourceId}"/>
+
+                <set field="order" from="[:]"/>
+                <set field="order.orderTypeId" value="SALES_ORDER"/>
+                <set field="order.externalId" from="legacyResourceId"/>
+                <set field="order.grandTotal" from="totalPriceSet.shopMoney.amount"/>
+                <set field="order.currencyUom" from="totalPriceSet.shopMoney.currencyCode"/>
+                <set field="order.productStoreId" from="shopifyConfig.productStoreId"/>
+                <set field="order.name" from="name"/>
+
+                <set field="order.entryDate" from="ec.user.nowTimestamp"/>
+                <set field="Timezone" from="TimeZone.getDefault()"/>
+                <set field="order.orderDate"
+                from="co.hotwax.common.CommerceUtil.getOffsetDateTimeInPattern(
+                      createdAt,
+                      ec.l10n.timeZone,
+                      'yyyy-MM-dd HH:mm:ss.SSS'
+                       )"/>
+
+                <set field="order.salesChannelEnumId" from="ShopifyMappingWorker.getShopifyTypeMappedValue(ec,shopifyConfig.shopId, SHOPIFY_ORDER_SOURCE, sourceName)"/>
+                <if condition="!order.salesChannelEnumId">
+                    <set field="order.salesChannelEnumId" value="UNKNWN_SALES_CHANNEL"/>
+                    <service-call name="create#org.apache.ofbiz.party.communication.CommunicationEvent"
+                                  in-map="[content:'Sales channel set to default: ' + order.channelId, communicationEventTypeId:'COMMENT_NOTE']"
+                                  out-map="createCommEventResult"/>
+                    <log message="------result: ${createCommEventResult} ---------"/>
+                    <if condition="createCommEventResult?.communicationEventId">
+                        <set field="orderCommunicationList"
+                             from="(orderCommunicationList ?: []) + [['communicationEventId': createCommEventResult.communicationEventId]]"/>
+                        <log message="Created Communication Event for Order ${order.externalId} with ID: ${orderCommunicationList}"/>
                     </if>
                 </if>
-                <if condition="!skipOrder">
-                    <log message="====no skip tags found in order tags, proceeding with order import===="/>
-                    <log message="Processing Shopify Order with ID: ${legacyResourceId}"/>
-                    <set field="order" from="[:]"/>
-                    <set field="order.externalId" from="legacyResourceId"/>
-                    <set field="order.grandTotal" from="totalPriceSet.shopMoney.amount"/>
-                    <set field="order.currencyUom" from="totalPriceSet.shopMoney.currencyCode"/>
-                    <set field="order.orderTypeId" value="SALES_ORDER"/>
-                    <set field="Timezone" from="TimeZone.getDefault()"/>
-                    <set field="order.orderDate"
-                         from="co.hotwax.common.CommerceUtil.getOffsetDateTimeInPattern(
-                          createdAt,
-                          ec.l10n.timeZone,
-                          'yyyy-MM-dd HH:mm:ss.SSS'
-                           )"/>
-                    <set field="order.productStoreId" from="shopifyConfigs.productStoreId[0]"/>
-                    <set field="order.entryDate" from="ec.user.nowTimestamp"/>
-                    <set field="order.name" from="name"/>
-                    <set field="order.salesChannelEnumId" from="ShopifyMappingWorker.getShopifyTypeMappedValue(ec,shopifyConfigs[0].shopId,SHOPIFY_ORDER_SOURCE,sourceName)"/>
-                    <if condition="!order.salesChannelEnumId">
-                        <set field="order.salesChannelEnumId" value="UNKNWN_SALES_CHANNEL"/>
-                        <service-call name="create#org.apache.ofbiz.party.communication.CommunicationEvent"
-                                      in-map="[content:'Sales channel set to default: ' + order.channelId, communicationEventTypeId:'COMMENT_NOTE']"
-                                      out-map="createCommEventResult"/>
-                        <log message="------result: ${createCommEventResult} ---------"/>
-                        <if condition="createCommEventResult?.communicationEventId">
-                            <set field="orderCommunicationList"
-                                 from="(orderCommunicationList ?: []) + [['communicationEventId': createCommEventResult.communicationEventId]]"/>
-                            <log message="Created Communication Event for Order ${order.externalId} with ID: ${orderCommunicationList}"/>
-                        </if>
+
+                <set field="isShippingAddressEmpty" from="(shippingAddress == null || shippingAddress.isEmpty())"/>
+
+                <!-- Order which is fulfilled in store and no item for shipping. -->
+                <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; 'POS_SALES_CHANNEL'.equals(order.salesChannelEnumId))"/>
+
+                <!-- Mixed Cart POS Orders will have partially fulfilled items as some items are already fulfilled and rest needs to be fulfilled i.e they are pos and send sale. -->
+                <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; 'POS_SALES_CHANNEL'.equals(order.salesChannelEnumId) &amp;&amp; 'PARTIALLY_FULFILLED'.equals(displayFulfillmentStatus))"/>
+
+                <log message="isShippingAddressEmpty: ${isShippingAddressEmpty}, isPosCompletedOrder: ${isPosCompletedOrder}, isMixedCartPosOrder: ${isMixedCartPosOrder}"/>
+
+                <!-- Facility -->
+                <if condition="productStore.reserveInventory == 'Y' &amp;&amp; productStore.inventoryFacilityId">
+                    <set field="defaultFacility" from="productStore.inventoryFacilityId"/>
+                </if>
+                <if condition="retailLocation">
+                    <if condition="!tags.any{ it?.toString()?.equalsIgnoreCase('sendsale') }">
+                        <set field="locationId" from="retailLocation.legacyResourceId"/>
                     </if>
-                    <set field="shippingAddress" from="shippingAddress"/>
-                    <set field="isShippingAddressEmpty" from="(shippingAddress == null || shippingAddress.isEmpty())"/>
-                    <!-- Order which is fulfilled in store and no item for shipping. -->
-                    <set field="isPosCompletedOrder" from="(isShippingAddressEmpty &amp;&amp; order.salesChannelEnumId=='POS_SALES_CHANNEL')"/>
-                    <!-- Mixed Cart POS Orders will have partially fulfilled items as some items are already fulfilled and rest needs to be fulfilled i.e they are pos and send sale. -->
-                    <set field="isMixedCartPosOrder" from="(!isShippingAddressEmpty &amp;&amp; order.salesChannelEnumId=='POS_SALES_CHANNEL' &amp;&amp; displayFulfillmentStatus =='PARTIALLY_FULFILLED')"/>
-                    <log message="isShippingAddressEmpty: ${isShippingAddressEmpty}, isPosCompletedOrder: ${isPosCompletedOrder}, isMixedCartPosOrder: ${isMixedCartPosOrder}"/>
-                    <if condition="shopifyConfigs.productStoreId[0]&amp;&amp;productStore.reserveInventory[0] == 'Y'&amp;&amp; productStore.inventoryFacilityId[0]">
-                        <set field="defaultFacility" from="productStore.inventoryFacilityId[0]"/>
-                    </if>
-                    <!--TODO:Merge this to ifs-->
-                    <if condition="retailLocation">
-                            <if condition="!tags.any{ it?.toString()?.equalsIgnoreCase('sendsale') }">
-                                <set field="locationId" from="retailLocation.legacyResourceId.toString()"/>
-                            </if>
-                    </if>
-                    <if condition="locationId &amp;&amp; (isPosCompletedOrder || isMixedCartPosOrder)">
-                        <set field="facilityId" from="ShopifyMappingWorker.getFacilityId(ec, shopifyConfigId, locationId)"/>
-                        <if condition="!facilityId">
-                            <set field="facilityId" from="defaultFacility"/>
-                        </if>
-                        <else>
-                            <set field="facilityId" value="_NA_"/>
-                        </else>
-                    </if>
-                <!--    TODO: Add customer mapping logic-->
+                </if>
+                <if condition="locationId &amp;&amp; (isPosCompletedOrder || isMixedCartPosOrder)">
+                    <set field="facilityId" from="ShopifyMappingWorker.getFacilityId(ec, shopifyConfigId, locationId)"/>
+                    <set field="facilityId" from="facilityId ?: defaultFacility"/>
+
+                    <else>
+                        <set field="facilityId" value="_NA_"/>
+                    </else>
+                </if>
+            <!--    TODO: Add customer mapping logic-->
 <!--                    <if condition="customer">-->
 <!--                        <set field="customerExternalId" from="customer.legacyResourceId"/>-->
 <!--                        <if condition=""-->
 <!--                    </if>-->
-                    <script>
-                        orderIdentifications=[]
-                        if(legacyResourceId) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_ID",idValue:legacyResourceId])
-                        if(name) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NAME",idValue:name])
-                        if(number) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NO",idValue:order.number])
-                    </script>
-                    <set field="order.identifications" from="orderIdentifications"/>
-                    <!-- Create order contact mechs -->
-                    <set field="orderContacts" from="[email:email, phone:phone,shipToMap:shippingAddress]"/>
-                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.map#OrderContactMech" in-map="[orderContacts:orderContacts,facilityId:facilityId]" out-map="context"/>
-                    <set field="order.contactMechs" from="orderContactMech"/>
-                    <log message="==========orderContactMech : ${orderContactMech} =========="/>
-                    <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.create#ShipGroup" in-map="[lineItems:lineItems,
-                        isPosCompletedOrder:isPosCompletedOrder,
-                        isMixedCartPosOrder:isMixedCartPosOrder,
-                        shippingLines:shippingLines,
-                        retailLocation:retailLocation,
-                        contactMechId:orderContactMech.find{ it.contactMechPurposeTypeId == 'SHIPPING_LOCATION' }?.contactMechId,
-                        telecomContactMechId:orderContactMech.find{ it.contactMechPurposeTypeId == 'PHONE_SHIPPING' }?.contactMechId,
-                        facilityAddressContactMech: orderContactMech.find{ it.contactMechPurposeTypeId == 'SHIP_ORIG_LOCATION' }?.contactMechId,
-                        facilityTelecomContactMech: orderContactMech.find{ it.contactMechPurposeTypeId == 'PRIMARY_PHONE' }?.contactMechId,
-                        shopifyConfigId:shopifyConfigId
-                        ]" out-map="shipGroupOut"/>
-                    <set field="order.shipGroups" from="shipGroupOut.shipGroupList"/>
-                    <!-- After setting each explodedItem.statusId -->
-                    <set field="allItemStatuses"
-                         from="order.shipGroups
-                        .collectMany{ it.items ?: [] }
-                        .collect{ it.statusId }"/>
 
-                    <if condition="allItemStatuses.every{ it == 'ITEM_CANCELLED' }">
-                        <set field="order.statusId" value="ORDER_CANCELLED"/>
-                        <else-if condition="allItemStatuses.every{ it == 'ITEM_COMPLETED' }">
-                            <set field="order.statusId" value="ORDER_COMPLETED"/>
-                        </else-if>
-                        <else>
-                            <set field="order.statusId" value="ORDER_CREATED"/>
-                        </else>
-                    </if>
+                <!-- Identifications -->
+                <set field="orderIdentifications" from="[]"/>
+                <script>
+                    orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_ID", idValue:legacyResourceId])
+                    if(name) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NAME", idValue:name])
+                    if(number) orderIdentifications.add([orderIdentificationTypeId:"SHOPIFY_ORD_NO", idValue:order.number])
+                </script>
+                <set field="order.identifications" from="orderIdentifications"/>
 
-                        <!-- Create order attributes-->
-                    <set field="orderAttributes" from="[:]"/>
-                    <if condition="customAttributes">
-                        <iterate list="customAttributes" entry="attr">
-                            <if condition="attr.key &amp;&amp; attr.value">
-                                <set field="orderAttributes" from="orderAttributes + [[
-                                'attrName': attr.key.substring(0, attr.key.length() > 59 ? 59 : attr.key.length()),
-                                'attrValue': attr.value.substring(0, attr.value.length() > 999 ? 999 : attr.value.length())
-                                 ]]"/>
-                            </if>
-                        </iterate>
-                    </if>
-                    <if condition="staffMember?.id">
-                        <set field="orderAttributes" from="orderAttributes + [[
-                        'attrName': 'shopify_user_id',
-                        'attrValue': order.staffMember.id,
-                        'attrDescription': 'Shopify User Id'
-                        ]]"/>
-                    </if>
-                    <set field="order.attributes" from="orderAttributes"/>
-                    
-                    <log message="----------order: ${order} ----------"/>
-                    <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="order" out-map="orderOut"/>
-<!--                    <set field="orderId" from="orderOut.orderId"/>-->
+                <!-- Create order contact mechs -->
+                <set field="orderContacts" from="[email:email, phone:phone, shipToMap:shippingAddress]"/>
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.map#OrderContactMech" in-map="[orderContacts:orderContacts, facilityId:facilityId]" out-map="context"/>
+                <set field="order.contactMechs" from="orderContactMech"/>
+                <log message="==========orderContactMech : ${orderContactMech} =========="/>
+
+                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.create#ShipGroup" in-map="[lineItems:lineItems,
+                    isPosCompletedOrder:isPosCompletedOrder,
+                    isMixedCartPosOrder:isMixedCartPosOrder,
+                    shippingLines:shippingLines,
+                    retailLocation:retailLocation,
+                    contactMechId:orderContactMech.find{ it.contactMechPurposeTypeId == 'SHIPPING_LOCATION' }?.contactMechId,
+                    telecomContactMechId:orderContactMech.find{ it.contactMechPurposeTypeId == 'PHONE_SHIPPING' }?.contactMechId,
+                    facilityAddressContactMech: orderContactMech.find{ it.contactMechPurposeTypeId == 'SHIP_ORIG_LOCATION' }?.contactMechId,
+                    facilityTelecomContactMech: orderContactMech.find{ it.contactMechPurposeTypeId == 'PRIMARY_PHONE' }?.contactMechId,
+                    shopifyConfigId:shopifyConfigId
+                    ]" out-map="shipGroupOut"/>
+                <set field="order.shipGroups" from="shipGroupOut.shipGroupList"/>
+
+                <!-- After setting each explodedItem.statusId -->
+                <set field="allItemStatuses"
+                     from="order.shipGroups
+                    .collectMany{ it.items ?: [] }
+                    .collect{ it.statusId }"/>
+
+                <if condition="allItemStatuses.every{ it == 'ITEM_CANCELLED' }">
+                    <set field="order.statusId" value="ORDER_CANCELLED"/>
+                    <else-if condition="allItemStatuses.every{ it == 'ITEM_COMPLETED' }">
+                        <set field="order.statusId" value="ORDER_COMPLETED"/>
+                    </else-if>
+                    <else>
+                        <set field="order.statusId" value="ORDER_CREATED"/>
+                    </else>
                 </if>
+
+                    <!-- Create order attributes-->
+                <set field="orderAttributes" from="[:]"/>
+                <if condition="customAttributes">
+                    <iterate list="customAttributes" entry="attr">
+                        <if condition="attr.key &amp;&amp; attr.value">
+                            <set field="orderAttributes" from="orderAttributes + [[
+                            'attrName': attr.key.substring(0, attr.key.length() > 59 ? 59 : attr.key.length()),
+                            'attrValue': attr.value.substring(0, attr.value.length() > 999 ? 999 : attr.value.length())
+                             ]]"/>
+                        </if>
+                    </iterate>
+                </if>
+                <if condition="staffMember?.id">
+                    <set field="orderAttributes" from="orderAttributes + [[
+                    'attrName': 'shopify_user_id',
+                    'attrValue': order.staffMember.id,
+                    'attrDescription': 'Shopify User Id'
+                    ]]"/>
+                </if>
+                <set field="order.attributes" from="orderAttributes"/>
+
+                <log message="----------order: ${order} ----------"/>
+                <service-call name="create#org.apache.ofbiz.order.order.OrderHeader" in-map="order" out-map="orderOut"/>
+<!--                    <set field="orderId" from="orderOut.orderId"/>-->
             </if>
         </actions>
     </service>
@@ -476,7 +494,6 @@ under the License.
             <parameter name="orderContactMech" type="List"/>
         </out-parameters>
         <actions>
-
             <set field="orderContactMech" from="[]"/>
 
             <!-- Phone contact -->
@@ -553,11 +570,9 @@ under the License.
             <parameter name="facilityAddressContactMech"/>
             <parameter name="facilityTelecomContactMech"/>
         </in-parameters>
-
         <out-parameters>
             <parameter name="shipGroupList" type="List"/>
         </out-parameters>
-
         <actions>
             <script>
                 import co.hotwax.shopify.ShopifyMappingWorker
@@ -582,7 +597,7 @@ under the License.
                     </if>
                     <!-- CASE 2: create new group -->
                     <if condition="!existingGroup">
-                        <set field="newGroup" from="[facilityId: facilityId,shipmentMethodTypeId: shipmentMethod,items: [item],contactMechId: contactMechId,telecomContactMechId: telecomContactMechId]"/>
+                        <set field="newGroup" from="[facilityId: facilityId,shipmentMethodTypeId: shipmentMethod,items:[item], contactMechId: contactMechId,telecomContactMechId: telecomContactMechId]"/>
                         <set field="shipGroups" from="shipGroups + [newGroup]"/>
                     </if>
                 </iterate>
@@ -756,7 +771,7 @@ under the License.
                             <field-map field-name="systemPropertyId" value="import.order.allow.product.create"/>
                         </entity-find-one>
                         <log message="====allowProductCreate: ${allowProductCreate} for variantId: ${variantId} ======"/>
-                        <if condition="(!product) &amp;&amp; allowProductCreate &amp;&amp; allowProductCreate != 'N'">
+                        <if condition="(!product) &amp;&amp; allowProductCreate?.systemPropertyValue != 'N'">
                             <!-- variantTitle -->
                             <set field="variantTitle"
                                  from="item.variant_title ?:
