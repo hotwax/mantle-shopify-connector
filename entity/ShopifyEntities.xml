@@ -61,4 +61,24 @@ under the License.
         <alias-all entity-alias="SM"/>
         <alias-all entity-alias="SMT"/>
     </view-entity>
+    <view-entity entity-name="ShopifyConfigAndShopLocation" package="co.hotwax.shopify">
+        <member-entity entity-alias="SHL" entity-name="co.hotwax.shopify.ShopifyShopLocation"/>
+        <member-entity entity-alias="SHC" entity-name="co.hotwax.shopify.ShopifyConfig" join-from-alias="SHL">
+            <key-map field-name="shopId"/>
+        </member-entity>
+
+        <alias-all entity-alias="SHL"/>
+        <alias entity-alias="SHC" name="shopifyConfigId"/>
+    </view-entity>
+    <view-entity entity-name="ShopifyShopProductAndConfig" package-name="co.hotwax.shopify">
+        <member-entity entity-alias="SHSP" entity-name="ShopifyShopProduct"/>
+        <member-entity entity-alias="SHC" entity-name="ShopifyConfig" join-from-alias="SHSP">
+            <key-map field-name="shopId"/>
+        </member-entity>
+        <alias entity-alias="SHC" name="shopifyConfigId"/>
+        <alias entity-alias="SHC" name="shopId"/>
+        <alias entity-alias="SHSP" name="shopifyProductId"/>
+        <alias entity-alias="SHSP" name="productId"/>
+    </view-entity>
+
 </entities>
