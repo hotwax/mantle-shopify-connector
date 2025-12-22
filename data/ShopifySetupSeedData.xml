@@ -27,8 +27,7 @@ under the License.
     <!-- EnumerationType for Shopify system message type enum and relationship -->
     <moqui.basic.EnumerationType description="Shopify System Message Type Enum" enumTypeId="ShopifyMessageTypeEnum"/>
 
-    <!-- Parent SystemMessageType record for incoming and outgoing local feed file system message types -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="LocalFeedFile" description="Local Feed File"/>
+    <moqui.basic.EnumerationType description="SOB System Message Type Enum" enumTypeId="SOBMessageTypeEnum"/>
 
     <!-- Parent SystemMessageType for all the shopify bulk import mutation system message types -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="ShopifyBulkImport" description="Parent SystemMessageType for Shopify Bulk Imports"/>
@@ -718,6 +717,36 @@ under the License.
             consumeServiceName="">
         <parameters parameterName="consumeSmrId" parameterValue=""/>
     </moqui.service.message.SystemMessageType>
+
+    <!-- SystemMessageType record for bulk product metafield by tags query to Shopify -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="BulkProductAndVariantsByIdQuery"
+                                             description="Bulk Product and Variants By Id Query System Message"
+                                             parentTypeId="ShopifyBulkQuery"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.send#BulkQuerySystemMessage"
+                                             sendPath="component://shopify-connector/template/graphQL/BulkProductAndVariantsByIdQuery.ftl"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#BulkOperationResult"
+                                             receivePath="${contentRoot}/shopify/BulkProductAndVariantsByIdQuery/BulkOperationResult-${systemMessageId}-${remoteMessageId}-${nowDate}.jsonl">
+        <parameters parameterName="consumeSmrId" parameterValue="" systemMessageRemoteId=""/>
+        <parameters parameterName="namespace" parameterValue=""/>
+    </moqui.service.message.SystemMessageType>
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ProductUpdatesFeedNew"
+                                             description="Product Updates Feed New"
+                                             consumeServiceName="co.hotwax.orderledger.system.FeedServices.consume#UpdatedProductHistories"/>
+    <moqui.basic.Enumeration description="Products Updates Feed" enumId="ProductUpdatesFeedNew" enumTypeId="OMSMessageTypeEnum"/>
+
+
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOMSUpdateProductsFeedNew"
+                                             description="Generate OMS Products Feed"
+                                             sendServiceName="co.hotwax.sob.system.FeedServices.generate#OMSFeedNew"
+                                             consumeServiceName="co.hotwax.orderledger.system.FeedServices.transform#JsonLToJsonForUpdatedProducts">
+        <!-- Add the SystemMessageTypeParameters to skip product import, applicable on the virtual product fields
+        <parameters parameterName="vendor" parameterValue="recurate"/>
+        -->
+    </moqui.service.message.SystemMessageType>
+    <moqui.basic.Enumeration description="Generate OMS Update Products Feed" enumId="GenerateOMSUpdateProductsFeedNew" enumTypeId="SOBMessageTypeEnum" relatedEnumId="ProductUpdatesFeedNew" relatedEnumTypeId="OMSMessageTypeEnum"/>
+
+    <moqui.basic.Enumeration description="Bulk Product Metafields Query" enumId="BulkProductAndVariantsByIdQuery" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateOMSUpdateProductsFeedNew" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
 
 <moqui.service.message.SystemMessageType systemMessageTypeId="ExportOrderReconciliationReport"
             description="Export order reconciliation report to SFTP"
