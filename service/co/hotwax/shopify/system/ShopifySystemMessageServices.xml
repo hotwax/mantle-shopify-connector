@@ -2363,19 +2363,13 @@ under the License.
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <!-- Load System Message -->
-            <entity-find-one entity-name="moqui.service.message.SystemMessage"
-                             value-field="systemMessage">
+            <entity-find-one entity-name="moqui.service.message.SystemMessage" value-field="systemMessage">
                 <field-map field-name="systemMessageId"/>
             </entity-find-one>
 
             <if condition="!systemMessage.messageText">
                 <return type="warning" message="System message [${systemMessageId}] has empty webhook payload, skipping."/>
             </if>
-
-            <!-- Resolve shop context -->
-            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
-                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-            </entity-find-one>
 
             <!-- Parse webhook JSON -->
             <set field="refundPayload" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
@@ -2387,7 +2381,7 @@ under the License.
             </if>
             <!-- Trigger refund orchestration -->
             <!-- todo: If required transaction="force-new" -->
-            <service-call name="co.hotwax.shopify.refund.ShopifyRefundServices.create#ShopifyRefunds" in-map="[systemMessageRemoteId: systemMessage.systemMessageRemoteId,shopifyOrderId: orderId]"/>
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.create#ShopifyRefunds" in-map="[systemMessageRemoteId: systemMessage.systemMessageRemoteId,shopifyOrderId: orderId]"/>
         </actions>
     </service>
 </services>
