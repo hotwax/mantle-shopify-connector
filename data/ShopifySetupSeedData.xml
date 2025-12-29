@@ -723,4 +723,13 @@ under the License.
             description="Export order reconciliation report to SFTP"
             sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+
+    <!-- SystemMessageType record for shopify refunds/create webhook -->
+    <moqui.service.message.SystemMessageType
+            systemMessageTypeId="ShopifyRefundCreateWebhook"
+            description="Shopify Refund Create Event (via SQS/NiFi)"
+            consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.consume#ShopifyRefundWebhook"/>
+
+    <!-- Maps Shopify webhook topic to SystemMessageType -->
+    <moqui.basic.Enumeration enumTypeId="ShopifyMessageTypeEnum" enumId="ShopifyRefundCreateWebhook" enumCode="refunds/create" description="Shopify Refund Create Webhook"/>
 </entity-facade-xml>
