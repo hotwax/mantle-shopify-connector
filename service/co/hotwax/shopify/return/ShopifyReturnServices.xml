@@ -518,10 +518,10 @@ under the License.
             <parameter name="shopifyRefundId" required="true"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="orderAdj"/>
+            <parameter name="orderAdjustments"/>
         </out-parameters>
         <actions>
-            <set field="orderAdj" from="[]"/>
+            <set field="orderAdjustments" from="[]"/>
             <set field="hasNextPage" value="true" type="Boolean"/>
             <while condition="hasNextPage">
                 <script>
@@ -532,14 +532,19 @@ under the License.
                     <return type="warning" message="No Shopify refund found for id: ${shopifyRefundId}"/>
                 </if>
                 <if condition="responseMap.response.node.orderAdjustments?.edges">
-                    <script>orderAdj.addAll(responseMap.response.node.orderAdjustments.edges.node)</script>
+                    <script>orderAdjustments.addAll(responseMap.response.node.orderAdjustments.edges.collect{ it.node })</script>
                 </if>
-                <set field="hasNextPage" from="responseMap.response.node.orderAdjustments.pageInfo.hasNextPage"/>
-                <set field="cursor" from="responseMap.response.node.orderAdjustments.pageInfo.endCursor"/>
+                <if condition="responseMap.response.node.orderAdjustments?.pageInfo">
+                    <set field="hasNextPage" from="responseMap.response.node.orderAdjustments.pageInfo.hasNextPage"/>
+                    <set field="cursor" from="responseMap.response.node.orderAdjustments.pageInfo.endCursor"/>
+                </if>
+                <else>
+                    <set field="hasNextPage" value="false"/>
+                </else>
             </while>
         </actions>
     </service>
-    <service verb="create" noun="ShopifyRefund">
+    <service verb="create" noun="ShopifyRefunds">
         <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
