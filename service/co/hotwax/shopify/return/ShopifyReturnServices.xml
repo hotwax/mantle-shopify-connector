@@ -471,7 +471,7 @@ under the License.
             <set field="orderExchanges.exchanges" from="exchanges"/>
         </actions>
     </service>
-    <service verb="create" noun="ShopifyRefunds">
+    <service verb="create" noun="ShopifyRefunds" authenticate="anonymous-all" transaction-timeout="900">
         <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
@@ -550,7 +550,6 @@ under the License.
             <!-- Orphan Return -->
             <if condition="!hcOrder">
                 <iterate list="orderMap.refunds" entry="refund">
-                    <!-- Guard -->
                     <if condition="refund.attributionType">
                         <continue/>
                     </if>
