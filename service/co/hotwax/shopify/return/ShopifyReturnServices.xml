@@ -327,16 +327,6 @@ under the License.
                 <set field="cursor" from="exchangeLineItemResponse.response.node.exchangeLineItems.pageInfo.endCursor"/>
             </while>
             <set field="returnDetail.exchangeLineItems" from="exchangeLineItems"/>
-
-            <!-- Getting order adjustment for refundId-->
-            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#OrderAdjustments" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:refundId]" out-map="refundOrderAdjustmentResponse"/>
-            <set field="refundDetail.orderAdjustments" from="refundOrderAdjustmentResponse.orderAdjustments"/>
-
-            <!-- Getting returns from refundId-->
-            <if condition="refundDetail.return?.id">
-                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId,returnId: refundDetail.return.id]" out-map="returnDetailsResponse"/>
-                <set field="refundDetail.return" from="returnDetailsResponse.returnDetail"/>
-            </if>
         </actions>
     </service>
 
@@ -370,6 +360,16 @@ under the License.
             <!-- Getting refund shipping Lines for refundId-->
             <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundShippingLines" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:refundId]" out-map="refundShippingLinesResponse"/>
             <set field="refundDetail.refundShippingLines" from="refundShippingLinesResponse.refundShippingLines"/>
+
+            <!-- Getting order adjustment for refundId-->
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#OrderAdjustments" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyRefundId:refundId]" out-map="refundOrderAdjustmentResponse"/>
+            <set field="refundDetail.orderAdjustments" from="refundOrderAdjustmentResponse.orderAdjustments"/>
+
+            <!-- Getting returns from refundId-->
+            <if condition="refundDetail.return?.id">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId,returnId: refundDetail.return.id]" out-map="returnDetailsResponse"/>
+                <set field="refundDetail.return" from="returnDetailsResponse.returnDetail"/>
+            </if>
         </actions>
     </service>
 
