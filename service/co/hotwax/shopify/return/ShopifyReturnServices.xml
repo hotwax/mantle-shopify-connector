@@ -471,7 +471,7 @@ under the License.
             <set field="orderExchanges.exchanges" from="exchanges"/>
         </actions>
     </service>
-    <service verb="create" noun="ShopifyRefunds" authenticate="anonymous-all" transaction-timeout="900">
+    <service verb="create" noun="ShopifyRefunds">
         <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
