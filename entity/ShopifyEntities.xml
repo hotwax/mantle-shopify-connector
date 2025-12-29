@@ -76,12 +76,22 @@ under the License.
         <relationship type="one" fk-name="RTN_HDR" related="org.apache.ofbiz.order.return.ReturnHeader">
             <key-map field-name="returnId"/>
         </relationship>
+        <relationship type="one" fk-name="RTN_ITM_EXT" related="org.apache.ofbiz.order.return.ReturnItem">
+            <key-map field-name="externalId" related="shopifyRefundLineId"/>
+        </relationship>
         <relationship type="one" fk-name="ORD_HDR" related="org.apache.ofbiz.order.order.OrderHeader">
             <key-map field-name="orderId"/>
+        </relationship>
+        <relationship type="one" fk-name="SPY_SHP" related="co.hotwax.shopify.ShopifyShop">
+            <key-map field-name="shopId" related="shopifyShopId"/>
         </relationship>
         <relationship type="one" fk-name="ORD_ITM" related="org.apache.ofbiz.order.order.OrderItem">
             <key-map field-name="orderId"/>
             <key-map field-name="orderItemSeqId"/>
+        </relationship>
+        <relationship type="one" fk-name="RTN_ITM" related="org.apache.ofbiz.order.return.ReturnItem">
+            <key-map field-name="returnId"/>
+            <key-map field-name="returnItemSeqId"/>
         </relationship>
     </entity>
 </entities>

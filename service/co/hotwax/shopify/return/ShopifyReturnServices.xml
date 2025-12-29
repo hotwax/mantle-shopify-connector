@@ -677,7 +677,6 @@ under the License.
             </if>
             <log message="skipAttribution=${skipAttribution}"/>
 
-            <log message="skipAttribution=${skipAttribution}"/>
 
             <if condition="!skipAttribution">
                 <log message="==========================================================="/>
@@ -703,6 +702,13 @@ under the License.
                 <iterate list="orderMap.refunds" entry="refund">
                     <!-- Skip already attributed refunds -->
                     <if condition="refund.attributionType">
+                        <continue/>
+                    </if>
+                    <!-- Refund has NO line items → APPEASEMENT -->
+                    <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
+                        <set field="refund.attributionType" value="APPEASEMENT"/>
+                        <script>returnsToCreateList.add(refund)</script>
+                        <log message="Refund ${refund.id} has no line items. Marking as APPEASEMENT."/>
                         <continue/>
                     </if>
                     <iterate list="refund.refundLineItems" entry="refundLineItem">
@@ -801,6 +807,354 @@ under the License.
             </if>
             <log message="Returns to create from absolute returns: ${returnsToCreateList*.id}"/>
             <log message="Unassigned refunds after absolute return processing: ${unassignedRefunds*.id}"/>
+
+            <!-- PREPARE RETURN / APPEASEMENT PAYLOADS -->
+            <iterate list="returnsToCreateList" entry="refund">
+                <set field="payLoad" from="[:]"/>
+
+                <set field="refundExternalId"
+                     from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)"/>
+                <set field="payLoad.externalId" from="refundExternalId"/>
+
+                <set field="externalOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.order.id)"/>
+
+                <entity-find-one entity-name="org.apache.ofbiz.order.order.OrderHeader" value-field="orderHeader">
+                    <field-map field-name="externalId" from="externalOrderId"/>
+                </entity-find-one>
+
+                <set field="orderId" from="orderHeader?.orderId"/>
+
+                <!-- ================= TYPE & STATUS ================= -->
+                <set field="payLoad.type" from="refund.attributionType == 'APPEASEMENT'? 'APPEASEMENT': 'CUSTOMER_RETURN'"/>
+                <set field="payLoad.status" value="RETURN_COMPLETED"/>
+
+                <!-- ================= RETURN DATE ================= -->
+                <script><![CDATA[
+                    try {
+                        payLoad.returnDate =
+                            java.time.Instant.parse(refund.createdAt)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    } catch (Exception e) {
+                        payLoad.returnDate =
+                            ec.l10n.format(ec.user.nowTimestamp, 'yyyy-MM-dd HH:mm:ss')
+                    }
+                ]]></script>
+                <!-- ================= RETURN CHANNEL ================= -->
+                <set field="returnChannelEnumId" value="ECOM_RTN_CHANNEL"/>
+                <iterate list="orderMap.refundAgreements" entry="refundAgreement">
+                    <if condition="refundAgreement?.refund?.id == refund.id">
+                        <if condition="refundAgreement?.app?.title">
+                            <if condition="refundAgreement.app.title == 'Point of Sale'">
+                                <set field="returnChannelEnumId" value="POS_RTN_CHANNEL"/>
+                                <break/>
+                            </if>
+                            <!-- Loop -->
+                            <if condition="refundAgreement.app.title == 'Loop'">
+                                <set field="returnChannelEnumId" value="LOOP_RETURN_CHANNEL"/>
+                                <break/>
+                            </if>
+                        </if>
+                    </if>
+                </iterate>
+                <entity-find-one entity-name="co.hotwax.shopify.ShopifyShop" value-field="shopifyShop">
+                    <field-map field-name="shopId" value="1000"/>
+                    <select-field field-name="productStoreId"/>
+                </entity-find-one>
+
+                <entity-find-one entity-name="org.apache.ofbiz.product.store.ProductStore" value-field="productStore">
+                    <field-map field-name="productStoreId" from="shopifyShop?.productStoreId"/>
+                    <select-field field-name="payToPartyId"/>
+                </entity-find-one>
+                <set field="companyId" from="productStore?.payToPartyId"/>
+                <set field="payLoad.companyId" from="companyId"/>
+
+                <if condition="orderMap.customer">
+                    <set field="payLoad.customerIdentificationType" value="SHOPIFY_CUST_ID"/>
+                    <set field="payLoad.customerIdentificationValue"
+                         from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(orderMap.customer.id)"/>
+                    <else>
+                        <set field="payLoad.customerId" value="_NA_"/>
+                    </else>
+                </if>
+
+                <set field="payLoad.returnChannelEnumId" from="returnChannelEnumId"/>
+                <set field="payLoad.currencyCode" from="refund.transactions[0].amountSet.presentmentMoney.currencyCode ?: 'USD'"/>
+
+                <!-- ================= SHIP TO ================= -->
+                <set field="shipTo" from="[:]"/>
+                <set field="shipTo.facilityId" value="_NA_"/>
+
+                <if condition="refund.refundLineItems">
+                    <set field="shopifyLocationId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.refundLineItems[0]?.location?.id)"/>
+
+                    <if condition="shopifyLocationId">
+                        <entity-find-one entity-name="co.hotwax.shopify.ShopifyShopLocation" value-field="facility">
+                            <field-map field-name="shopifyLocationId" from="shopifyLocationId"/>
+                            <field-map field-name="shopId" from="shopId"/>
+                        </entity-find-one>
+                        <if condition="facility?.facilityId">
+                            <set field="shipTo.facilityId" from="facility.facilityId"/>
+                        </if>
+                    </if>
+                </if>
+                <set field="payLoad.shipTo" from="shipTo"/>
+                <!-- If no facility resolved, treat as appeasement -->
+                <if condition="shipTo.facilityId == '_NA_'">
+                    <set field="payLoad.type" value="APPEASEMENT"/>
+                    <log level="info" message="Facility not found for refund ${payLoad.externalId}, marking return as APPEASEMENT"/>
+                </if>
+
+                <!-- ================= ITEMS ================= -->
+                <set field="items" from="[]"/>
+                <set field="itemTotalReturnAmount" from="BigDecimal.ZERO"/>
+
+                <if condition="refund.refundLineItems">
+                    <iterate list="refund.refundLineItems" entry="refundLineItem">
+
+                        <set field="item" from="[:]"/>
+                        <set field="itemAdjustments" from="[]"/>
+
+                        <!-- IDs -->
+                        <set field="item.itemExternalId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.id)"/>
+                        <set field="item.orderItemExternalId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)"/>
+
+                        <!-- Product lookup (variant or gift card or SKU) -->
+                        <entity-find-one entity-name="co.hotwax.shopify.ShopifyShopProduct" value-field="shopifyShopProduct">
+                            <field-map field-name="shopId" value="1000"/>
+                            <field-map field-name="shopifyProductId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.variant?.id)"/>
+                        </entity-find-one>
+
+                        <set field="productId" from="shopifyShopProduct?.productId"/>
+
+                        <if condition="refundLineItem.lineItem?.isGiftCard &amp;&amp; !productId">
+                            <entity-find entity-name="co.hotwax.integration.IntegrationTypeMapping" list="giftCardList" limit="1">
+                                <econdition field-name="mappingKey" value="GIFT_CARD"/>
+                                <econdition field-name="integrationTypeId" value="NETSUITE_GIFT_CARD"/>
+                            </entity-find>
+                            <if condition="giftCardList">
+                                <entity-find entity-name="org.apache.ofbiz.product.product.GoodIdentification" list="productList" limit="1">
+                                    <econdition field-name="goodIdentificationTypeId" value="NETSUITE_PRODUCT_ID"/>
+                                    <econdition field-name="idValue" from="giftCardList[0].mappingValue"/>
+                                    <date-filter/>
+                                </entity-find>
+                                <set field="productId" from="productList[0]?.productId"/>
+                            </if>
+                        </if>
+
+                        <if condition="!productId &amp;&amp; refundLineItem.lineItem?.sku">
+                            <entity-find entity-name="org.apache.ofbiz.product.product.GoodIdentification" list="product" limit="1">
+                                <econdition field-name="goodIdentificationTypeId" value="SKU"/>
+                                <econdition field-name="idValue" from="refundLineItem.lineItem.sku"/>
+                                <date-filter/>
+                            </entity-find>
+                            <set field="productId" from="product[0]?.productId"/>
+                        </if>
+
+                        <set field="item.id" from="productId" type="String"/>
+                        <log message="Final productId for return item: ${item.id}"/>
+
+                        <!-- Item attributes -->
+                        <set field="item.quantity" from="refundLineItem.quantity"/>
+                        <set field="item.status" value="RETURN_COMPLETED"/>
+                        <set field="item.returnType" value="RTN_REFUND"/>
+
+                        <set field="restockType" from="(refundLineItem.restockType ?: 'no_restock').toString().toLowerCase()"/>
+                        <if condition="restockType == 'no_restock'">
+                            <set field="item.itemTypeId" value="RET_LOST_ITEM"/>
+                            <set field="item.restockType" value="INV_NOT_RETURNED"/>
+                            <else>
+                                <set field="item.itemTypeId" value="RET_FPROD_ITEM"/>
+                                <set field="item.restockType" value="INV_RETURNED"/>
+                            </else>
+                        </if>
+                        <!-- Amounts -->
+                        <set field="taxAmountSum" from="BigDecimal.ZERO"/>
+                        <set field="itemAmountSum" from="BigDecimal.ZERO"/>
+                        <!-- Discount allocations -->
+                        <if condition="refundLineItem.lineItem?.discountAllocations">
+                            <iterate list="refundLineItem.lineItem.discountAllocations" entry="discount">
+                                <set field="adjAmount" from="ec.l10n.parseNumber(discount.allocatedAmountSet.presentmentMoney.amount, '') ?: BigDecimal.ZERO"/>
+                                <script>adjAmount = adjAmount.negate()</script>
+                                <if condition="adjAmount.compareTo(BigDecimal.ZERO) &lt; 0">
+                                    <set field="discAdjMap" from="[:]"/>
+                                    <set field="discAdjMap.itemExternalId" from="item.itemExternalId"/>
+                                    <set field="discAdjMap.amount" from="adjAmount"/>
+                                    <set field="discAdjMap.type" value="RET_EXT_PRM_ADJ"/>
+                                    <set field="discAdjMap.comments" value="External Discount"/>
+                                    <set field="discAdjMap.description" value="Return External Promotion Adjustment"/>
+                                    <script>itemAdjustments.add(discAdjMap)</script>
+                                </if>
+                            </iterate>
+                        </if>
+
+                        <!-- Tax lines -->
+                        <if condition="refundLineItem.lineItem?.taxLines">
+                            <iterate list="refundLineItem.lineItem.taxLines" entry="taxLine">
+                                <set field="taxAmount" from="ec.l10n.parseNumber(taxLine.priceSet.presentmentMoney.amount, '') ?: BigDecimal.ZERO"/>
+                                <if condition="taxAmount.compareTo(BigDecimal.ZERO) &gt; 0">
+                                    <set field="taxAdjMap" from="[:]"/>
+                                    <set field="taxAdjMap.itemExternalId" from="item.itemExternalId"/>
+                                    <set field="taxAdjMap.amount" from="taxAmount"/>
+                                    <set field="taxAdjMap.type" value="RET_SALES_TAX_ADJ"/>
+                                    <set field="taxAdjMap.comments" from="taxLine.title"/>
+                                    <set field="taxAdjMap.description" value="Return Sales Tax"/>
+                                    <script>itemAdjustments.add(taxAdjMap)</script>
+                                </if>
+                            </iterate>
+                        </if>
+
+                        <if condition="refundLineItem.totalTaxSet?.presentmentMoney?.amount">
+                            <set field="taxAmountSum" from="taxAmountSum.add(ec.l10n.parseNumber(refundLineItem.totalTaxSet.presentmentMoney.amount, '') ?: BigDecimal.ZERO)"/>
+                        </if>
+                        <if condition="refundLineItem.subtotalSet?.presentmentMoney?.amount">
+                            <set field="itemAmountSum" from="itemAmountSum.add(ec.l10n.parseNumber(refundLineItem.subtotalSet.presentmentMoney.amount, '') ?: BigDecimal.ZERO)"/>
+                        </if>
+                        <if condition="!orderId">
+                            <if condition="refundLineItem.priceSet?.presentmentMoney?.amount">
+                                <set field="item.price" from="ec.l10n.parseNumber(refundLineItem.priceSet.presentmentMoney.amount, '') ?: BigDecimal.ZERO"/>
+                            </if>
+                            <set field="item.itemAdjustments" from="itemAdjustments"/>
+                        </if>
+                        <set field="lineReturnAmount" from="itemAmountSum.add(taxAmountSum)" type="BigDecimal"/>
+
+                        <set field="itemTotalReturnAmount" from="itemTotalReturnAmount.add(lineReturnAmount)" type="BigDecimal"/>
+                        <script>items.add(item)</script>
+                    </iterate>
+                </if>
+
+                <set field="payLoad.items" from="items"/>
+
+                <!-- ================= APPEASEMENT ================= -->
+                <if condition="refund.attributionType == 'APPEASEMENT'">
+                    <set field="adjustments" from="[]"/>
+                    <set field="adjustment" from="[:]"/>
+                    <set field="adjustment.type" value="APPEASEMENT"/>
+                    <set field="adjustment.comments" value="Refund appeasement"/>
+
+                    <script><![CDATA[
+                        BigDecimal appeasementAmount = BigDecimal.ZERO
+                        for (txn in refund.transactions ?: []) {
+                            if (txn.kind == "REFUND") {
+                                appeasementAmount +=
+                                    ec.l10n.parseNumber(
+                                        txn.amountSet?.presentmentMoney?.amount, ''
+                                    ) ?: BigDecimal.ZERO
+                            }
+                        }
+                        adjustment.amount =
+                            appeasementAmount.setScale(2, BigDecimal.ROUND_HALF_UP)
+                        itemTotalReturnAmount = appeasementAmount
+                    ]]></script>
+
+                    <script>adjustments.add(adjustment)</script>
+                    <set field="payLoad.returnAdjustment" from="adjustments"/>
+                </if>
+
+                <!-- ================= TOTALS ================= -->
+                <script><![CDATA[
+                    BigDecimal refundAmount = refund.transactions?.findAll {
+                        it.kind == "REFUND"
+                    }?.collect {
+                        ec.l10n.parseNumber(it.amountSet?.presentmentMoney?.amount, "")
+                            ?: BigDecimal.ZERO
+                    }?.sum() ?: BigDecimal.ZERO
+
+                    payLoad.refundAmount =
+                        refundAmount.setScale(2, BigDecimal.ROUND_HALF_UP)
+                    payLoad.totalReturnAmount =
+                        itemTotalReturnAmount.setScale(2, BigDecimal.ROUND_HALF_UP)
+                ]]></script>
+
+                <!-- ================= PAYMENT PREF ================= -->
+                <set field="returnPaymentPref" from="[]"/>
+                <iterate list="refund.transactions" entry="txn">
+
+                    <service-call name="co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction" in-map="[shopifyOrderId: shopifyOrderId, shopId: '1000', shopifyTransaction: txn]" out-map="mapOrderTransactionResponse"/>
+<!--                    <log message="Mapped Order Transaction Response: ${mapOrderTransactionResponse}"/>-->
+
+                    <if condition="mapOrderTransactionResponse.orderPaymentPreference">
+                        <set field="mapOrderTransactionResponse.orderPaymentPreference.presentmentAmount" from="mapOrderTransactionResponse.orderPaymentPreference.presentmentAmount.toBigDecimal().round(2)" type="BigDecimal"/>
+                        <script>returnPaymentPref.add(mapOrderTransactionResponse.orderPaymentPreference)</script>
+<!--                        <log message="Using mapped order payment preference for transaction ${returnPaymentPref}"/>-->
+                        <else>
+                            <if condition="orderId">
+                                <entity-find entity-name="org.apache.ofbiz.order.order.OrderPaymentPreference" list="orderPaymentPreferences" limit="1">
+                                    <econdition field-name="orderId" operator="equals" from="orderId"/>
+                                    <econdition field-name="manualRefNum" operator="equals" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(txn.id)"/>
+                                </entity-find>
+                                <if condition="orderPaymentPreferences">
+                                    <set field="transaction" from="[:]"/>
+                                    <set field="transaction.paymentMethodTypeId" from="orderPaymentPreferences[0].paymentMethodTypeId"/>
+                                    <set field="transaction.statusId" value="PAYMENT_REFUNDED"/>
+                                    <set field="transaction.orderPaymentPreferenceId" from="orderPaymentPreferences[0].orderPaymentPreferenceId"/>
+                                    <set field="transaction.presentmentCurrency" from="refund.order.presentmentCurrencyCode ?: 'USD'"/>
+                                    <set field="transaction.presentmentAmount" from="(ec.l10n.parseNumber(txn.amountSet?.presentmentMoney?.amount, '') ?: BigDecimal.ZERO).round(2)"/>
+                                    <set field="transaction.maxAmount" from="(ec.l10n.parseNumber(txn.amountSet?.shopMoney?.amount, '') ?: BigDecimal.ZERO).round(2)"/>
+                                    <set field="transaction.orderExternalId" from="externalOrderId"/>
+                                    <script>returnPaymentPref.add(transaction)</script>
+                                </if>
+                            </if>
+
+                            <if condition="!orderId || !orderPaymentPreferences">
+                                <set field="returnPaymentPreference" from="[:]"/>
+                                <set field="returnPaymentPreference.paymentMethodTypeId" value="EXT_SHOP_OTHR_GTWAY"/>
+                                <set field="returnPaymentPreference.statusId" value="PAYMENT_REFUNDED"/>
+                                <set field="returnPaymentPreference.manualRefNum" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(txn.id)"/>
+                                <if condition="txn.parentTransaction?.id">
+                                    <set field="returnPaymentPreference.parentRefNum" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(txn.parentTransaction.id)"/>
+                                </if>
+                                <set field="returnPaymentPreference.presentmentCurrency" from="refund.order.presentmentCurrencyCode ?: 'USD'"/>
+                                <set field="returnPaymentPreference.maxAmount" from="(ec.l10n.parseNumber(txn.amountSet?.shopMoney?.amount, '') ?: BigDecimal.ZERO).round(2)"/>
+                                <set field="returnPaymentPreference.presentmentAmount" from="(ec.l10n.parseNumber(txn.amountSet?.presentmentMoney?.amount, '') ?: BigDecimal.ZERO).round(2)"/>
+                                <set field="returnPaymentPreference.orderExternalId" from="externalOrderId"/>
+                                <script>returnPaymentPref.add(returnPaymentPreference)</script>
+                            </if>
+                        </else>
+                    </if>
+                </iterate>
+
+                <set field="payLoad.returnPaymentPref" from="returnPaymentPref"/>
+
+                <!-- ================= IDENTIFICATIONS ================= -->
+                <set field="returnIdentifications" from="[]"/>
+                <set field="returnIdentification" from="[:]"/>
+                <set field="returnIdentification.returnIdentificationTypeId" value="SHOPIFY_RTN_ID"/>
+                <set field="returnIdentification.idValue" from="refundExternalId"/>
+                <script>returnIdentifications.add(returnIdentification)</script>
+
+                <if condition="!orderId">
+                    <set field="orphanId" from="[:]"/>
+                    <set field="orphanId.returnIdentificationTypeId" value="SHPY_ORPN_RTN_ORD_ID"/>
+                    <set field="orphanId.idValue" from="externalOrderId"/>
+                    <script>returnIdentifications.add(orphanId)</script>
+                </if>
+
+                <set field="payLoad.returnIdentifications" from="returnIdentifications"/>
+<!--                <service-call name="co.hotwax.oms.search.SearchServices.create#ShopifyReturn" in-map="[payLoad:payLoad]" ignore-error="false" transaction="force-new"/>-->
+                <entity-find-one entity-name="co.hotwax.shopify.ShopifyShopAndConfig" value-field="shopifyConfig">
+                    <field-map field-name="shopId" value="1000"/>
+                    <select-field field-name="shopId"/>
+                    <select-field field-name="shopifyConfigId"/>
+                </entity-find-one>
+                <log message="Using shopifyConfigId=${shopifyConfig?.shopifyConfigId} for shopId=${shopId}"/>
+                <script><![CDATA[
+                    try {
+                        response = ec.service.sync().name("co.hotwax.soblegacy.order.OrderServices.create#ShopifyReturn")
+                                .requireNewTransaction(true).parameters([shopifyConfigId: shopifyConfig.shopifyConfigId, payLoad: payLoad])
+                                .call()
+                    } catch (Throwable e) {
+                        ec.logger.error("Error creating order: ${e.getMessage()}")
+                        ec.message.clearErrors()
+                        ec.message.clearAll()
+                        return
+                    }
+                ]]></script>
+                <!-- ================= LOG ================= -->
+                <log message="Prepared payload for refund ${refundExternalId}, type=${refund.attributionType}"/>
+                <log message="============================================================================"/>
+                <log message="Payload: ${payLoad}"/>
+            </iterate>
         </actions>
     </service>
 </services>
