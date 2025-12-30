@@ -1135,7 +1135,7 @@ under the License.
             <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
 
             <if condition="!orders">
-                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order exchange feed file."/>
             </if>
 
             <set field="nowDate" from="ec.user.nowTimestamp"/>
@@ -1143,7 +1143,6 @@ under the License.
                     [contentRoot: ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager', date:ec.l10n.format(nowDate, 'yyyy-MM-dd'),
                     dateTime:ec.l10n.format(nowDate, 'yyyy-MM-dd-HH-mm-ss-SSS')], false)"/>
             <set field="jsonFilePath" from="ec.resource.getLocationReference(jsonFilePathRef).getUri().getPath()"/>
-            <log message="jsonFilePath: ${jsonFilePath}"/>
             <script>
                 import com.fasterxml.jackson.core.JsonGenerator
                 import com.fasterxml.jackson.core.JsonFactory
@@ -1186,7 +1185,7 @@ under the License.
                 jGenerator.writeEndArray()
                 }
                 } catch (IOException e) {
-                    logger.error("Error preparing Return and Exchange Feed file", e)
+                    logger.error("Error preparing Exchange Feed file", e)
                 }
             </script>
 
