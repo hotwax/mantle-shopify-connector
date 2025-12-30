@@ -1164,22 +1164,16 @@ under the License.
             </script>
 
             <iterate list="orders" entry="order">
-                <service-call name="co.hotwax.shopify.order.ShopifyOrderServices.get#OrderDetails" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id, includeLineItems:false]"
-                              out-map="orderDetailsResponse" ignore-error="true" transaction="force-new"/>
-
-                <if condition="orderDetailsResponse.orderDetail">
-                    <set field="orderMap" from="orderDetailsResponse.orderDetail"/>
-
-                    <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ExchangesByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
+                <set field="orderMap" from="[:]"/>
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ExchangesByOrderId" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyOrderId:order.id]"
                                   out-map="orderExchangesResponse" ignore-error="true" transaction="force-new"/>
-                    <set field="orderMap.exchanges" from="orderExchangesResponse.orderExchanges.exchanges"/>
+                    <set field="orderMap" from="orderExchangesResponse.orderExchanges"/>
                     <set field="orderMap.shopId" from="shopId"/>
                     <script>
                         new ObjectMapper()
                                 .setDateFormat(new java.text.SimpleDateFormat(System.getProperty('default_date_time_format')))
                                 .writerWithDefaultPrettyPrinter().writeValue(jGenerator, orderMap)
                     </script>
-                </if>
             </iterate>
             <script>
                 jGenerator.writeEndArray()
