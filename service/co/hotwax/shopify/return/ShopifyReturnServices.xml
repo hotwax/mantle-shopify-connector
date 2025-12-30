@@ -566,6 +566,28 @@ under the License.
                     <econdition field-name="orderId" from="hcOrder.orderId"/>
                     <econdition field-name="statusId" value="ITEM_APPROVED"/>
                 </entity-find>
+                <!-- ORDER HAS NO APPROVED ITEMS SO FORCE RETURNS -->
+                <if condition="hcOrderItems == null || hcOrderItems.isEmpty()">
+                    <log message="Order has no approved items. Marking remaining refunds as RETURN."/>
+                    <iterate list="orderMap.refunds" entry="refund">
+                        <!-- Guard -->
+                        <if condition="refund.attributionType">
+                            <continue/>
+                        </if>
+                        <!-- Appeasement if no line items -->
+                        <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
+                            <set field="refund.attributionType" value="APPEASEMENT"/>
+                            <script>returnsToCreateList.add(refund)</script>
+                            <continue/>
+                        </if>
+                        <!-- Otherwise RETURN -->
+                        <set field="refund.attributionType" value="RETURN"/>
+                        <script>returnsToCreateList.add(refund)</script>
+                    </iterate>
+                    <set field="skipAttribution" value="true"/>
+                </if>
+                <log message="skipAttribution=${skipAttribution}"/>
+            </if>
 
                 <!-- ORDER HAS NO APPROVED ITEMS SO FORCE RETURNS -->
                 <if condition="hcOrderItems == null || hcOrderItems.isEmpty()">
@@ -588,7 +610,6 @@ under the License.
                     </iterate>
                     <set field="skipAttribution" value="true"/>
                 </if>
-            </if>
 
             <if condition="!skipAttribution">
                 <!-- Build Approved Qty Map from HC Order Items -->
@@ -670,11 +691,13 @@ under the License.
                     </if>
                 </iterate>
                 <iterate list="orderMap.refunds" entry="refund">
+                    <log message="Processing refund ${refund.id} for absolute RETURN attribution ${refund.attributionType}"/>
                     <if condition="refund.attributionType">
                         <continue/>
                     </if>
                     <set field="refundId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)"/>
-                    <set field="isReturn" value="false"/>
+                    <log message="================== refundId=${refundId} =================="/>
+                    <set field="isReturn" from="false"/>
                     <if condition="refund.return?.id">
                         <set field="isReturn" value="true"/>
                     </if>
@@ -698,13 +721,177 @@ under the License.
                                 </script>
                             </if>
                         </iterate>
+                        <else>
+                            <script>unassignedRefunds.add(refund)</script>
+                        </else>
                     </if>
-                    <else>
-                        <script>unassignedRefunds.add(refund)</script>
-                    </else>
                 </iterate>
             </if>
+            <!-- CANCEL ATTRIBUTION BASED ON ZEROED OUT QUANTITIES -->
+            <log message="Starting CANCEL attribution pass"/>
+            <set field="cancelRefundsToProcess" from="[]"/>
+
+            <script><![CDATA[
+                for (refund in unassignedRefunds) {
+                    if (refund.attributionType) continue
+                    boolean attributed = false
+                    String refundId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)
+
+                    // Iterate refund line items
+                    for (refundLineItem in refund.refundLineItems) {
+                        String lineItemId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)
+
+                        def itemData = groupedRefundLineItems[lineItemId]
+                        if (!itemData) continue
+
+                        int qty = refundLineItem.quantity ?: 0
+
+                        // CANCEL CASE
+                        if ((itemData.toCancelQuantity ?: 0) > 0) {
+                            int cancelQty = Math.min(qty, itemData.toCancelQuantity)
+                            // Init cancel log
+                            if (!itemData.cancelQuantityLog) {
+                                itemData.cancelQuantityLog = []
+                            }
+                            // Reduce cancel qty
+                            itemData.toCancelQuantity = itemData.toCancelQuantity - cancelQty
+                            // Log
+                            itemData.cancelQuantityLog.add([
+                                refundId    : refundId,
+                                quantityDiff: -cancelQty
+                            ])
+                            refund.attributionType = "CANCEL"
+                            cancelRefundsToProcess.add(refund)
+                            attributed = true
+                            break
+                        }
+                    }
+
+                    // FALLBACK: RETURN IF CANCEL EXHAUSTED
+                    if (!attributed) {
+                        refund.attributionType = "RETURN"
+                        returnsToCreateList.add(refund)
+                        for (refundLineItem in refund.refundLineItems) {
+                            String lineItemId =
+                                co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)
+                            def itemData = groupedRefundLineItems[lineItemId]
+                            if (!itemData) continue
+                            int qty = refundLineItem.quantity ?: 0
+
+                            if (!itemData.returnQuantityLog) {
+                                itemData.returnQuantityLog = []
+                            }
+
+                            itemData.toReturnQuantity = (itemData.toReturnQuantity ?: 0) - qty
+                            itemData.returnQuantityLog.add([
+                                refundId    : refundId,
+                                quantityDiff: -qty
+                            ])
+                        }
+                    }
+                }
+            ]]></script>
+
+            <log message="Cancel attributed refunds: ${cancelRefundsToProcess*.id}"/>
+            <log message="Returns after cancel attribution: ${returnsToCreateList*.id}"/>
+            <log message="Grouped Refund Line Items after cancel attribution: ${groupedRefundLineItems}"/>
+
+            <!-- STOP IF ALL QUANTITIES ARE ZEROED OUT -->
+            <script><![CDATA[
+                boolean allResolved = true
+                groupedRefundLineItems.each { k, v ->
+                    if ((v.toCancelQuantity ?: 0) != 0 || (v.toReturnQuantity ?: 0) != 0) {
+                        allResolved = false
+                    }
+                }
+                if (allResolved) {
+                    ec.logger.info("All refund quantities fully attributed. Stopping further processing.")
+                }
+            ]]></script>
+
+
             <!-- PREPARE RETURN / APPEASEMENT PAYLOADS -->
+            <iterate list="returnsToCreateList" entry="refund">
+                <iterate list="refund.transactions" entry="txn">
+                    <service-call
+                            name="co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction"
+                            in-map="[shopifyOrderId: refund.order.id,
+                     shopId: '1000',
+                     shopifyTransaction: txn]"
+                            out-map="mapOrderTransactionResponse"/>
+
+                    <log message="Mapped order transaction for refund ${refund.id}, txn ${txn.id}: ${mapOrderTransactionResponse}"/>
+                </iterate>
+                <set field="templateLocation" value="component://shopify-connector/template/ftl/ShopifyRefundPayload.ftl"/>
+                <set field="writer" from="new StringWriter()"/>
+                <set field="jsonSlurper" from="new groovy.json.JsonSlurper()"/>
+                <script>
+                    ec.resourceFacade.template(templateLocation, writer)
+                </script>
+                <set field="payLoadMap" from="jsonSlurper.parseText(writer.toString())"/>
+                <set field="payLoad" from="payLoadMap.payLoad"/>
+                <log message="Prepared payload for refund ${refund.id}: ${payLoad}"/>
+                <entity-find-one entity-name="co.hotwax.shopify.ShopifyShopAndConfig" value-field="shopifyConfig">
+                    <field-map field-name="shopId" value="1000"/>
+                    <select-field field-name="shopId"/>
+                    <select-field field-name="shopifyConfigId"/>
+                </entity-find-one>
+                <script><![CDATA[
+                    try {
+                        response = ec.service.sync().name("co.hotwax.soblegacy.order.OrderServices.create#ShopifyReturn")
+                              .requireNewTransaction(true)
+                              .parameters([shopifyConfigId: shopifyConfig.shopifyConfigId,payLoad: payLoad])
+                              .call()
+                        } catch (Throwable e) {
+                            ec.logger.error("Error creating order: ${e.getMessage()}")
+                            ec.message.clearErrors()
+                            ec.message.clearAll()
+                            return
+                        }
+                ]]></script>
+            </iterate>
+            <script><![CDATA[
+                cancelItems = []
+
+                groupedRefundLineItems.each { lineItemId, itemData ->
+                    if (!itemData.cancelQuantityLog) return
+                        hcItem = hcOrderItems.find {
+                        co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(it.externalId) == lineItemId
+                     }
+
+                    if (!hcItem) return
+                    int totalCancelQty = itemData.cancelQuantityLog.sum {
+                        Math.abs(it.quantityDiff ?: 0)
+                    }
+                    (totalCancelQty).each {
+                        cancelItems.add([
+                            orderItemSeqId : hcItem.orderItemSeqId,
+                            shipGroupSeqId : hcItem.shipGroupSeqId,
+                            reason         : 'ITEM_CANCELLED',
+                            comment        : 'Cancelled via Shopify refund'
+                        ])
+                    }
+                }
+            ]]></script>
+            <if condition="cancelItems &amp;&amp; !cancelItems.isEmpty()">
+                <log message="Calling SalesOrderItems cancellation for order ${hcOrder.orderId}, items=${cancelItems}"/>
+
+                <script><![CDATA[
+                    try {
+                        ec.service.sync()
+                          .name("co.hotwax.orderledger.order.OrderServices.cancel#SalesOrderItems")
+                          .requireNewTransaction(true)
+                          .parameters([
+                              orderId : hcOrder.orderId,
+                              items   : cancelItems
+                          ])
+                          .call()
+                    } catch (Throwable t) {
+                        ec.logger.error("Error while cancelling order items for order ${hcOrder.orderId}")
+                        return
+                    }
+                ]]></script>
+            </if>
         </actions>
     </service>
 </services>
