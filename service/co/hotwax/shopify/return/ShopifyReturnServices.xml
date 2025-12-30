@@ -601,12 +601,10 @@ under the License.
                         <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
                             <set field="refund.attributionType" value="APPEASEMENT"/>
                             <script>returnsToCreateList.add(refund)</script>
-                            <log message="Refund ${refund.id} has no line items but order has no approved items. Marking as APPEASEMENT."/>
                             <continue/>
                         </if>
                         <!-- Otherwise RETURN -->
                         <set field="refund.attributionType" value="RETURN"/>
-                        <log message="Refund ${refund.id} has line items but order has no approved items. Marking as RETURN."/>
                         <script>returnsToCreateList.add(refund)</script>
                     </iterate>
                     <set field="skipAttribution" value="true"/>
@@ -637,7 +635,6 @@ under the License.
                     <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
                         <set field="refund.attributionType" value="APPEASEMENT"/>
                         <script>returnsToCreateList.add(refund)</script>
-                        <log message="Refund ${refund.id} has no line items. Marking as APPEASEMENT."/>
                         <continue/>
                     </if>
                     <iterate list="refund.refundLineItems" entry="refundLineItem">
@@ -697,7 +694,6 @@ under the License.
                         <continue/>
                     </if>
                     <set field="refundId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)"/>
-                    <log message="================== refundId=${refundId} =================="/>
                     <set field="isReturn" from="false"/>
                     <if condition="refund.return?.id">
                         <set field="isReturn" value="true"/>
@@ -729,7 +725,6 @@ under the License.
                 </iterate>
             </if>
             <!-- CANCEL ATTRIBUTION BASED ON ZEROED OUT QUANTITIES -->
-            <log message="Starting CANCEL attribution pass"/>
             <set field="cancelRefundsToProcess" from="[]"/>
 
             <script><![CDATA[
@@ -793,10 +788,6 @@ under the License.
                 }
             ]]></script>
 
-            <log message="Cancel attributed refunds: ${cancelRefundsToProcess*.id}"/>
-            <log message="Returns after cancel attribution: ${returnsToCreateList*.id}"/>
-            <log message="Grouped Refund Line Items after cancel attribution: ${groupedRefundLineItems}"/>
-
             <!-- STOP IF ALL QUANTITIES ARE ZEROED OUT -->
             <script><![CDATA[
                 boolean allResolved = true
@@ -813,16 +804,6 @@ under the License.
 
             <!-- PREPARE RETURN / APPEASEMENT PAYLOADS -->
             <iterate list="returnsToCreateList" entry="refund">
-                <iterate list="refund.transactions" entry="txn">
-                    <service-call
-                            name="co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction"
-                            in-map="[shopifyOrderId: refund.order.id,
-                     shopId: '1000',
-                     shopifyTransaction: txn]"
-                            out-map="mapOrderTransactionResponse"/>
-
-                    <log message="Mapped order transaction for refund ${refund.id}, txn ${txn.id}: ${mapOrderTransactionResponse}"/>
-                </iterate>
                 <set field="templateLocation" value="component://shopify-connector/template/ftl/ShopifyRefundPayload.ftl"/>
                 <set field="writer" from="new StringWriter()"/>
                 <set field="jsonSlurper" from="new groovy.json.JsonSlurper()"/>
@@ -833,7 +814,7 @@ under the License.
                 <set field="payLoad" from="payLoadMap.payLoad"/>
                 <log message="Prepared payload for refund ${refund.id}: ${payLoad}"/>
                 <entity-find-one entity-name="co.hotwax.shopify.ShopifyShopAndConfig" value-field="shopifyConfig">
-                    <field-map field-name="shopId" value="1000"/>
+                    <field-map field-name="shopId" from="shopId"/>
                     <select-field field-name="shopId"/>
                     <select-field field-name="shopifyConfigId"/>
                 </entity-find-one>
