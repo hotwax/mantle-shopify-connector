@@ -11,7 +11,7 @@
                                 .useCache(true)
                                 .one()!>
 
-<#if orderHeader??>
+<#if orderHeader?? && orderHeader.orderId?has_content>
     <#assign orderId = orderHeader.orderId>
 <#else>
     <#assign orderId = null>
@@ -70,8 +70,7 @@
 <#assign shipFacilityId = "_NA_">
 
 <#if refund.refundLineItems?has_content && refund.refundLineItems[0].location?? && refund.refundLineItems[0].location.id??>
-    <#assign shopifyLocationId = refund.refundLineItems[0].location.id?replace("gid://shopify/Location/", "")>
-
+    <#assign shopifyLocationId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.refundLineItems[0].location.id)>
     <#assign facility = ec.entity.find("co.hotwax.shopify.ShopifyShopLocation")
                                  .condition("shopifyLocationId", shopifyLocationId)
                                  .condition("shopId", shopId)
@@ -104,6 +103,27 @@
     <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", refund.order.id).parameter("shopId", shopId).parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
     <#if mapTxnResp??>
         <#assign returnPaymentPrefList += [mapTxnResp]>
+        <#else>
+            <#assign presentmentAmt = 0>
+            <#assign maxAmt = 0>
+            <#if txn.amountSet??>
+                <#if txn.amountSet.presentmentMoney??>
+                    <#assign presentmentAmt = txn.amountSet.presentmentMoney.amount>
+                </#if>
+                <#if txn.amountSet.shopMoney??>
+                    <#assign maxAmt = txn.amountSet.shopMoney.amount>
+                </#if>
+            </#if>
+            <#assign fallbackPref = {
+                "paymentMethodTypeId": "EXT_SHOP_OTHR_GTWAY",
+                "statusId": "PAYMENT_REFUNDED",
+                "manualRefNum": Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(txn.id),
+                "presentmentCurrencyUom": (currency!"USD"),
+                "presentmentAmount": presentmentAmt,
+                "maxAmount": maxAmt,
+                "orderExternalId": orderExternalId
+            }>
+            <#assign returnPaymentPrefList += [fallbackPref]>
     </#if>
 </#list>
 
@@ -136,7 +156,7 @@
                     <#assign shopifyVariantId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(rli.lineItem.variant.id)>
 
                     <#assign shopifyShopProduct = ec.entity.find("co.hotwax.shopify.ShopifyShopProduct")
-                                                            .condition("shopId", "1000")
+                                                            .condition("shopId", shopId)
                                                             .condition("shopifyProductId", shopifyVariantId)
                                                             .useCache(true)
                                                             .one()!>
@@ -230,9 +250,7 @@
                 <#if rpp.maxAmount??>
                 ,"maxAmount": ${rpp.maxAmount}
                 </#if>
-                <#if rpp.orderExternalId??>
-                ,"orderExternalId": "${rpp.orderExternalId}"
-                </#if>
+                ,"orderExternalId": "${orderExternalId}"
                 }
             </#list>
         ],
