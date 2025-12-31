@@ -34,7 +34,7 @@
 </#if>
 
 <#assign shopifyShop = ec.entity.find("co.hotwax.shopify.ShopifyShop")
-                                .condition("shopId", "1000")
+                                .condition("shopId", shopId)
                                 .useCache(true)
                                 .one()>
 
@@ -73,7 +73,7 @@
     <#assign shopifyLocationId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.refundLineItems[0].location.id)>
     <#assign facility = ec.entity.find("co.hotwax.shopify.ShopifyShopLocation")
                                  .condition("shopifyLocationId", shopifyLocationId)
-                                 .condition("shopId", "1000")
+                                 .condition("shopId", shopId)
                                  .useCache(true)
                                  .one()!>
 
@@ -100,7 +100,7 @@
     <#if txn.kind == "SALE" && txn.amountSet?? && txn.amountSet.presentmentMoney??>
         <#assign paymentAmount += txn.amountSet.presentmentMoney.amount?number>
     </#if>
-    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", refund.order.id).parameter("shopId", "1000").parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
+    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", refund.order.id).parameter("shopId", shopId).parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
     <#if mapTxnResp??>
         <#assign returnPaymentPrefList += [mapTxnResp]>
         <#else>
@@ -157,7 +157,7 @@
                     <#assign shopifyVariantId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(rli.lineItem.variant.id)>
 
                     <#assign shopifyShopProduct = ec.entity.find("co.hotwax.shopify.ShopifyShopProduct")
-                                                            .condition("shopId", "1000")
+                                                            .condition("shopId", shopId)
                                                             .condition("shopifyProductId", shopifyVariantId)
                                                             .useCache(true)
                                                             .one()!>
