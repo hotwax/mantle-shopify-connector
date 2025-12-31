@@ -588,10 +588,6 @@ under the License.
 
 
            <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
-           <entity-find entity-name="ShopifyRefundHistory" list="processedRefundHistory">
-               <econdition field-name="shopifyOrderId" from="shopifyOrderId"/>
-           </entity-find>
-
 
            <set field="filteredRefunds" from="[]"/>
 
@@ -630,7 +626,7 @@ under the License.
            <entity-find entity-name="org.apache.ofbiz.order.order.OrderHeader" list="hcOrderList">
                <econdition field-name="externalId" from="shopifyOrderId"/>
            </entity-find>
-           <set field="hcOrder" from="hcOrderList?.first?"/>
+           <set field="hcOrder" from="hcOrderList?.first"/>
            <set field="skipAttribution" from="false" type="Boolean"/>
 
 
@@ -920,7 +916,7 @@ under the License.
                <set field="payLoad" from="payLoadMap.payLoad"/>
                <log message="Prepared payload for refund ${refund.id}: ${payLoad}"/>
                <entity-find entity-name="co.hotwax.shopify.ShopifyConfig" list="shopifyConfigList">
-                   <econdition field-name="shopId"/>
+                   <econdition field-name="shopId" value="1000"/>
                    <select-field field-name="shopifyConfigId"/>
                </entity-find>
                <script><![CDATA[
@@ -944,8 +940,8 @@ under the License.
                        1. returnId and returnItemSeqId and other fields if required
                        2. decisionType and actionType -->
                <iterate list="refund.refundLineItems" entry="refundLineItem">
-                   <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:refund.id,
-                       shopifyRefundLineId:refundLineItem.id, shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                   <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id),
+                       shopifyRefundLineId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.id), shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
                        decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
                </iterate>
            </iterate>
@@ -1011,12 +1007,19 @@ under the License.
                       def refundTxnId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.id)
                       def parentTxnId = refundTxn.parentId ? co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.parentId) : null
 
-
-                      def settledOpp =
-                          ec.entity.find("org.apache.ofbiz.order.order.OrderPaymentPreference")
-                              .condition("orderId", hcOrder.orderId)
-                              .condition("statusId", "in", "['PAYMENT_SETTLED','PAYMENT_AUTHORIZED']")
-                              .one()
+                      def gateway = refundTxn.gateway
+                      def currencyUomId = refundTxn.amountSet?.shopMoney?.currencyCode
+                      def paymentMethodTypeId = ec.entity.find("co.hotwax.shopify.ShopifyShopTypeMapping")
+                                                .condition("shopId", shopId)
+                                                .condition("mappedTypeId", "PAYMENT_METHOD")
+                                                .condition("mappedKey", gateway?.toUpperCase())
+                                                .one()?.mappedValue
+                      if (!paymentMethodTypeId) {
+                            paymentMethodTypeId = "EXT_SHOP_OTHR_GTWAY"
+                      }
+                      if (!currencyUomId) {
+                            currencyUomId = "USD"
+                      }
 
 
                       ec.service.sync()
@@ -1024,10 +1027,10 @@ under the License.
                           .parameters([
                               orderId                : hcOrder.orderId,
                               statusId               : 'PAYMENT_REFUNDED',
-                              paymentMethodTypeId    : settledOpp.paymentMethodTypeId,
+                              paymentMethodTypeId    : paymentMethodTypeId,
                               maxAmount              : refundedAmount,
                               presentmentAmount      : refundedAmount,
-                              presentmentCurrencyUom : settledOpp.presentmentCurrencyUom,
+                              presentmentCurrencyUom : currencyUomId,
                               manualRefNum           : refundTxnId,
                               parentRefNum           : parentTxnId
                           ])
@@ -1043,8 +1046,8 @@ under the License.
                        1. returnId and returnItemSeqId and other fields if required
                        2. decisionType and actionType -->
                <iterate list="refund.refundLineItems" entry="refundLineItem">
-                   <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:refund.id,
-                       shopifyRefundLineId:refundLineItem.id, shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                   <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id),
+                       shopifyRefundLineId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.id), shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
                        decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
                </iterate>
            </iterate>
