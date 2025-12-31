@@ -1093,7 +1093,7 @@ under the License.
             </if>
         </actions>
     </service>
-    <service verb="generate" noun="ExchangeFeed" authenticate="anonymous-all" transaction-timeout="1800">
+    <service verb="generate" noun="ExchangeOrderFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
             <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>

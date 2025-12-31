@@ -436,7 +436,7 @@ under the License.
                                              description="Generate Exchange Feed"
                                              parentTypeId="LocalFeedFile"
                                              sendPath="${contentRoot}/shopify/ExchangeOrderFeed/ExchangeOrderFeed-${dateTime}-${systemMessageId}.json"
-                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ExchangeFeed">
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ExchangeOrderFeed">
     </moqui.service.message.SystemMessageType>
     <moqui.basic.Enumeration description="Send Exchange Order Feed" enumId="SendExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum"/>
     <moqui.basic.Enumeration description="Generate Exchange Order Feed" enumId="GenerateExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
@@ -445,7 +445,7 @@ under the License.
                                              description="Send Exchange Order Feed"
                                              parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
-                                             sendPath=""/>
+                                             sendPath="/home/${sftpUsername}/hotwax/shopify/ExchangeOrderFeed/"/>
     <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateExchangeOrderFeed"
                                                       parameterName="sendSmrId"
                                                       parameterValue=""
