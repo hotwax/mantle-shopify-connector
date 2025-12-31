@@ -471,4 +471,458 @@ under the License.
             <set field="orderExchanges.exchanges" from="exchanges"/>
         </actions>
     </service>
+    <service verb="create" noun="ShopifyRefunds" authenticate="anonymous-all">
+        <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
+                <field-map field-name="systemMessageRemoteId"/>
+            </entity-find-one>
+            <if condition="!systemMessageRemote">
+                <return error="true" message="Invalid systemMessageRemoteId: ${systemMessageRemoteId}"/>
+            </if>
+            <set field="shopId" from="systemMessageRemote.internalId"/>
+            <!-- Fetch refund agreements -->
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements" in-map="[systemMessageRemoteId:systemMessageRemoteId,shopifyOrderId:shopifyOrderId]" out-map="orderDetailsResponse"/>
+
+            <if condition="!orderDetailsResponse?.refundAgreements">
+                <return type="warning" message="Order not found in Shopify. shopifyOrderId=${shopifyOrderId}, shopId=${shopId}"/>
+            </if>
+            <set field="orderMap" from="[:]"/>
+            <set field="orderMap.refundAgreements" from="orderDetailsResponse.refundAgreements"/>
+            <set field="orderMap.shopId" from="shopId"/>
+
+            <!-- Fetch refunds -->
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundsByOrderId" in-map="[systemMessageRemoteId:systemMessageRemoteId,shopifyOrderId:shopifyOrderId]" out-map="refundsResponse"/>
+            <set field="orderMap.refunds" from="refundsResponse?.orderRefunds?.refunds ?: []"/>
+            <script>
+                import com.fasterxml.jackson.databind.ObjectMapper
+                orderMapJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(orderMap)
+            </script>
+
+            <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
+            <entity-find entity-name="ShopifyRefundHistory" list="processedRefundHistory">
+                <econdition field-name="shopifyOrderId" from="shopifyOrderId"/>
+            </entity-find>
+
+            <set field="filteredRefunds" from="[]"/>
+
+            <!-- Go-live timestamp -->
+            <!-- TODO revisit the refundGoLiveTs -->
+            <set field="refundGoLiveTs" from="java.time.OffsetDateTime.parse('2025-12-30T00:00:00Z')"/>
+
+            <iterate list="orderMap.refunds" entry="refund">
+                <!-- Check if refund already processed -->
+                <entity-find entity-name="co.hotwax.shopify.ShopifyRefundHistory" list="existingRefundList">
+                    <econdition field-name="shopifyRefundId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)"/>
+                </entity-find>
+                <if condition="existingRefundList">
+                    <log message="Refund ${refund.id} is existing and history created in ShopifyRefundHistory ${existingRefundList?.first}"/>
+                    <continue/>
+                </if>
+                <!-- Skip refunds before go-live -->
+                <set field="refundCreatedTs" from="java.time.OffsetDateTime.parse(refund.createdAt)"/>
+                <if condition="refundCreatedTs.isBefore(refundGoLiveTs)">
+                    <continue/>
+                </if>
+                <!-- Valid refund -->
+                <script>
+                    filteredRefunds.add(refund)
+                </script>
+            </iterate>
+
+            <set field="orderMap.refunds" from="filteredRefunds"/>
+            <if condition="!orderMap.refunds || orderMap.refunds.isEmpty()">
+                <log message="No new refunds to process after de-duplication for order ${shopifyOrderId}"/>
+                <return/>
+            </if>
+            <entity-find entity-name="org.apache.ofbiz.order.order.OrderHeader" list="hcOrderList">
+                <econdition field-name="externalId" from="shopifyOrderId"/>
+            </entity-find>
+            <set field="hcOrder" from="hcOrderList?.first?"/>
+            <set field="skipAttribution" from="false" type="Boolean"/>
+
+            <set field="returnsToCreateList" from="[]"/>
+            <set field="remainingRefunds" from="[]"/>
+
+            <!-- Orphan Return -->
+            <if condition="!hcOrder">
+                <log message="Order ${hcOrder} not found in OMS. Marking remaining refunds as RETURN."/>
+                <iterate list="orderMap.refunds" entry="refund">
+                    <set field="refund.attributionType" value="RETURN"/>
+                    <script>returnsToCreateList.add(refund)</script>
+                </iterate>
+                <set field="skipAttribution" value="true"/>
+            </if>
+
+            <!-- Extract HC Approved Order Item Quantities -->
+            <if condition="hcOrder">
+                <log message="Found HC Order with ID: ${hcOrder.orderId} for Shopify Order ID: ${shopifyOrderId}"/>
+                <entity-find entity-name="org.apache.ofbiz.order.order.OrderItem" list="hcOrderItems">
+                    <econdition field-name="orderId" from="hcOrder.orderId"/>
+                    <econdition field-name="statusId" value="ITEM_APPROVED"/>
+                </entity-find>
+                <!-- ORDER HAS NO APPROVED ITEMS SO FORCE RETURNS -->
+                <if condition="hcOrderItems.isEmpty()">
+                    <log message="Order has no approved items. Marking remaining refunds as RETURN."/>
+                    <iterate list="orderMap.refunds" entry="refund">
+                        <!-- Appeasement if no line items -->
+                        <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
+                            <set field="refund.attributionType" value="APPEASEMENT"/>
+                            <script>returnsToCreateList.add(refund)</script>
+                            <log message="Refund ${refund.id} has no line items but order has no approved items. Marking as APPEASEMENT."/>
+                            <continue/>
+                        </if>
+                        <!-- Otherwise RETURN -->
+                        <set field="refund.attributionType" value="RETURN"/>
+                        <log message="Refund ${refund.id} has line items but order has no approved items. Marking as RETURN."/>
+                        <script>returnsToCreateList.add(refund)</script>
+                    </iterate>
+                    <set field="skipAttribution" value="true"/>
+                </if>
+                <log message="skipAttribution=${skipAttribution}"/>
+            </if>
+
+            <if condition="!skipAttribution">
+                <log message="==== Starting refund attribution for order ${shopifyOrderId} ======"/>
+                <!-- Build Approved Qty Map from HC Order Items -->
+                <set field="approvedQtyByLineItem" from="[:]"/>
+                <iterate list="hcOrderItems" entry="orderItem">
+                    <!-- HC externalId is already numeric -->
+                    <set field="shopifyLineItemId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(orderItem.externalId)"/>
+
+                    <if condition="approvedQtyByLineItem[shopifyLineItemId] == null">
+                        <set field="approvedQtyByLineItem[shopifyLineItemId]" from="0" type="Integer"/>
+                    </if>
+                    <set field="approvedQtyByLineItem[shopifyLineItemId]" from="approvedQtyByLineItem[shopifyLineItemId] + (orderItem.quantity ?: 0)" type="Integer"/>
+                </iterate>
+
+                <log message="Approved quantities by Shopify line item: ${approvedQtyByLineItem}"/>
+
+                <!-- Group Refund Line Items -->
+                <set field="groupedRefundLineItems" from="[:]"/>
+                <iterate list="orderMap.refunds" entry="refund">
+                    <!-- Skip already attributed refunds -->
+                    <if condition="refund.attributionType">
+                        <continue/>
+                    </if>
+                    <!-- Refund has NO line items → APPEASEMENT -->
+                    <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
+                        <set field="refund.attributionType" value="APPEASEMENT"/>
+                        <script>returnsToCreateList.add(refund)</script>
+                        <log message="Refund ${refund.id} has no line items. Marking as APPEASEMENT."/>
+                        <continue/>
+                    </if>
+                    <iterate list="refund.refundLineItems" entry="refundLineItem">
+                        <!--  NORMALIZE LINE ITEM ID -->
+                        <set field="shopifyLineItemId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)"/>
+
+                        <if condition="groupedRefundLineItems[shopifyLineItemId] == null">
+                            <set field="groupedRefundLineItems[shopifyLineItemId]" from="[:]"/>
+
+                            <set field="groupedRefundLineItems[shopifyLineItemId].unfulfilledQuantity" from="refundLineItem.lineItem.unfulfilledQuantity ?: 0" type="Integer"/>
+                            <set field="groupedRefundLineItems[shopifyLineItemId].totalRefundedQuantity" from="0" type="Integer"/>
+
+                            <!--  approvedQuantity lookup -->
+                            <set field="groupedRefundLineItems[shopifyLineItemId].approvedQuantity" from="approvedQtyByLineItem[shopifyLineItemId] ?: 0" type="Integer"/>
+                        </if>
+                        <set field="groupedRefundLineItems[shopifyLineItemId].totalRefundedQuantity" from="groupedRefundLineItems[shopifyLineItemId].totalRefundedQuantity + (refundLineItem.quantity ?: 0)" type="Integer"/>
+                    </iterate>
+                </iterate>
+                <log message="Grouped Refund Line Items (initial): ${groupedRefundLineItems}"/>
+
+                <!-- Calculate toCancelQty & toReturnQty -->
+                <script><![CDATA[
+                   groupedRefundLineItems.each { lineItemId, itemData ->
+                       int approvedQty    = (itemData.approvedQuantity ?: 0) as int
+                       int unfulfilledQty = (itemData.unfulfilledQuantity ?: 0) as int
+                       int refundedQty    = (itemData.totalRefundedQuantity ?: 0) as int
+
+                       int toCancelQty = approvedQty - unfulfilledQty
+                       if (toCancelQty < 0) {
+                           ec.logger.error("Refund quantity mismatch for order ${shopifyOrderId}, " + "lineItem ${lineItemId}. ApprovedQty=${approvedQty}, UnfulfilledQty=${unfulfilledQty}")
+                           ec.message.addError("Refund discrepancy detected for order ${shopifyOrderId}. Manual intervention required.")
+                           return
+                       }
+
+                       int toReturnQty = refundedQty - toCancelQty
+                       itemData.toCancelQuantity = toCancelQty
+                       itemData.toReturnQuantity = toReturnQty
+                   }
+               ]]></script>
+                <log message="Grouped Refund Line Items (with cancel/return qty): ${groupedRefundLineItems}"/>
+
+                <!-- Absolute RETURN Attribution -->
+                <set field="unassignedRefunds" from="[]"/>
+                <set field="refundAppMap" from="[:]"/>
+                <!-- TODO loop return attribution -->
+                <iterate list="orderMap.refundAgreements" entry="refundAgreement">
+                    <if condition="refundAgreement?.refund?.id &amp;&amp; refundAgreement?.app?.title">
+                        <set field="refundAppMap[co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundAgreement.refund.id)]" from="refundAgreement.app.title"/>
+                    </if>
+                </iterate>
+                <iterate list="orderMap.refunds" entry="refund">
+                    <log message="Processing refund ${refund.id} for absolute RETURN attribution ${refund.attributionType}"/>
+                    <if condition="refund.attributionType">
+                        <continue/>
+                    </if>
+                    <set field="refundId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)"/>
+                    <log message="================== refundId=${refundId} =================="/>
+                    <set field="isReturn" from="false"/>
+                    <if condition="refund.return?.id">
+                        <set field="isReturn" from="true"/>
+                        <log message="Refund ${refund.id} is linked to Return ${refund.return.id}"/>
+                    </if>
+                    <if condition="isReturn">
+                        <log message="Attributing refund ${refund.id} as RETURN based on linked Return"/>
+                        <set field="refund.attributionType" value="RETURN"/>
+                        <script>returnsToCreateList.add(refund)</script>
+
+                        <iterate list="refund.refundLineItems" entry="refundLineItem">
+                            <set field="lineItemId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)"/>
+                            <set field="qty" from="refundLineItem.quantity ?: 0"/>
+                            <set field="itemData" from="groupedRefundLineItems[lineItemId]"/>
+
+                            <if condition="itemData">
+                                <if condition="!itemData.returnQuantityLog">
+                                    <set field="itemData.returnQuantityLog" from="[]"/>
+                                </if>
+
+                                <set field="itemData.toReturnQuantity" from="itemData.toReturnQuantity - qty" type="Integer"/>
+                                <script>
+                                    itemData.returnQuantityLog.add([refundId: refundId, quantityDiff: -qty])
+                                </script>
+                            </if>
+                        </iterate>
+                        <else>
+                            <log message="Refund ${refund.id} is NOT linked to any Return. Deferring attribution."/>
+                            <script>unassignedRefunds.add(refund)</script>
+                            <log message="Added refund ${refund.id} to unassignedRefunds for further processing."/>
+                        </else>
+                    </if>
+                </iterate>
+            </if>
+            <log message="Returns to create from absolute returns: ${returnsToCreateList*.id}"/>
+            <log message="Unassigned refunds after absolute return processing: ${unassignedRefunds*.id}"/>
+
+            <!-- CANCEL ATTRIBUTION BASED ON ZEROED OUT QUANTITIES -->
+            <log message="Starting CANCEL attribution pass"/>
+            <set field="cancelRefundsToProcess" from="[]"/>
+
+            <script><![CDATA[
+               for (refund in unassignedRefunds) {
+                   if (refund.attributionType) continue
+                   boolean attributed = false
+                   String refundId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)
+
+                   // Iterate refund line items
+                   for (refundLineItem in refund.refundLineItems) {
+                       String lineItemId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)
+
+                       def itemData = groupedRefundLineItems[lineItemId]
+                       if (!itemData) continue
+
+                       int qty = refundLineItem.quantity ?: 0
+
+                       // CANCEL CASE
+                       if ((itemData.toCancelQuantity ?: 0) > 0) {
+                           int cancelQty = Math.min(qty, itemData.toCancelQuantity)
+                           // Init cancel log
+                           if (!itemData.cancelQuantityLog) {
+                               itemData.cancelQuantityLog = []
+                           }
+                           // Reduce cancel qty
+                           itemData.toCancelQuantity = itemData.toCancelQuantity - cancelQty
+                           // Log
+                           itemData.cancelQuantityLog.add([
+                               refundId    : refundId,
+                               quantityDiff: -cancelQty
+                           ])
+                           refund.attributionType = "CANCEL"
+                           cancelRefundsToProcess.add(refund)
+                           attributed = true
+                           break
+                       }
+                   }
+
+                   // FALLBACK: RETURN IF CANCEL EXHAUSTED
+                   if (!attributed) {
+                       refund.attributionType = "RETURN"
+                       returnsToCreateList.add(refund)
+                       for (refundLineItem in refund.refundLineItems) {
+                           String lineItemId =
+                               co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)
+                           def itemData = groupedRefundLineItems[lineItemId]
+                           if (!itemData) continue
+                           int qty = refundLineItem.quantity ?: 0
+
+                           if (!itemData.returnQuantityLog) {
+                               itemData.returnQuantityLog = []
+                           }
+
+                           itemData.toReturnQuantity = (itemData.toReturnQuantity ?: 0) - qty
+                           itemData.returnQuantityLog.add([
+                               refundId    : refundId,
+                               quantityDiff: -qty
+                           ])
+                       }
+                   }
+               }
+            ]]></script>
+
+            <log message="Cancel attributed refunds: ${cancelRefundsToProcess*.id}"/>
+            <log message="Returns after cancel attribution: ${returnsToCreateList*.id}"/>
+            <log message="Grouped Refund Line Items after cancel attribution: ${groupedRefundLineItems}"/>
+
+            <!-- STOP IF ALL QUANTITIES ARE ZEROED OUT -->
+            <script><![CDATA[
+               boolean allResolved = true
+               groupedRefundLineItems.each { k, v ->
+                   if ((v.toCancelQuantity ?: 0) != 0 || (v.toReturnQuantity ?: 0) != 0) {
+                       allResolved = false
+                   }
+               }
+               if (allResolved) {
+                   ec.logger.info("All refund quantities fully attributed. Stopping further processing.")
+               }
+           ]]></script>
+
+            <!-- PREPARE RETURN / APPEASEMENT PAYLOADS -->
+            <iterate list="returnsToCreateList" entry="refund">
+                <!-- transformation -->
+                <set field="templateLocation" value="component://shopify-connector/template/ftl/ShopifyRefundPayload.ftl"/>
+                <set field="writer" from="new StringWriter()"/>
+                <set field="jsonSlurper" from="new groovy.json.JsonSlurper()"/>
+                <script>
+                    ec.resourceFacade.template(templateLocation, writer)
+                </script>
+                <set field="payLoadMap" from="jsonSlurper.parseText(writer.toString())"/>
+                <set field="payLoad" from="payLoadMap.payLoad"/>
+                <log message="Prepared payload for refund ${refund.id}: ${payLoad}"/>
+                <entity-find entity-name="co.hotwax.shopify.ShopifyConfig" list="shopifyConfigList">
+                    <econdition field-name="shopId"/>
+                    <select-field field-name="shopifyConfigId"/>
+                </entity-find>
+                <script><![CDATA[
+                    try {
+                       response = ec.service.sync().name("co.hotwax.soblegacy.order.OrderServices.create#ShopifyReturn")
+                             .requireNewTransaction(true)
+                             .parameters([shopifyConfigId:shopifyConfigList?.first?.shopifyConfigId, payLoad:payLoad])
+                             .call()
+                       ec.logger.info("Created return for refund ${refund.id}, response: ${response}")
+                       } catch (Throwable e) {
+                           ec.logger.error("Error creating order: ${e.getMessage()}")
+                           ec.message.clearErrors()
+                           ec.message.clearAll()
+                           return
+                       }
+                    ]]></script>
+
+                <!-- create history
+                    TODO
+                        1. returnId and returnItemSeqId and other fields if required
+                        2. decisionType and actionType -->
+                <iterate list="refund.refundLineItems" entry="refundLineItem">
+                    <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:refund.id,
+                        shopifyRefundLineId:refundLineItem.id, shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                        decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
+                </iterate>
+            </iterate>
+            <!-- Cancellation -->
+            <iterate list="cancelRefundsToProcess" entry="refund">
+                <log message="Processing CANCEL execution for refund ${refund.id}"/>
+
+                <!-- Build cancelItems ONLY for this refund -->
+                <script><![CDATA[
+                       cancelItems = []
+
+                       def refundId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id)
+                       refund.refundLineItems.each { refundLineItem ->
+                           def lineItemId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.lineItem.id)
+                           def itemData = groupedRefundLineItems[lineItemId]
+                           if (!itemData?.cancelQuantityLog) return
+                           def cancelLog = itemData.cancelQuantityLog.find {
+                               it.refundId == refundId
+                           }
+                           int cancelQty = Math.abs(cancelLog.quantityDiff ?: 0)
+
+                           def hcItem = hcOrderItems.find {
+                               co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(it.externalId) == lineItemId
+                           }
+
+                           cancelQty.times {
+                               cancelItems.add([
+                                   orderItemSeqId : hcItem.orderItemSeqId,
+                                   shipGroupSeqId : hcItem.shipGroupSeqId,
+                                   reason         : 'ITEM_CANCELLED',
+                                   comment        : 'Cancelled via Shopify refund'
+                               ])
+                           }
+                       }
+                   ]]></script>
+                <!-- Call cancel service for THIS refund -->
+                <if condition="cancelItems &amp;&amp; !cancelItems.isEmpty()">
+                    <log message="Calling SalesOrderItems cancellation for refund ${refund.id}, items=${cancelItems}"/>
+                    <script><![CDATA[
+                       def cancelResp = ec.service.sync()
+                           .name("co.hotwax.orderledger.order.OrderServices.cancel#SalesOrderItems")
+                           .requireNewTransaction(true)
+                           .parameters([
+                               orderId : hcOrder.orderId,
+                               items   : cancelItems
+                           ])
+                           .call()
+                       def cancelledItems = cancelResp?.cancelledItems
+                       ec.logger.info(
+                           "Cancelled items response for refund ${refund.id}: ${cancelledItems}"
+                       )
+                   ]]></script>
+                </if>
+                <!-- Create PAYMENT_REFUNDED OrderPaymentPreference -->
+                <!-- TODO revisit the handling below thinking of multi payment methods and handling of create/update OPP -->
+                <script><![CDATA[
+                       def refundTxn = refund.transactions.find { it.kind == "REFUND" }
+                       BigDecimal refundedAmount = new BigDecimal(refundTxn.amountSet.shopMoney.amount ?: 0).setScale(2, BigDecimal.ROUND_HALF_UP)
+                       def refundTxnId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.id)
+                       def parentTxnId = refundTxn.parentId ? co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.parentId) : null
+
+                       def settledOpp =
+                           ec.entity.find("org.apache.ofbiz.order.order.OrderPaymentPreference")
+                               .condition("orderId", hcOrder.orderId)
+                               .condition("statusId", "in", "['PAYMENT_SETTLED','PAYMENT_AUTHORIZED']")
+                               .one()
+
+                       ec.service.sync()
+                           .name("create#org.apache.ofbiz.order.order.OrderPaymentPreference")
+                           .parameters([
+                               orderId                : hcOrder.orderId,
+                               statusId               : 'PAYMENT_REFUNDED',
+                               paymentMethodTypeId    : settledOpp.paymentMethodTypeId,
+                               maxAmount              : refundedAmount,
+                               presentmentAmount      : refundedAmount,
+                               presentmentCurrencyUom : settledOpp.presentmentCurrencyUom,
+                               manualRefNum           : refundTxnId,
+                               parentRefNum           : parentTxnId
+                           ])
+                           .call()
+
+                       ec.logger.info(
+                           "Created PAYMENT_REFUNDED OPP for refund ${refund.id}, amount=${refundedAmount}"
+                       )
+                   ]]></script>
+                <!-- create history
+                    TODO
+                        1. returnId and returnItemSeqId and other fields if required
+                        2. decisionType and actionType -->
+                <iterate list="refund.refundLineItems" entry="refundLineItem">
+                    <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:refund.id,
+                        shopifyRefundLineId:refundLineItem.id, shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                        decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
+                </iterate>
+            </iterate>
+        </actions>
+    </service>
 </services>
