@@ -425,29 +425,28 @@ under the License.
             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
         <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
-    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateExchangedOrderIdsFeed"
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeedForExchange"
                                              description="Generate Exchange Order Ids Feed"
                                              sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
                                              receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ExchangedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
 
     <!-- SystemMessageType record for generating Exchange Order Feed -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateExchangeFeed"
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateExchangeOrderFeed"
                                              description="Generate Exchange Feed"
                                              parentTypeId="LocalFeedFile"
-                                             sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ExchangeFeed-${dateTime}-${systemMessageId}.json"
+                                             sendPath="${contentRoot}/shopify/ExchangeOrderFeed/ExchangeOrderFeed-${dateTime}-${systemMessageId}.json"
                                              consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ExchangeFeed">
-        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
     </moqui.service.message.SystemMessageType>
-    <moqui.basic.Enumeration description="Send Exchange Feed" enumId="SendExchangeFeed" enumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Exchange Feed" enumId="GenerateExchangeFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.basic.Enumeration description="Generate Exchanged Order Ids Feed" enumId="GenerateExchangedOrderIdsFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateExchangeFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
-    <moqui.service.message.SystemMessageType systemMessageTypeId="SendExchangeFeed"
-                                             description="Send Exchange Feed"
+    <moqui.basic.Enumeration description="Send Exchange Order Feed" enumId="SendExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchange Order Feed" enumId="GenerateExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchanged Order Ids Feed" enumId="GenerateReturnedOrderIdsFeedForExchange" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendExchangeOrderFeed"
+                                             description="Send Exchange Order Feed"
                                              parentTypeId="LocalFeedFile"
                                              sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
                                              sendPath=""/>
-    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateExchangeFeed"
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateExchangeOrderFeed"
                                                       parameterName="sendSmrId"
                                                       parameterValue=""
                                                       systemMessageRemoteId=""/>
