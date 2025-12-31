@@ -749,7 +749,7 @@ under the License.
             <set field="hasNextPage" type="Boolean" value="true"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template(systemMessage.sendPath, "")
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl","")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:queryText]" out-map="returnedOrderIdsResponse"/>
                 <if condition="!returnedOrderIdsResponse.response.orders.edges">

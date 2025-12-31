@@ -1,3 +1,197 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="ext-upgrade">
+    <moqui.resource.DbResourceFile resourceId="ReturnLineItemByIdQuery">
+            <fileData>
+                <![CDATA[<#ftl output_format="HTML">
+                <@compress single_line=true>
+                query{
+                    node(id: "${returnId}") {
+                        id
+                        ... on
+                        Return{
+                            id
+                            returnLineItems (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                edges {
+                                    node {
+                                        ... on ReturnLineItem {
+                                            id
+                                            returnReason
+                                            returnReasonNote
+                                            fulfillmentLineItem {
+                                                lineItem {
+                                                    id
+                                                    isGiftCard
+                                                    sku
+                                                    quantity
+                                                    product {
+                                                        id
+                                                    }
+                                                }
+                                            }
+                                            quantity
+                                            withCodeDiscountedTotalPriceSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                pageInfo{
+                                    endCursor
+                                    hasNextPage
+                                }
+                            }
+                        }
+                    }
+                }
+                </@compress>]]>
+            </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.resource.DbResourceFile resourceId="RefundLineItemsByIdQuery">
+        <fileData>
+            <![CDATA[<#ftl output_format="HTML">
+                    <@compress single_line=true>
+                        query {
+                            node(id: "${shopifyRefundId}") {
+                                id
+                                ... on
+                                Refund {
+                                    id
+                                    refundLineItems (first : 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                        edges {
+                                            node {
+                                                id
+                                                lineItem {
+                                                    id
+                                                    isGiftCard
+                                                    variant {
+                                                        id
+                                                    }
+                                                    discountAllocations{
+                                                        allocatedAmountSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                    }
+                                                    taxLines{
+                                                        priceSet{
+                                                            presentmentMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                            shopMoney{
+                                                                amount
+                                                                currencyCode
+                                                            }
+                                                        }
+                                                        rate
+                                                        title
+                                                    }
+                                                }
+                                                location {
+                                                    id
+                                                }
+                                                priceSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                    shopMoney{
+                                                        amount
+                                                        currencyCode
+                                                    }
+                                                }
+                                                restockType
+                                                quantity
+                                                subtotalSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                    }
+                                                }
+                                                totalTaxSet{
+                                                    presentmentMoney{
+                                                        amount
+                                                        currencyCode
+                                                    },
+                                                    shopMoney{
+                                                        currencyCode
+                                                        amount
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        pageInfo {
+                                            hasNextPage
+                                            endCursor
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    </@compress>]]>
+        </fileData>
+    </moqui.resource.DbResourceFile>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="ExportOrderReconciliationReport"
+                description="Export order reconciliation report to SFTP"
+                sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
+                sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+    <!-- ServiceJob data for queuing exchanged orderIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeedForExchange" description="Queue exchanged orderIds feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateReturnedOrderIdsFeedForExchange"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for generating Returned Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
+                                             description="Generate Returned Order Ids Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
+                                             description="Generate Returns and Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeedForExchange"
+                                             description="Generate Exchange Order Ids Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeedForExchange/ExchangedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+    <!-- SystemMessageType record for generating Exchange Order Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateExchangeOrderFeed"
+                                             description="Generate Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/ExchangeOrderFeed/ExchangeOrderFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ExchangeFeed">
+    </moqui.service.message.SystemMessageType>
+    <moqui.basic.Enumeration description="Send Exchange Order Feed" enumId="SendExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchange Order Feed" enumId="GenerateExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchanged Order Ids Feed" enumId="GenerateReturnedOrderIdsFeedForExchange" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendExchangeOrderFeed"
+                                             description="Send Exchange Order Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath=""/>
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateExchangeOrderFeed"
+                                                      parameterName="sendSmrId"
+                                                      parameterValue=""
+                                                      systemMessageRemoteId=""/>
+
 </entity-facade-xml>
