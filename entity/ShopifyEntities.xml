@@ -65,14 +65,13 @@ under the License.
         <field name="shopifyRefundId" type="id-long" is-pk="true"/>
         <field name="shopifyRefundLineId" type="id-long" is-pk="true"/>
         <field name="shopifyOrderId" type="id-long"/>
-        <field name="shopifyShopId" type="id"/>
+        <field name="shopId" type="id"/>
         <field name="orderId" type="id"/>
-        <field name="orderItemSeqId" type="id"/>
         <field name="returnId" type="id"/>
         <field name="returnItemSeqId" type="id"/>
         <field name="decisionType" type="text-medium"/>
         <field name="actionType" type="text-medium"/>
-        <field name="processedDate" type="date-time"/>
+        <field name="createdDate" type="date-time"/>
         <relationship type="one" fk-name="RTN_HDR" related="org.apache.ofbiz.order.return.ReturnHeader">
             <key-map field-name="returnId"/>
         </relationship>
@@ -83,11 +82,7 @@ under the License.
             <key-map field-name="orderId"/>
         </relationship>
         <relationship type="one" fk-name="SPY_SHP" related="co.hotwax.shopify.ShopifyShop">
-            <key-map field-name="shopId" related="shopifyShopId"/>
-        </relationship>
-        <relationship type="one" fk-name="ORD_ITM" related="org.apache.ofbiz.order.order.OrderItem">
-            <key-map field-name="orderId"/>
-            <key-map field-name="orderItemSeqId"/>
+            <key-map field-name="shopId"/>
         </relationship>
         <relationship type="one" fk-name="RTN_ITM" related="org.apache.ofbiz.order.return.ReturnItem">
             <key-map field-name="returnId"/>
