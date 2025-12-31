@@ -143,4 +143,55 @@
                 description="Export order reconciliation report to SFTP"
                 sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
                 sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+    <!-- ServiceJob data for queuing exchanged orderIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_ReturnedOrderIdsFeedForExchange" description="Queue exchanged orderIds feed"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateReturnedOrderIdsFeedForExchange"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
+    <!-- SystemMessageType record for generating Returned Order Ids Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeed"
+                                             description="Generate Returned Order Ids Feed"
+                                             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+
+    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
+                                             description="Generate Returns and Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/ReturnsAndExchangeFeed/ReturnsAndExchangeFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnsAndExchangeFeed">
+        <parameters parameterName="sendSmrId" parameterValue="" systemMessageRemoteId=""/>
+    </moqui.service.message.SystemMessageType>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeedForExchange"
+                                             description="Generate Exchange Order Ids Feed"
+                                             sendPath="component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeedForExchange/ExchangedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+    <!-- SystemMessageType record for generating Exchange Order Feed -->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateExchangeOrderFeed"
+                                             description="Generate Exchange Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendPath="${contentRoot}/shopify/ExchangeOrderFeed/ExchangeOrderFeed-${dateTime}-${systemMessageId}.json"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ExchangeOrderFeed">
+    </moqui.service.message.SystemMessageType>
+    <moqui.basic.Enumeration description="Send Exchange Order Feed" enumId="SendExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchange Order Feed" enumId="GenerateExchangeOrderFeed" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="SendExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.basic.Enumeration description="Generate Exchanged Order Ids Feed" enumId="GenerateReturnedOrderIdsFeedForExchange" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateExchangeOrderFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="SendExchangeOrderFeed"
+                                             description="Send Exchange Order Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"
+                                             sendPath="/home/${sftpUsername}/hotwax/shopify/ExchangeOrderFeed/"/>
+    <moqui.service.message.SystemMessageTypeParameter systemMessageTypeId="GenerateExchangeOrderFeed"
+                                                      parameterName="sendSmrId"
+                                                      parameterValue=""
+                                                      systemMessageRemoteId=""/>
+
 </entity-facade-xml>
