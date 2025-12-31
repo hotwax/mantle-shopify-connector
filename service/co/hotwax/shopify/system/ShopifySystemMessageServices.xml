@@ -2455,4 +2455,38 @@ under the License.
             </while>
         </actions>
     </service>
+    <service verb="consume" noun="ShopifyRefundWebhook" authenticate="anonymous-all" transaction-timeout="600">
+        <description>
+            Consume Shopify refunds/create webhook System Message and trigger refund attribution flow.
+        </description>
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <!-- Load System Message -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessage"
+                             value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <if condition="!systemMessage.messageText">
+                <return type="warning" message="System message [${systemMessageId}] has empty webhook payload, skipping."/>
+            </if>
+
+            <!-- Resolve shop context -->
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
+                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+            </entity-find-one>
+
+            <!-- Parse webhook JSON -->
+            <set field="refundPayload" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(systemMessage.messageText, Map.class)"/>
+            <set field="orderId" from="refundPayload.order_id"/>
+
+            <!-- Validate orderId -->
+            <if condition="!orderId">
+                <return error="true" message="Refund webhook payload missing order_id. SystemMessageId=${systemMessageId}"/>
+            </if>
+            <!-- Trigger refund orchestration -->
+            <!-- todo: If required transaction="force-new" -->
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.create#ShopifyRefunds" in-map="[systemMessageRemoteId: systemMessage.systemMessageRemoteId,shopifyOrderId: orderId]"/>
+        </actions>
+    </service>
 </services>

@@ -241,18 +241,6 @@
                                         ... on ReturnLineItem {
                                             id
                                             returnReason
-                                            returnReasonNote
-                                            fulfillmentLineItem {
-                                                lineItem {
-                                                    id
-                                                    isGiftCard
-                                                    sku
-                                                    quantity
-                                                    product {
-                                                        id
-                                                    }
-                                                }
-                                            }
                                             quantity
                                             withCodeDiscountedTotalPriceSet {
                                                 presentmentMoney {
@@ -291,56 +279,6 @@
                                 edges{
                                     node{
                                         id
-                                        lineItem {
-                                            id
-                                            quantity
-                                            sku
-                                            variantTitle
-                                            product {
-                                                id
-                                                title
-                                            }
-                                            originalUnitPriceSet {
-                                                presentmentMoney {
-                                                    amount
-                                                    currencyCode
-                                                }
-                                            }
-                                            originalTotalSet {
-                                                presentmentMoney {
-                                                    amount
-                                                    currencyCode
-                                                }
-                                            }
-                                            discountedUnitPriceSet {
-                                                presentmentMoney {
-                                                    amount
-                                                    currencyCode
-                                                }
-                                            }
-                                            discountedUnitPriceAfterAllDiscountsSet {
-                                                presentmentMoney {
-                                                    amount
-                                                    currencyCode
-                                                }
-                                            }
-                                            discountAllocations {
-                                                allocatedAmountSet {
-                                                    presentmentMoney {
-                                                        amount
-                                                        currencyCode
-                                                    }
-                                                }
-                                            }
-                                            taxLines {
-                                                priceSet {
-                                                    presentmentMoney {
-                                                        amount
-                                                        currencyCode
-                                                    }
-                                                }
-                                            }
-                                        }
                                     }
                                 }
                                 pageInfo{
@@ -445,7 +383,7 @@
                                 methodType
                                 serviceCode
                             }
-                            createdAt                            
+                            createdAt
                         }
                     }
                 }
@@ -697,7 +635,10 @@
                                                 id
                                                 lineItem {
                                                     id
+                                                    sku
                                                     isGiftCard
+                                                    quantity
+                                                    unfulfilledQuantity
                                                     variant {
                                                         id
                                                     }
@@ -746,6 +687,7 @@
                                                 subtotalSet{
                                                     presentmentMoney{
                                                         amount
+                                                        currencyCode
                                                     }
                                                 }
                                                 totalTaxSet{
@@ -1323,7 +1265,7 @@
                                                     presentmentMoney {
                                                         amount
                                                         currencyCode
-                                                    }    
+                                                    }
                                                 }
                                                 transactions {
                                                     id
@@ -1888,6 +1830,89 @@
                     }
                 }
                 </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundAgreementsByOrderIdQuery.ftl" isFile="Y" resourceId="RefundAgreementsByOrderIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                    query {
+                        node(id: "${shopifyOrderId}") {
+                            id
+                            ... on Order {
+                                id
+                                name
+                                updatedAt
+                                cancelledAt
+                                customer{
+                                        id
+                                        firstName
+                                        lastName
+                                    }
+                                agreements (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    edges {
+                                        node {
+                                            ... on RefundAgreement {
+                                                id
+                                                app {
+                                                    id
+                                                    title
+                                                }
+                                                refund {
+                                                    id
+                                                }
+                                            }
+                                        }
+                                    }
+                                    pageInfo {
+                                        endCursor
+                                        hasNextPage
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    </@compress>]]>
+            </fileData>
+            <histories versionName="01" previousVersionName="01"/>
+        </file>
+    </moqui.resource.DbResource>
+    <moqui.resource.DbResource filename="RefundOrderAdjustmentsByRefundIdQuery.ftl" isFile="Y" resourceId="RefundOrderAdjustmentsByRefundIdQuery" parentResourceId="GraphQL">
+        <file mimeType="text/html" versionName="01" rootVersionName="01">
+            <fileData>
+                <![CDATA[
+                    <#ftl output_format="HTML">
+                    <@compress single_line=true>
+                    query {
+                        node(id: "${shopifyRefundId}") {
+                            id
+                            ... on Refund {
+                                id
+                                orderAdjustments (first: 10<#if cursor?has_content>, after: "${cursor}"</#if>) {
+                                    edges {
+                                        node {
+                                            id
+                                            amountSet {
+                                                presentmentMoney {
+                                                    amount
+                                                    currencyCode
+                                                }
+                                            }
+                                        }
+                                    }
+                                    pageInfo {
+                                        hasNextPage
+                                        endCursor
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    </@compress>]]>
             </fileData>
             <histories versionName="01" previousVersionName="01"/>
         </file>
