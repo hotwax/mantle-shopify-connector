@@ -171,7 +171,7 @@
     </moqui.service.message.SystemMessageType>
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnedOrderIdsFeedForExchange"
                                              description="Generate Exchange Order Ids Feed"
-                                             sendPath="dbresource://shopify/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendPath="component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl"
                                              sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
                                              receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeedForExchange/ExchangedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
     <!-- SystemMessageType record for generating Exchange Order Feed -->
