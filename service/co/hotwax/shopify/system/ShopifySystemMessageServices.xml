@@ -323,6 +323,63 @@ under the License.
                           in-map="[systemMessageId:systemMessages[0].systemMessageId]" out-map="context"/>
         </actions>
     </service>
+    <service verb="queue" noun="BulkQueryProductAndVariantsById" authenticate="anonymous-all">
+        <description>Scheduled service to queue a BulkProductAndVariantsByIdQuery system message.</description>
+        <in-parameters>
+            <parameter name="systemMessageTypeId" default-value="BulkProductAndVariantsByIdQuery"/>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="filterQuery"/><parameter name="fromDate"/><parameter name="thruDate"/>
+            <parameter name="fromDateLabel"/><parameter name="thruDateLabel"/>
+            <parameter name="namespaces"/><parameter name="sendNow" type="Boolean" default="false"/>
+        </in-parameters>
+        <actions>
+            <set field="templateLocation" value="component://mantle-shopify-connector/template/graphQL/BulkProductAndVariantsByIdQuery.ftl"/>
+            <set field="queryParams" from="[:]"/>
+            <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
+                <econdition field-name="systemMessageTypeId" from="systemMessageTypeId"/>
+                <econdition field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+            </entity-find>
+            <if condition="additionalParameters">
+                <iterate list="additionalParameters" entry="paramMap">
+                    <script>queryParams.put(paramMap.parameterName, paramMap.parameterValue)</script>
+                </iterate>
+            </if>
+            <set field="namespaces" from="namespaces ?: queryParams.namespace"/>
+            <if condition="namespaces"><set field="queryParams.namespace" from="namespaces"/></if>
+            <if condition="filterQuery"><set field="queryParams.filterQuery" from="filterQuery"/></if>
+            <if condition="queryParams.filterQuery">
+                <set field="queryParams.filterQuery" from="org.apache.commons.text.StringEscapeUtils.unescapeHtml4(queryParams.filterQuery)"/>
+            </if>
+            <if condition="!fromDate">
+                <entity-find entity-name="moqui.service.message.SystemMessage" list="systemMessageList" limit="1">
+                    <econdition field-name="systemMessageTypeId" from="systemMessageTypeId"/>
+                    <econdition field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+                    <econdition field-name="statusId" value="SmsgConfirmed"/>
+                    <order-by field-name="-processedDate"/>
+                </entity-find>
+                <if condition="systemMessageList"><set field="fromDate" from="systemMessageList[0].processedDate"/></if>
+            </if>
+            <if condition="fromDate">
+                <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <if condition="queryParams.fromDateBuffer">
+                    <set field="fromZdtUTC" from="fromZdtUTC.minusMinutes(Integer.valueOf(queryParams.fromDateBuffer))"/>
+                </if>
+                <set field="queryParams.fromDate" from="fromZdtUTC.toString()"/>
+            </if>
+            <if condition="thruDate">
+                <set field="thruZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(thruDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
+                <if condition="queryParams.thruDateBuffer">
+                    <set field="thruZdtUTC" from="thruZdtUTC.minusMinutes(Integer.valueOf(queryParams.thruDateBuffer))"/>
+                </if>
+                <set field="queryParams.thruDate" from="thruZdtUTC.toString()"/>
+            </if>
+            <if condition="fromDateLabel"><set field="queryParams.fromDateLabel" from="fromDateLabel"/></if>
+            <if condition="thruDateLabel"><set field="queryParams.thruDateLabel" from="thruDateLabel"/></if>
+            <script>messageText = ec.resourceFacade.template(templateLocation, [queryParams: queryParams])</script>
+            <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
+                in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:sendNow]" out-map="context"/>
+        </actions>
+    </service>
     <service verb="queue" noun="BulkQuerySystemMessage" authenticate="anonymous-all">
         <description>
             Scheduled service to queue a bulk query system message of a specific SystemMessageType.
