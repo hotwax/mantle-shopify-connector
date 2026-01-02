@@ -2366,7 +2366,7 @@ under the License.
             <parameter name="namespaces"/><parameter name="sendNow" type="Boolean" default="false"/>
         </in-parameters>
         <actions>
-            <set field="templateLocation" value="component://mantle-shopify-connector/template/graphQL/BulkProductAndVariantsByIdQuery.ftl"/>
+            <set field="templateLocation" value="component://shopify-connector/template/graphQL/BulkProductAndVariantsByIdQuery.ftl"/>
             <set field="queryParams" from="[:]"/>
             <entity-find entity-name="moqui.service.message.SystemMessageTypeParameter" list="additionalParameters">
                 <econdition field-name="systemMessageTypeId" from="systemMessageTypeId"/>
@@ -2390,7 +2390,8 @@ under the License.
                     <econdition field-name="statusId" value="SmsgConfirmed"/>
                     <order-by field-name="-processedDate"/>
                 </entity-find>
-                <if condition="systemMessageList"><set field="fromDate" from="systemMessageList[0].processedDate"/></if>
+                <log message="\n\n==================== systemMessageList: ${systemMessageList[0].systemMessageId}"/>
+                <if condition="systemMessageList"><set field="fromDate" from="systemMessageList[0].processedDate" type="String"/></if>
             </if>
             <if condition="fromDate">
                 <set field="fromZdtUTC" from="java.time.ZonedDateTime.ofInstant(Timestamp.valueOf(fromDate).toInstant(), java.time.ZoneId.of('UTC'))"/>
@@ -2408,7 +2409,7 @@ under the License.
             </if>
             <if condition="fromDateLabel"><set field="queryParams.fromDateLabel" from="fromDateLabel"/></if>
             <if condition="thruDateLabel"><set field="queryParams.thruDateLabel" from="thruDateLabel"/></if>
-            <script>messageText = ec.resourceFacade.template(templateLocation, [queryParams: queryParams])</script>
+            <script>messageText = ec.resourceFacade.template(templateLocation, "")</script>
             <service-call name="org.moqui.impl.SystemMessageServices.queue#SystemMessage"
                           in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:sendNow]" out-map="context"/>
         </actions>
@@ -2434,6 +2435,7 @@ under the License.
             <if condition="!shopifyBulkOperationId">
                 <return error="true" message="No Shopify bulk operation ID received."/>
             </if>
+            <log message="================================= Shopify Bulk Operation ID: ${shopifyBulkOperationId} ================================="/>
 
             <set field="remoteMessageId" from="shopifyBulkOperationId"/>
         </actions>

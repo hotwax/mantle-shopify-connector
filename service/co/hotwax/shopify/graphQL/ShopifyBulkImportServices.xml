@@ -207,13 +207,16 @@ under the License.
                 <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkQuery"/>
                 <order-by field-name="initDate"/>
             </entity-find>
+            <log message="======================== Found ${systemMessages.size()} bulk operation(s) in progress."/>
             <if condition="!systemMessages"><return message="No bulk operation in progress."/></if>
 
+            <log message="======================== Processing bulk operation for systemMessageId:[${systemMessages[0].systemMessageId}]."/>
             <set field="systemMessage" from="systemMessages[0]"/>
             <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#BulkOperationResult"
                           in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyBulkOperationId:systemMessage.remoteMessageId]"
                           out-map="bulkOperationResult"/>
 
+            <log message="=========== Bulk operation result response: ${bulkOperationResult.response}"/>
             <set field="status" from="bulkOperationResult.response.status?.toLowerCase()"/>
             <if condition="!status || 'created'.equalsIgnoreCase(status) || 'running'.equalsIgnoreCase(status)">
                 <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] is still in status: ${status ?: 'unknown'}."/>
@@ -235,7 +238,7 @@ under the License.
             <if condition="bulkOperationResult.response.url">
                 <set field="nowDate" from="ec.l10n.format(ec.user.nowTimestamp, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())"/>
                 <set field="contentRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
-                <set field="fileLocation" from="ec.resourceFacade.expand(systemMessage.receivePath, null, [nowDate:nowDate, contentRoot:contentRoot, systemMessageId:systemMessage.systemMessageId, remoteMessageId:systemMessage.remoteMessageId])"/>
+                <set field="fileLocation" from="ec.resourceFacade.expand(systemMessage.receivePath, null, [nowDate:nowDate, contentRoot:contentRoot, systemMessageId:systemMessage.systemMessageId])"/>
                 <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.store#BulkOperationResultFile"
                               in-map="[downloadUrl:bulkOperationResult.response.url, fileLocation:fileLocation]"/>
 
