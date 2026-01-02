@@ -453,7 +453,7 @@ under the License.
             <set field="exchanges" from="[]"/>
             <while condition="hasNextPage">
                 <script>
-                    queryText = ec.resourceFacade.template("dbresource://shopify/template/graphQL/ExchangesByOrderIDQuery.ftl", "")
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl", "")
                 </script>
                 <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="exchangeResponse"/>
                 <if condition="!exchangeResponse.response.node">
@@ -468,6 +468,8 @@ under the License.
             </while>
             <set field="orderExchanges.id" from="exchangeResponse.response.node.id"/>
             <set field="orderExchanges.name" from="exchangeResponse.response.node.name"/>
+            <set field="orderExchanges.customer" from="exchangeResponse.response.node.customer"/>
+            <set field="orderExchanges.originalTotalPriceSet" from="exchangeResponse.response.node.originalTotalPriceSet"/>
             <set field="orderExchanges.exchanges" from="exchanges"/>
         </actions>
     </service>
