@@ -197,4 +197,77 @@ under the License.
             <set field="shopifyBulkOperationId" from="bulkQueryResponse.response.bulkOperationRunQuery.bulkOperation.id"/>
         </actions>
     </service>
+    <service verb="poll" noun="ShopifyBulkOperationResult" authenticate="anonymous-all">
+        <description>
+            Polling service to fetch and process bulk operation result for a sent bulk query system message.
+        </description>
+        <actions>
+            <entity-find entity-name="moqui.service.message.SystemMessageAndType" list="systemMessages" limit="1">
+                <econdition field-name="statusId" operator="equals" value="SmsgSent"/>
+                <econdition field-name="parentTypeId" operator="equals" value="ShopifyBulkQuery"/>
+                <order-by field-name="initDate"/>
+            </entity-find>
+            <log message="======================== Found ${systemMessages.size()} bulk operation(s) in progress."/>
+            <if condition="!systemMessages"><return message="No bulk operation in progress."/></if>
+
+            <log message="======================== Processing bulk operation for systemMessageId:[${systemMessages[0].systemMessageId}]."/>
+            <set field="systemMessage" from="systemMessages[0]"/>
+            <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.get#BulkOperationResult"
+                          in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, shopifyBulkOperationId:systemMessage.remoteMessageId]"
+                          out-map="bulkOperationResult"/>
+
+            <log message="=========== Bulk operation result response: ${bulkOperationResult.response}"/>
+            <set field="status" from="bulkOperationResult.response.status?.toLowerCase()"/>
+            <if condition="!status || 'created'.equalsIgnoreCase(status) || 'running'.equalsIgnoreCase(status)">
+                <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] is still in status: ${status ?: 'unknown'}."/>
+            </if>
+
+            <!-- Error Handling First -->
+            <if condition="'failed'.equalsIgnoreCase(status) || 'expired'.equalsIgnoreCase(status)">
+                <set field="errorText" from="'expired'.equalsIgnoreCase(status) ? 'The bulk operation URL has expired.' : (bulkOperationResult.response.errorCode ?: 'Bulk operation failed.')"/>
+                <service-call name="create#moqui.service.message.SystemMessageError" in-map="[systemMessageId:systemMessage.systemMessageId, errorDate:ec.user.nowTimestamp, errorText:errorText]"/>
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId, statusId:'SmsgError']"/>
+                <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] failed with error: ${errorText}."/>
+            </if>
+            <if condition="'canceled'.equalsIgnoreCase(status)">
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId, statusId:'SmsgCancelled']"/>
+                <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] was canceled."/>
+            </if>
+
+            <!-- Success Case Finally -->
+            <if condition="bulkOperationResult.response.url">
+                <set field="nowDate" from="ec.l10n.format(ec.user.nowTimestamp, 'yyyy-MM-dd-HH-mm-ss', null, TimeZone.getDefault())"/>
+                <set field="contentRoot" from="ec.user.getPreference('mantle.content.root') ?: 'dbresource://datamanager'"/>
+                <set field="fileLocation" from="ec.resourceFacade.expand(systemMessage.receivePath, null, [nowDate:nowDate, contentRoot:contentRoot, systemMessageId:systemMessage.systemMessageId])"/>
+                <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.store#BulkOperationResultFile"
+                              in-map="[downloadUrl:bulkOperationResult.response.url, fileLocation:fileLocation]"/>
+
+                <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="smr">
+                    <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+                </entity-find-one>
+                <set field="shopId" from="smr.internalId"/>
+
+                <service-call name="${systemMessage.consumeServiceName}" in-map="[inputPath: fileLocation, systemMessageId: systemMessage.systemMessageId, shopId:shopId]" out-map="responseOut"/>
+
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="!enumValue || !enumValue.relatedEnumId">
+                    <return error="true" message="Related SystemMessageType to create SystemMessage for ${systemMessage?.systemMessageTypeId} not defined, not creating related system message."/>
+                </if>
+
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+
+                <if condition="!relatedSystemMessageType"><return error="true" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId: relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId, messageText:fileLocation,
+                          parentMessageId:systemMessage.systemMessageId ]" out-map="relMessage"/>
+            </if>
+            <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId, statusId:'SmsgConfirmed', ackMessageId:relMessage?.systemMessageIdList?.get(0)]"/>
+            <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] completed and result file saved."/>
+        </actions>
+    </service>
 </services>
