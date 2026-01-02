@@ -1,9 +1,9 @@
 <@compress single_line=true>
 
 <#assign orderExternalId = "">
-<#if refund.order?? && refund.order.id??>
-    <#assign orderExternalId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.order.id)>
-    <#assign orderName= refund.order.name>
+<#if orderMap.id??>
+    <#assign orderExternalId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(orderMap.id)>
+    <#assign orderName= orderMap.name>
 </#if>
 
 <#assign orderHeader = ec.entity.find("org.apache.ofbiz.order.order.OrderHeader")
@@ -100,7 +100,7 @@
     <#if txn.kind == "SALE" && txn.amountSet?? && txn.amountSet.presentmentMoney??>
         <#assign paymentAmount += txn.amountSet.presentmentMoney.amount?number>
     </#if>
-    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", refund.order.id).parameter("shopId", shopId).parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
+    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", orderMap.id).parameter("shopId", shopId).parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
     <#if mapTxnResp??>
         <#assign returnPaymentPrefList += [mapTxnResp]>
         <#else>
@@ -137,9 +137,9 @@
         "returnDate": "${returnDate}",
         "returnChannelEnumId": "${returnChannel}",
 
-        <#if refund.order?? && refund.order.customer?? && refund.order.customer.id??>
+        <#if orderMap.customer?? && orderMap.customer.id??>
             "customerIdentificationType": "SHOPIFY_CUST_ID",
-            "customerIdentificationValue": "${Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.order.customer.id)}",
+            "customerIdentificationValue": "${Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(orderMap.customer.id)}",
             <#else>
             "customerId": "_NA_",
         </#if>
