@@ -238,8 +238,32 @@ under the License.
                 <set field="fileLocation" from="ec.resourceFacade.expand(systemMessage.receivePath, null, [nowDate:nowDate, contentRoot:contentRoot, systemMessageId:systemMessage.systemMessageId, remoteMessageId:systemMessage.remoteMessageId])"/>
                 <service-call name="co.hotwax.shopify.graphQL.ShopifyBulkImportServices.store#BulkOperationResultFile"
                               in-map="[downloadUrl:bulkOperationResult.response.url, fileLocation:fileLocation]"/>
+
+                <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="smr">
+                    <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
+                </entity-find-one>
+                <set field="shopId" from="smr.internalId"/>
+
+                <service-call name="${systemMessage.consumeServiceName}" in-map="[inputPath: fileLocation, systemMessageId: systemMessage.systemMessageId, shopId:shopId]" out-map="responseOut"/>
+
+                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
+                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
+                </entity-find-one>
+
+                <if condition="!enumValue || !enumValue.relatedEnumId">
+                    <return error="true" message="Related SystemMessageType to create SystemMessage for ${systemMessage?.systemMessageTypeId} not defined, not creating related system message."/>
+                </if>
+
+                <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
+                    <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
+                </entity-find-one>
+
+                <if condition="!relatedSystemMessageType"><return error="true" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
+
+                <service-call name="org.moqui.impl.SystemMessageServices.receive#IncomingSystemMessage" in-map="[systemMessageTypeId: relatedSystemMessageType.systemMessageTypeId, systemMessageRemoteId:systemMessage.systemMessageRemoteId, messageText:fileLocation,
+                          parentMessageId:systemMessage.systemMessageId ]" out-map="relMessage"/>
             </if>
-            <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId, statusId:'SmsgConfirmed']"/>
+            <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessage.systemMessageId, statusId:'SmsgConfirmed', ackMessageId:relMessage?.systemMessageIdList?.get(0)]"/>
             <return message="The bulk operation for systemMessageId:[${systemMessage.systemMessageId}] completed and result file saved."/>
         </actions>
     </service>
