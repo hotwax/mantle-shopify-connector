@@ -2413,4 +2413,29 @@ under the License.
                           in-map="[systemMessageTypeId:systemMessageTypeId, systemMessageRemoteId:systemMessageRemoteId, messageText:messageText, sendNow:sendNow]" out-map="context"/>
         </actions>
     </service>
+    <service verb="send" noun="ShopifyBulkQueryMessage" authenticate="anonymous-all">
+        <description>Executes the GraphQL bulk operation request to Shopify.</description>
+        <implements service="org.moqui.impl.SystemMessageServices.send#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage">
+                <field-map field-name="systemMessageId"/>
+            </entity-find-one>
+
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                in-map="[systemMessageRemoteId:systemMessage.systemMessageRemoteId, queryText:systemMessage.messageText]"
+                out-map="gqlResponse"/>
+
+            <set field="response" from="gqlResponse.response"/>
+            <if condition="response?.bulkOperationRunQuery?.userErrors">
+                <return error="true" message="Shopify Bulk Operation User Errors: ${response.bulkOperationRunQuery.userErrors.toString()}"/>
+            </if>
+
+            <set field="shopifyBulkOperationId" from="response?.bulkOperationRunQuery?.bulkOperation?.id"/>
+            <if condition="!shopifyBulkOperationId">
+                <return error="true" message="No Shopify bulk operation ID received."/>
+            </if>
+
+            <set field="remoteMessageId" from="shopifyBulkOperationId"/>
+        </actions>
+    </service>
 </services>
