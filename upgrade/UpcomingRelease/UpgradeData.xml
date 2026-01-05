@@ -143,4 +143,26 @@
                 description="Export order reconciliation report to SFTP"
                 sendPath="/home/${sftpUsername}/moqui/reconciliation/order/${monthYear}/Order_Reconciliation_${dateTime}.csv"
                 sendServiceName="co.hotwax.ofbiz.SystemMessageServices.send#SystemMessageFileSftp"/>
+    <!-- SystemMessageType record for generating Order Ids Feed for returns batch processing-->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderIdsFeedForReturnAndCancellation"
+                                             description="Generate Order Ids Feed For Returns and Cancellations"
+                                             sendPath="component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/OrderIdsFeedForReturnAndCancellation/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+    <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateOrderIdsFeedForReturnAndCancellation" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnAndCancellationFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnAndCancellationFeed"
+                                             description="Generate Return and Cancellation Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnAndCancellationFeed"/>
+    <!-- ServiceJob data for queuing orderIds feed for returns and cancellation-->
+    <moqui.service.job.ServiceJob jobName="queue_ReturnAndCancellationOrderIdsFeed" description="Order Ids Feed for Returns and Cancellations"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateOrderIdsFeedForReturnAndCancellation"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
 </entity-facade-xml>

@@ -1093,6 +1093,22 @@ under the License.
             </if>
         </actions>
     </service>
+    <service verb="generate" noun="ReturnAndCancellationFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
+            <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
+            <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
+
+            <if condition="!orders">
+                <return type="warning" message="System message [${systemMessageId}] for Type [${systemMessage?.systemMessageTypeId}] has messageText [${systemMessage.messageText}], with ReturnedOrderIdsFeed file having incorrect data and may contain null, not generating order returns feed file."/>
+            </if>
+            <iterate list="orders" entry="order">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.create#ShopifyRefunds" in-map="[systemMessageRemoteId: systemMessage.systemMessageRemoteId,shopifyOrderId: order.Id]"
+                              ignore-error="true" transaction="force-new"/>
+            </iterate>
+        </actions>
+    </service>
     <service verb="queue" noun="OrderIdsByTagFeed" authenticate="anonymous-all">
         <in-parameters>
             <parameter name="systemMessageTypeId" required="true"/>

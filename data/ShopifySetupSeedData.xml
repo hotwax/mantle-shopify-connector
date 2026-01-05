@@ -417,7 +417,17 @@ under the License.
             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
             receivePath="${contentRoot}/shopify/ReturnedOrderIdsFeed/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
 
-    <!-- SystemMessageType record for generating Returns and Exchange Feed -->
+    <!-- SystemMessageType record for generating Order Ids Feed for returns batch processing-->
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateOrderIdsFeedForReturnAndCancellation"
+                                             description="Generate Order Ids Feed For Returns and Cancellations"
+                                             sendPath="component://shopify-connector/template/graphQL/ReturnedOrderIdsQuery.ftl"
+                                             sendServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnedOrderIdsFeed"
+                                             receivePath="${contentRoot}/shopify/OrderIdsFeedForReturnAndCancellation/ReturnedOrderIdsFeed-${dateTime}-${systemMessageId}.json"/>
+    <moqui.basic.Enumeration description="Generate Returned Order Ids Feed" enumId="GenerateOrderIdsFeedForReturnAndCancellation" enumTypeId="ShopifyMessageTypeEnum" relatedEnumId="GenerateReturnAndCancellationFeed" relatedEnumTypeId="ShopifyMessageTypeEnum"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnAndCancellationFeed"
+                                             description="Generate Return and Cancellation Feed"
+                                             parentTypeId="LocalFeedFile"
+                                             consumeServiceName="co.hotwax.shopify.system.ShopifySystemMessageServices.generate#ReturnAndCancellationFeed"/>
     <moqui.service.message.SystemMessageType systemMessageTypeId="GenerateReturnsAndExchangeFeed"
             description="Generate Returns and Exchange Feed"
             parentTypeId="LocalFeedFile"
