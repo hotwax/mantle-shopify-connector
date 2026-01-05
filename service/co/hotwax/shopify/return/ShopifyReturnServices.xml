@@ -22,6 +22,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundLineItems" type="List"/>
@@ -51,6 +52,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundShippingLines" type="List"/>
@@ -80,6 +82,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundTransactions" type="Map"/>
@@ -513,6 +516,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundAgreements" type="List"/>
@@ -587,6 +591,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="orderAdj"/>
