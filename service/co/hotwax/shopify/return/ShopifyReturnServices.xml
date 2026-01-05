@@ -684,9 +684,9 @@ under the License.
            <!-- Fetch refund agreements -->
            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderAgreementsResponse"/>
 
-           <if condition="!orderAgreementsResponse?.refundAgreements">
-               <return type="warning" message="Order not found in Shopify. shopifyOrderId=${shopifyOrderId}, shopId=${shopId}"/>
-           </if>
+<!--           <if condition="!orderAgreementsResponse?.refundAgreements">-->
+<!--               <return type="warning" message="Order not found in Shopify. shopifyOrderId=${shopifyOrderId}, shopId=${shopId}"/>-->
+<!--           </if>-->
            <set field="orderMap.refundAgreements" from="orderAgreementsResponse.refundAgreements"/>
 
            <log message="===== 2. orderMap: ${orderMap} ======"/>
@@ -1045,7 +1045,7 @@ under the License.
                <set field="payLoad" from="payLoadMap.payLoad"/>
                <log message="Prepared payload for refund ${refund.id}: ${payLoad}"/>
                <entity-find entity-name="co.hotwax.shopify.ShopifyConfig" list="shopifyConfigList">
-                   <econdition field-name="shopId" value="1000"/>
+                   <econdition field-name="shopId" from="shopId"/>
                    <select-field field-name="shopifyConfigId"/>
                </entity-find>
                <script><![CDATA[
@@ -1134,41 +1134,36 @@ under the License.
                       def refundTxn = refund.transactions.find { it.kind == "REFUND" }
                       BigDecimal refundedAmount = new BigDecimal(refundTxn.amountSet.shopMoney.amount ?: 0).setScale(2, BigDecimal.ROUND_HALF_UP)
                       def refundTxnId = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.id)
-                      def parentTxnId = refundTxn.parentId ? co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.parentId) : null
+                      def parentTxnId = refundTxn.parentTransaction.id ? co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundTxn.parentTransaction.id) : null
+                      def existingOpp = ec.entity.find("OrderPaymentPreference").condition("orderId", hcOrder.orderId).condition("manualRefNum", refundTxnId).one()
 
-                      def gateway = refundTxn.gateway
-                      def currencyUomId = refundTxn.amountSet?.shopMoney?.currencyCode
-                      def paymentMethodTypeId = ec.entity.find("co.hotwax.shopify.ShopifyShopTypeMapping")
-                                                .condition("shopId", shopId)
-                                                .condition("mappedTypeId", "PAYMENT_METHOD")
-                                                .condition("mappedKey", gateway?.toUpperCase())
-                                                .one()?.mappedValue
-                      if (!paymentMethodTypeId) {
-                            paymentMethodTypeId = "EXT_SHOP_OTHR_GTWAY"
+                      if (!existingOpp) {
+                          def gateway = refundTxn.gateway
+                          def currencyUomId = refundTxn.amountSet?.shopMoney?.currencyCode ?: "USD"
+                          def paymentMethodTypeId = ec.entity.find("co.hotwax.shopify.ShopifyShopTypeMapping")
+                                                    .condition("shopId", shopId)
+                                                    .condition("mappedTypeId", "PAYMENT_METHOD")
+                                                    .condition("mappedKey", gateway?.toUpperCase())
+                                                    .one()?.mappedValue?: "EXT_SHOP_OTHR_GTWAY"
+
+                          ec.service.sync()
+                              .name("create#org.apache.ofbiz.order.order.OrderPaymentPreference")
+                              .parameters([
+                                  orderId                : hcOrder.orderId,
+                                  statusId               : 'PAYMENT_REFUNDED',
+                                  paymentMethodTypeId    : paymentMethodTypeId,
+                                  maxAmount              : refundedAmount,
+                                  presentmentAmount      : refundedAmount,
+                                  presentmentCurrencyUom : currencyUomId,
+                                  manualRefNum           : refundTxnId,
+                                  parentRefNum           : parentTxnId
+                              ])
+                              .call()
+
+                          ec.logger.info(
+                              "Created PAYMENT_REFUNDED OPP for refund ${refund.id}, amount=${refundedAmount}"
+                          )
                       }
-                      if (!currencyUomId) {
-                            currencyUomId = "USD"
-                      }
-
-
-                      ec.service.sync()
-                          .name("create#org.apache.ofbiz.order.order.OrderPaymentPreference")
-                          .parameters([
-                              orderId                : hcOrder.orderId,
-                              statusId               : 'PAYMENT_REFUNDED',
-                              paymentMethodTypeId    : paymentMethodTypeId,
-                              maxAmount              : refundedAmount,
-                              presentmentAmount      : refundedAmount,
-                              presentmentCurrencyUom : currencyUomId,
-                              manualRefNum           : refundTxnId,
-                              parentRefNum           : parentTxnId
-                          ])
-                          .call()
-
-
-                      ec.logger.info(
-                          "Created PAYMENT_REFUNDED OPP for refund ${refund.id}, amount=${refundedAmount}"
-                      )
                   ]]></script>
                <!-- create history
                    TODO
