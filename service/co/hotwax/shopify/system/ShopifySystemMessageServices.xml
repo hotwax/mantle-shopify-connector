@@ -1093,6 +1093,7 @@ under the License.
             </if>
         </actions>
     </service>
+<<<<<<< HEAD
     <service verb="generate" noun="ExchangeOrderFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
         <actions>
@@ -1131,6 +1132,10 @@ under the License.
                 </else>
             </if>
 
+    <service verb="generate" noun="ReturnAndCancellationFeed" authenticate="anonymous-all" transaction-timeout="1800">
+        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
+        <actions>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
             <set field="fileText" from="ec.resource.getLocationReference(systemMessage.messageText).getText()"/>
             <set field="orders" from="org.moqui.impl.context.ContextJavaUtil.jacksonMapper.readValue(fileText, List.class)"/>
 

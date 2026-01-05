@@ -220,6 +220,17 @@ under the License.
         <parameters parameterName="runAsBatch" parameterValue="true"/>
     </moqui.service.job.ServiceJob>
 
+    <!-- ServiceJob data for queuing returned orderIds feed -->
+    <moqui.service.job.ServiceJob jobName="queue_ReturnAndCancellationOrderIdsFeed" description="Order Ids Feed for Returns and Cancellations"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeId" parameterValue="GenerateOrderIdsFeedForReturnAndCancellation"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="additionalParameters" parameterValue=""/>
+        <parameters parameterName="runAsBatch" parameterValue="true"/>
+    </moqui.service.job.ServiceJob>
+
     <!-- ServiceJob data for queuing Appeasement Ids feed -->
     <moqui.service.job.ServiceJob jobName="queue_AppeasementIdsFeed" description="Queue Appeasement Ids feed"
         serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#FeedSystemMessage" cronExpression="0 0 * * * ?" paused="Y">
