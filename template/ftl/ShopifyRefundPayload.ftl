@@ -1,9 +1,12 @@
 <@compress single_line=true>
 
 <#assign orderExternalId = "">
+<#assign orderName = "">
 <#if orderMap.id??>
     <#assign orderExternalId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(orderMap.id)>
-    <#assign orderName= orderMap.name>
+    <#if orderMap.name??>
+        <#assign orderName = orderMap.name>
+    </#if>
 </#if>
 
 <#assign orderHeader = ec.entity.find("org.apache.ofbiz.order.order.OrderHeader")
@@ -14,7 +17,7 @@
 <#if orderHeader?? && orderHeader.orderId?has_content>
     <#assign orderId = orderHeader.orderId>
 <#else>
-    <#assign orderId = null>
+    <#assign orderId = "">
 </#if>
 
 <#assign refundExternalId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.id)>
@@ -53,13 +56,22 @@
 
 
 <#assign returnChannel = "ECOM_RTN_CHANNEL">
-<#if refund.refundAgreement?? && refund.refundAgreement.app?? && refund.refundAgreement.app.title??>
-    <#if refund.refundAgreement.app.title == "Loop">
-        <#assign returnChannel = "LOOP_RETURN_CHANNEL">
-    <#elseif refund.refundAgreement.app.title == "Point of Sale">
-        <#assign returnChannel = "POS_RTN_CHANNEL">
-    </#if>
+
+<#if orderMap.refundAgreements??>
+    <#list orderMap.refundAgreements as ra>
+        <#if ra.refund?? && ra.refund.id == refund.id>
+            <#if ra.app?? && ra.app.title??>
+                <#if ra.app.title == "Loop">
+                    <#assign returnChannel = "LOOP_RETURN_CHANNEL">
+                <#elseif ra.app.title == "Point of Sale">
+                    <#assign returnChannel = "POS_RTN_CHANNEL">
+                </#if>
+            </#if>
+            <#break>
+        </#if>
+    </#list>
 </#if>
+
 
 <#assign returnDate = "">
 <#if refund.createdAt??>
@@ -115,10 +127,10 @@
                 <#assign maxAmt = txn.amountSet.shopMoney.amount>
             </#if>
         </#if>
-        <#if orderId??>
+        <#if orderId?? && orderId?has_content>
             <#assign existingOpp = ec.entity.find("org.apache.ofbiz.order.order.OrderPaymentPreference").condition("orderId", orderId).condition("manualRefNum", resolvedTxnId).one()!>
         </#if>
-        <#if existingOpp??>
+        <#if existingOpp?? && existingOpp?has_content>
             <#assign pref = {
                 "paymentMethodTypeId": existingOpp.paymentMethodTypeId,
                 "statusId": "PAYMENT_REFUNDED",
@@ -154,26 +166,36 @@
         <#assign shippingRefund =
             (rsl.subtotalAmountSet.presentmentMoney.amount?number)!0>
         <#if shippingRefund gt 0>
-            <#assign finalAdjustments += [{
-                "orderId": orderId,
+            <#assign adj = {
                 "amount": shippingRefund,
                 "type": "RET_SHIPPING_ADJ",
                 "comments": "Shipping refund",
                 "description": "Shipping refund"
-            }]>
+            }>
+
+            <#if orderId?has_content>
+                <#assign adj = adj + {"orderId": orderId}>
+            </#if>
+
+            <#assign finalAdjustments += [adj]>
             <#assign totalItemReturnAmount += shippingRefund>
         </#if>
 
         <#assign shippingTaxRefund =
             (rsl.taxAmountSet.presentmentMoney.amount?number)!0>
         <#if shippingTaxRefund gt 0>
-            <#assign finalAdjustments += [{
-                "orderId": orderId,
+            <#assign adj = {
                 "amount": shippingTaxRefund,
                 "type": "RET_SALES_TAX_ADJ",
                 "comments": "Shipping Tax Refund",
                 "description": "Shipping Tax Refund"
-            }]>
+            }>
+
+            <#if orderId?has_content>
+                <#assign adj = adj + {"orderId": orderId}>
+            </#if>
+
+            <#assign finalAdjustments += [adj]>
             <#assign totalItemReturnAmount += shippingTaxRefund>
         </#if>
 
@@ -192,13 +214,18 @@
     <#assign appeasementAmount = appeasementAmount?round(2)>
 
     <#if appeasementAmount gt 0>
-        <#assign finalAdjustments += [{
+        <#assign adj = {
             "type": "APPEASEMENT",
             "description": "Refund Adjustment for orderId ${orderExternalId}",
             "comments": "Refund adjustment due to appeasement",
-            "amount": appeasementAmount,
-            "orderId": orderId
-        }]>
+            "amount": appeasementAmount
+        }>
+
+        <#if orderId?has_content>
+            <#assign adj = adj + {"orderId": orderId}>
+        </#if>
+
+        <#assign finalAdjustments += [adj]>
         <#assign totalItemReturnAmount += appeasementAmount>
     </#if>
 </#if>
@@ -226,10 +253,14 @@
                 <#if idx gt 0>,</#if>
                 <#assign idx += 1>
                 <#assign itemAdjustments = []>
+                <#assign orderedQty = rli.lineItem.quantity!1>
+                <#assign totalDiscount = 0>
 
                 <#if rli.lineItem.discountAllocations??>
                     <#list rli.lineItem.discountAllocations as discount>
-                        <#assign adjAmt = -(discount.allocatedAmountSet.presentmentMoney.amount?number)!0>
+                        <#assign totalDiscount += (discount.allocatedAmountSet.presentmentMoney.amount?number)!0>
+                        <#assign discountAmt = (discount.allocatedAmountSet.presentmentMoney.amount?number)!0>
+                        <#assign adjAmt = -(discountAmt / orderedQty)>
                         <#if adjAmt lt 0>
                             <#assign itemAdjustments += [{
                                 "itemExternalId": Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(rli.id),
@@ -290,9 +321,13 @@
                 <#assign restockType = (rli.restockType!"no_restock")?lower_case>
                 <#assign itemAmount = 0>
                 <#assign taxAmount = 0>
+                <#assign perUnitDiscount = 0>
 
                 <#if rli.subtotalSet?? && rli.subtotalSet.presentmentMoney??>
                     <#assign itemAmount = rli.subtotalSet.presentmentMoney.amount?number>
+                    <#assign perUnitDiscount = totalDiscount / orderedQty>
+
+                    <#assign itemAmount = itemAmount + perUnitDiscount>
                 </#if>
                 <#if rli.totalTaxSet?? && rli.totalTaxSet.presentmentMoney??>
                     <#assign taxAmount = rli.totalTaxSet.presentmentMoney.amount?number>
@@ -306,20 +341,25 @@
                 "quantity": ${rli.quantity!0},
                 "reason": "UNKNOWN",
                 "returnType": "RTN_REFUND",
-                <#if orderId??>
-                    "orderExternalId": "${orderExternalId}",
-                    "orderName": "${orderName}",
+                <#if orderId?? && orderId?has_content>
+                    "orderExternalId": "${orderExternalId}"
+                    <#if orderName?has_content>
+                    ,"orderName": "${orderName}"
+                    </#if>
+                    ,
                 </#if>
 
                 <#if restockType == "no_restock">
                     "itemTypeId": "RET_LOST_ITEM",
-                    "restockType": "INV_NOT_RETURNED"
+                    "restockType": "INV_NOT_RETURNED",
+                    "receivedQty": 0
                 <#else>
                     "itemTypeId": "RET_FPROD_ITEM",
-                    "restockType": "INV_RETURNED"
+                    "restockType": "INV_RETURNED",
+                    "receivedQty": ${rli.quantity}
                 </#if>
 
-               <#if !orderId??>
+                    <#if !orderId?has_content>
                     ,"price": ${itemAmount}
                     <#if itemAdjustments?has_content>
                     ,"itemAdjustments": [
@@ -387,8 +427,21 @@
             </#list>
         ],
 
-        <#if shippingAndTaxAdjustments?has_content>
-        ,"returnAdjustment":${shippingAndTaxAdjustments}
+        <#if finalAdjustments?has_content>
+        ,"returnAdjustment": [
+            <#list finalAdjustments as adj>
+                <#if adj?index gt 0>,</#if>
+                {
+                    <#if adj.orderId?has_content>
+                    "orderId": "${adj.orderId}",
+                    </#if>
+                    "amount": ${adj.amount},
+                    "type": "${adj.type}",
+                    "comments": "${adj.comments}",
+                    "description": "${adj.description}"
+                }
+            </#list>
+        ],
         </#if>
 
         "returnIdentifications": [
@@ -396,7 +449,7 @@
             "returnIdentificationTypeId": "SHOPIFY_RTN_ID",
             "idValue": "${refundExternalId}"
         }
-        <#if !orderExternalId?has_content>,
+        <#if !orderId?has_content>,
         {
             "returnIdentificationTypeId": "SHPY_ORPN_RTN_ORD_ID",
             "idValue": "${orderExternalId}"

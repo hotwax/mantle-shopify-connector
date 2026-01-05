@@ -715,6 +715,7 @@ under the License.
                import com.fasterxml.jackson.databind.ObjectMapper
                orderMapJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(orderMap)
            </script>
+           <log message="Order Refund and Return Summary for shopifyOrderId=${shopifyOrderId}: ${orderMapJson}"/>
 
 
            <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
