@@ -1158,7 +1158,9 @@ under the License.
         </description>
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
-            <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="shopifyOrderId" required="true">
+                <description>Shopify Order gid</description>
+            </parameter>
         </in-parameters>
         <out-parameters>
             <parameter name="order" type="Map"/>
@@ -1166,7 +1168,7 @@ under the License.
         <actions>
             <script>queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderRefundMegaQuery.ftl", "")</script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
-                          in-map='[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[shopifyOrderId: "gid://shopify/Order/${shopifyOrderId}"]]'
+                          in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables: [shopifyOrderId: shopifyOrderId]]"
                           out-map="responseMap"/>
 
             <if condition="!responseMap.response?.order">
