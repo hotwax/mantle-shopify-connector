@@ -211,7 +211,7 @@
         </#if>
     </#list>
 
-    <#assign appeasementAmount = appeasementAmount?round(2)>
+    <#assign appeasementAmount = appeasementAmount>
 
     <#if appeasementAmount gt 0>
         <#assign adj = {
