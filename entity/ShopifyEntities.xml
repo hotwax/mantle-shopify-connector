@@ -61,4 +61,32 @@ under the License.
         <alias-all entity-alias="SM"/>
         <alias-all entity-alias="SMT"/>
     </view-entity>
+    <entity entity-name="ShopifyRefundHistory" package="co.hotwax.shopify" title="Shopify Refund Attribution History">
+        <field name="shopifyRefundId" type="id-long" is-pk="true"/>
+        <field name="shopifyRefundLineId" type="id-long" is-pk="true"/>
+        <field name="shopifyOrderId" type="id-long"/>
+        <field name="shopId" type="id"/>
+        <field name="orderId" type="id"/>
+        <field name="returnId" type="id"/>
+        <field name="returnItemSeqId" type="id"/>
+        <field name="decisionType" type="text-medium"/>
+        <field name="actionType" type="text-medium"/>
+        <field name="createdDate" type="date-time"/>
+        <relationship type="one" fk-name="RTN_HDR" related="org.apache.ofbiz.order.return.ReturnHeader">
+            <key-map field-name="returnId"/>
+        </relationship>
+        <relationship type="one" fk-name="RTN_ITM_EXT" related="org.apache.ofbiz.order.return.ReturnItem">
+            <key-map field-name="externalId" related="shopifyRefundLineId"/>
+        </relationship>
+        <relationship type="one" fk-name="ORD_HDR" related="org.apache.ofbiz.order.order.OrderHeader">
+            <key-map field-name="orderId"/>
+        </relationship>
+        <relationship type="one" fk-name="SPY_SHP" related="co.hotwax.shopify.ShopifyShop">
+            <key-map field-name="shopId"/>
+        </relationship>
+        <relationship type="one" fk-name="RTN_ITM" related="org.apache.ofbiz.order.return.ReturnItem">
+            <key-map field-name="returnId"/>
+            <key-map field-name="returnItemSeqId"/>
+        </relationship>
+    </entity>
 </entities>
