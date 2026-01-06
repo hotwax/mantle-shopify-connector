@@ -594,10 +594,10 @@ under the License.
             <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="orderAdj"/>
+            <parameter name="orderAdjustments"/>
         </out-parameters>
         <actions>
-            <set field="orderAdj" from="[]"/>
+            <set field="orderAdjustments" from="[]"/>
             <set field="hasNextPage" value="true" type="Boolean"/>
             <while condition="hasNextPage">
                 <script>
@@ -608,7 +608,7 @@ under the License.
                     <return type="warning" message="No Shopify refund found for id: ${shopifyRefundId}"/>
                 </if>
                 <if condition="responseMap.response.refund.orderAdjustments?.edges">
-                    <script>orderAdj.addAll(responseMap.response.refund.orderAdjustments.edges.node)</script>
+                    <script>orderAdjustments.addAll(responseMap.response.refund.orderAdjustments.edges.node)</script>
                 </if>
                 <set field="hasNextPage" from="responseMap.response.refund.orderAdjustments.pageInfo.hasNextPage"/>
                 <set field="cursor" from="responseMap.response.refund.orderAdjustments.pageInfo.endCursor"/>
@@ -1222,7 +1222,7 @@ under the License.
                     resolveConnection(refund, 'id', 'refundLineItems', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundLineItems', 'refundLineItems', 'shopifyRefundId')
                     resolveConnection(refund, 'id', 'refundShippingLines', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundShippingLines', 'refundShippingLines', 'shopifyRefundId')
                     resolveConnection(refund, 'id', 'transactions', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundTransactions', 'refundTransactions', 'shopifyRefundId')
-                    resolveConnection(refund, 'id', 'orderAdjustments', 'co.hotwax.shopify.return.ShopifyReturnServices.get#OrderAdjustments', 'orderAdj', 'shopifyRefundId')
+                    resolveConnection(refund, 'id', 'orderAdjustments', 'co.hotwax.shopify.return.ShopifyReturnServices.get#OrderAdjustments', 'orderAdjustments', 'shopifyRefundId')
 
                     if (refund.return) {
                         refund.return.refundId = refund.id
