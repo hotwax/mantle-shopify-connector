@@ -1199,7 +1199,7 @@ under the License.
             <parameter name="order" type="Map"/>
         </out-parameters>
         <actions>
-            <script>queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/RefundsMegaQuery.ftl", "")</script>
+            <script>queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderRefundMegaQuery.ftl", "")</script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
                           in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
                           out-map="responseMap"/>
@@ -1234,7 +1234,7 @@ under the License.
                     }
                 }
                 if(order.agreements) {
-                    order.resolvedGid = co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(order.id)
+                    order.resolvedGid = co.hotwax.shopify.util.ShopifyHelper.resolveShopifyGid(order.id)
                     resolveConnection(order, 'resolvedGid', 'agreements', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements', 'refundAgreements', 'shopifyOrderId')
                 }
                 ]]></script>
