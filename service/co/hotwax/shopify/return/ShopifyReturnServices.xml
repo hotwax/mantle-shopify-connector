@@ -1197,7 +1197,7 @@ under the License.
         <actions>
             <script>queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderRefundMegaQuery.ftl", "")</script>
             <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
-                          in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]"
+                          in-map='[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[shopifyOrderId: "gid://shopify/Order/${shopifyOrderId}"]]'
                           out-map="responseMap"/>
 
             <if condition="!responseMap.response?.order">
