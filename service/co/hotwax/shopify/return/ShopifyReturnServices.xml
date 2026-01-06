@@ -678,41 +678,10 @@ under the License.
                <return error="true" message="Invalid systemMessageRemoteId: ${systemMessageRemoteId}"/>
            </if>
            <set field="shopId" from="systemMessageRemote.internalId"/>
-           <set field="orderMap" from="[:]"/>
+
+           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
+           <set field="orderMap" from="orderRefundDetails.order"/>
            <set field="orderMap.shopId" from="shopId"/>
-
-           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#OrderRefundAndReturnSummary" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderRefundAndReturnSummaryOut"/>
-           <set field="orderMap" from="orderMap + orderRefundAndReturnSummaryOut.order"/>
-
-           <log message="[OrderMap] - After OrderRefundAndReturnSummary fetch: ${orderMap}"/>
-
-           <!-- Fetch refund agreements -->
-           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderAgreementsResponse"/>
-
-<!--           <if condition="!orderAgreementsResponse?.refundAgreements">-->
-<!--               <return type="warning" message="Order not found in Shopify. shopifyOrderId=${shopifyOrderId}, shopId=${shopId}"/>-->
-<!--           </if>-->
-           <set field="orderMap.refundAgreements" from="orderAgreementsResponse.refundAgreements"/>
-
-           <log message="[RefundAgreements] - After RefundAgreements fetch: ${orderMap}"/>
-
-           <set field="refundsList" from="[]"/>
-           <!-- Fetch refund details -->
-           <iterate list="orderMap.refunds" entry="refund">
-               <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#RefundDetailsById" in-map="[systemMessageRemoteId:systemMessageRemoteId, refundId:refund.id]" out-map="refundDetailsOut"/>
-<!--               <log message="==== refundDetailsOut: ${refundDetailsOut} ===="/>-->
-               <set field="refund" from="refund + refundDetailsOut.refundDetail"/>
-
-<!--               <log message="==== refund: ${refund} ===="/>-->
-
-               <!-- Getting returns from refundId-->
-               <if condition="refund.return?.id">
-                   <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnDetailsById" in-map="[systemMessageRemoteId:systemMessageRemoteId, returnId:refund.return.id]" out-map="returnDetailsOut"/>
-                   <set field="refund.return" from="refund.return + returnDetailsOut.returnDetail"/>
-               </if>
-               <script>refundsList.add(refund)</script>
-           </iterate>
-           <set field="orderMap.refunds" from="refundsList"/>
 
            <log message="[RefundDetails] - After assembling refunds: ${orderMap}"/>
 
