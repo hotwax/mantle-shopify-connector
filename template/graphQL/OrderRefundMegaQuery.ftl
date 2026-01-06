@@ -3,8 +3,18 @@
 query GetOrderRefundDetails($shopifyOrderId: ID!) {
     order(id: $shopifyOrderId) {
         id
+        name
+        updatedAt
+        cancelledAt
+        customer {
+            id
+            firstName
+            lastName
+        }
         refunds {
             id
+            createdAt
+            note
             refundLineItems(first: 20) {
                 edges {
                     node {
@@ -165,6 +175,8 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
             }
             return {
                 id
+                name
+                status
                 returnLineItems (first: 20) {
                     edges {
                         node {
@@ -195,7 +207,7 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
                 }
             }
         }
-        agreements(first: 20) {
+        refundAgreements: agreements(first: 20) {
             edges {
                 node {
                     __typename
