@@ -1227,11 +1227,12 @@ under the License.
                     if (refund.return) {
                         refund.return.refundId = refund.id
                         resolveConnection(refund.return, 'refundId', 'returnLineItems', 'co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnLineItemsByRefundV2', 'returnLineItems', 'shopifyRefundId')
+                        resolveConnection(refund.return, null, 'exchangeLineItems', null, null, null)
                     }
                 }
-                if(order.agreements) {
+                if(order.refundAgreements) {
                     order.resolvedGid = co.hotwax.shopify.util.ShopifyHelper.resolveShopifyGid(order.id)
-                    resolveConnection(order, 'resolvedGid', 'agreements', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements', 'refundAgreements', 'shopifyOrderId')
+                    resolveConnection(order, 'resolvedGid', 'refundAgreements', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements', 'refundAgreements', 'shopifyOrderId')
                 }
                 ]]></script>
         </actions>
