@@ -1,7 +1,7 @@
 <#ftl output_format="HTML">
 <@compress single_line=true>
-query {
-    order(id: "gid://shopify/Order/${shopifyOrderId}") {
+query GetOrderRefundDetails($shopifyOrderId: ID!) {
+    order(id: $shopifyOrderId) {
         id
         refunds {
             id
