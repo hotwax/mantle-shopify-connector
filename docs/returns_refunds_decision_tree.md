@@ -33,8 +33,7 @@ graph TD
     SieveRes --> L4{Level 4: Exchange Context}
     
     L4 -->|Exchange Flag Found?| L4_Sub{Exchange Type?}
-    L4_Sub -->|Native/V2| Scenario11[Scenario 11: Native Exchange]
-    L4_Sub -->|Loop App| Scenario13[Scenario 13: Loop Exchange]
+    L4_Sub -->|Native/V2/Return-Linked| Scenario11[Scenario 11: Shopify Exchange]
     L4_Sub -->|POS/Temporal| Scenario12[Scenario 12: POS Top-up Exchange]
     
     L4 -->|No Exchange| L5{Level 5: Physical Refinement}
@@ -50,14 +49,13 @@ graph TD
     Scenario9 --> NextItem{More Items?}
     Scenario11 --> NextItem
     Scenario12 --> NextItem
-    Scenario13 --> NextItem
     Scenario3 --> NextItem
     Scenario1 --> NextItem
     Scenario7 --> NextItem
     Scenario2 --> NextItem
     
     NextItem -->|Yes| LoopStart
-    NextItem -->|No| Recon[Level 6: Money Situaton Reconciliation]
+    NextItem -->|No| Recon[Level 6: Reconciliation & Channel Stats]
     Recon --> Exit
 ```
 
@@ -93,16 +91,15 @@ For **each** `refundLineItem` in the Shopify refund, we first attribute the item
 - **Output**: Physical quantities used for the next levels.
 
 ### Level 4: Exchange Context (Financial Attribution)
-The system checks four distinct signals to identify the "Exchange Relationship":
-1. **Native (V2)**: Order has `exchangeV2s` additions. (**Scenario 11**)
-2. **Return-Linked**: `refund.return.exchangeLineItems` is non-empty. (**Scenario 11**)
-3. **App-Driven**: `agreements.app.title == "Loop"` AND high-confidence exchange prefix. (**Scenario 13**)
-4. **POS Top-up**: $0 Cash Refund followed immediately by a `SALE` transaction. (**Scenario 12**)
+The system checks three primary signals to identify the "Exchange Relationship":
+1. **Shopify Native (V2)**: Order has `exchangeV2s` additions. (**Scenario 11**)
+2. **Shopify Return-Linked**: `refund.return.exchangeLineItems` is non-empty. (**Scenario 11**)
+3. **POS Temporal Rule**: $0 Cash Refund followed immediately by a `SALE` transaction. (**Scenario 12**)
 
-*Note: If an exchange is detected, the item still goes through the Sieve, but its "Item Value" is attributed as Exchange Credit rather than Cash Refund.*
+*Note: If any of these signals are present, the item value is attributed as "Exchange Credit" in the financial reconciliation.*
 
 ### Level 5: Physical Refinement (Non-Exchange Only)
-If no exchange is present, refine the intent for the `toReturn` portion:
+If no exchange relationship is detected, calibrate the intent for the `toReturn` portion:
 - **Scenario 1**: Standard Return (`RETURN`).
 - **Scenario 7**: Lost in Shipment (`NO_RESTOCK` + location=null).
 - **Scenario 2**: Damaged/No Restock (`NO_RESTOCK` + location!=null).
@@ -110,14 +107,16 @@ If no exchange is present, refine the intent for the `toReturn` portion:
 
 ---
 
-## 3. Money Situation Reconciliation (Level 6)
+## 3. Reconciliation & Attribution (Level 6)
 
-After all line items are processed, the service reconciles the total money flow:
+After all line items are processed, the service performs the final financial and metadata balancing:
 
-1. **totalReturnedAmount**: `Sum(itemValue) + shippingRefund`
-2. **aRefundAmt (Cash Out)**: Sum of all `transactions` of type `Refund`.
-3. **exchangeCredit**: `totalReturnedAmount - aRefundAmt`.
-4. **Scenario 6 (Loop)**: Apply final Loop channel overrides and fees.
+1. **Exchange Reconciliation**:
+    - `totalReturnedAmount = Sum(itemValue) + shippingRefund`
+    - `aRefundAmt (Cash Out) = Sum(refundTransactions)`
+    - `exchangeCredit = totalReturnedAmount - aRefundAmt`
+2. **Channel/Origin Attribution**:
+    - If a `refundAgreement.app.title` is present (e.g., "Loop"), tag the Moqui `ReturnHeader.originEnumId` accordingly. Loop is treated as **metadata** to track the return's origin, not a logic-branching signal.
 
 ---
 
