@@ -23,33 +23,42 @@ graph TD
     L1 -->|Has Refund Line Items| LoopStart[FOR EACH refundLineItem]
     
     subgraph ItemLevel[Item-Level Attribution]
-        LoopStart --> L2{Level 2: Item Type Check}
-        
+        LoopStart --> L2{Level 2: Item Type}
         L2 -->|isGiftCard=True| Scenario9[Scenario 9: Gift Card Return]
         
-        L2 -->|isGiftCard=False| L3{Level 3: Compute Exchange?}
-        L3 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
-
-        L3 -->|isExchange=False| L4{Level 4: Run Sieve}
-        
-        L4 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
-        L4 -->|toReturn > 0| L5[Level 5: Return Refinement]
-        
-        L5 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
-        L5 -->|restockType=NO_RESTOCK| L5_Sub{Location Set?}
-        L5_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
-        L5_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
+        L2 -->|isGiftCard=False| L3{Level 3: The Sieve}
+        L3 -->|Capacity: OK| SieveRes[Determine toCancel / toReturn]
     end
+
+    SieveRes --> L4{Level 4: Exchange Context}
+    
+    L4 -->|Exchange Flag Found?| L4_Sub{Exchange Type?}
+    L4_Sub -->|Native/V2| Scenario11[Scenario 11: Native Exchange]
+    L4_Sub -->|Loop App| Scenario13[Scenario 13: Loop Exchange]
+    L4_Sub -->|POS/Temporal| Scenario12[Scenario 12: POS Top-up Exchange]
+    
+    L4 -->|No Exchange| L5{Level 5: Physical Refinement}
+    
+    L5 -->|toCancel > 0| Scenario3[Scenario 3: Normal Cancel]
+    L5 -->|toReturn > 0| L5_Sub{Restock Type?}
+    
+    L5_Sub -->|RETURN| Scenario1[Scenario 1: Normal Return]
+    L5_Sub -->|NO_RESTOCK| L5_Cond{Location Set?}
+    L5_Cond -->|No| Scenario7[Scenario 7: Lost in Shipment]
+    L5_Cond -->|Yes| Scenario2[Scenario 2: Damaged/No Restock]
 
     Scenario9 --> NextItem{More Items?}
     Scenario11 --> NextItem
+    Scenario12 --> NextItem
+    Scenario13 --> NextItem
     Scenario3 --> NextItem
     Scenario1 --> NextItem
     Scenario7 --> NextItem
     Scenario2 --> NextItem
     
     NextItem -->|Yes| LoopStart
-    NextItem -->|No| Exit
+    NextItem -->|No| Recon[Level 6: Money Situaton Reconciliation]
+    Recon --> Exit
 ```
 
 ---
@@ -73,40 +82,42 @@ graph TD
 
 ## 2. Item-Level Decision Loop
 
-For **each** `refundLineItem` in the Shopify refund, execute Levels 2 through 5. Every line item is independently attributed to exactly one scenario.
+For **each** `refundLineItem` in the Shopify refund, we first attribute the item physically, then qualify it with financial context.
 
-### Level 2: Item Type Check (isGiftCard?)
-- **Check**: `lineItem.isGiftCard == true`.
-- **Exit Path**: If true, handle as **Scenario 9 (Gift Card Return)** and proceed to next item. This bypasses physical inventory and exchange logic.
+### Level 2: Item Type (isGiftCard?)
+- **Condition**: `lineItem.isGiftCard == true`.
+- **Exit Path**: Handle as **Scenario 9 (Gift Card Return)** and proceed to next item.
 
-### Level 3: Actionable Context (Compute Exchange?)
-- **Check**: Is this a physical exchange session?
-- **Computation**: Check Native `exchangeV2s` OR Return `exchangeLineItems` OR Loop App Agreement.
-- **Exit Path**: If `isExchange` is True, perform exchange-specific ledger allocation and proceed to next item.
+### Level 3: The Sieve (Physical Attribution)
+- **Computation**: Determine `toCancel` and `toReturn` based on Moqui Capacity Pools.
+- **Output**: Physical quantities used for the next levels.
 
-### Level 4: The Sieve (Physical Attribution)
-- **Check**: Distribute `quantity` based on Moqui State.
-- **Lazy Computation**: Initialize "Capacity Pools" at the start of the service and subtract for each item processed.
-    - `toCancel = min(rli.qty, cancelPool[sku])`
-    - `toReturn = min(rli.qty - toCancel, returnPool[sku])`
-- **Output**: 
-    - If `toCancel > 0` -> Create `OrderCancel` / **Scenario 3**.
-    - If `toReturn > 0` -> Proceed to Level 5 for restock refinement.
+### Level 4: Exchange Context (Financial Attribution)
+The system checks four distinct signals to identify the "Exchange Relationship":
+1. **Native (V2)**: Order has `exchangeV2s` additions. (**Scenario 11**)
+2. **Return-Linked**: `refund.return.exchangeLineItems` is non-empty. (**Scenario 11**)
+3. **App-Driven**: `agreements.app.title == "Loop"` AND high-confidence exchange prefix. (**Scenario 13**)
+4. **POS Top-up**: $0 Cash Refund followed immediately by a `SALE` transaction. (**Scenario 12**)
 
-### Level 5: Return Refinement (Shopify Flags)
-- **Check**: Shopify intent for the **shipped** portion (`toReturn`).
-- **Scenario 1**: `restockType == RETURN` -> Standard Return.
-- **Scenario 7**: `restockType == NO_RESTOCK` AND `location == null` -> Lost in Shipment Appeasement.
-- **Scenario 2**: `restockType == NO_RESTOCK` AND `location != null` -> Damaged/Field Scrap.
+*Note: If an exchange is detected, the item still goes through the Sieve, but its "Item Value" is attributed as Exchange Credit rather than Cash Refund.*
+
+### Level 5: Physical Refinement (Non-Exchange Only)
+If no exchange is present, refine the intent for the `toReturn` portion:
+- **Scenario 1**: Standard Return (`RETURN`).
+- **Scenario 7**: Lost in Shipment (`NO_RESTOCK` + location=null).
+- **Scenario 2**: Damaged/No Restock (`NO_RESTOCK` + location!=null).
+- **Scenario 3**: Standard Cancel (from `toCancel` portion).
 
 ---
 
-## 3. Global Refinements (Level 6)
+## 3. Money Situation Reconciliation (Level 6)
 
-### Scenario 6: Loop Channel Attribution
-- **Check**: Did the agreement come from the "Loop" app?
-- **Computation**: Agreement lookup by `refundId`.
-- **Outcome**: Override return source to "Loop" and apply specialized Loop return fee logic if applicable.
+After all line items are processed, the service reconciles the total money flow:
+
+1. **totalReturnedAmount**: `Sum(itemValue) + shippingRefund`
+2. **aRefundAmt (Cash Out)**: Sum of all `transactions` of type `Refund`.
+3. **exchangeCredit**: `totalReturnedAmount - aRefundAmt`.
+4. **Scenario 6 (Loop)**: Apply final Loop channel overrides and fees.
 
 ---
 
