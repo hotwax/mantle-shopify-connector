@@ -47,8 +47,6 @@ graph TD
 
 ---
 
-## 1. Primary Classification Nodes
-
 ## 1. Primary Classification (Layered Execution)
 
 ### Level 0: Global Perimeter
