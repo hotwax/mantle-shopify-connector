@@ -20,29 +20,31 @@ graph TD
     Scenario5 --> Exit
     Scenario8 --> Exit
 
-    L1 -->|Has Refund Line Items| L2{Level 2: Compute Exchange?}
-    L2 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
+    L1 -->|Has Refund Line Items| L2{Level 2: Item Type Check}
+    
+    L2 -->|isGiftCard=True| Scenario9[Scenario 9: Gift Card Return]
+    Scenario9 --> Exit
+    
+    L2 -->|isGiftCard=False| L3{Level 3: Compute Exchange?}
+    L3 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
     Scenario11 --> ExchangeExit[Process Exchange & EXIT]
 
-    L2 -->|isExchange=False| L3{Level 3: Run Sieve}
-    L3 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
+    L3 -->|isExchange=False| L4{Level 4: Run Sieve}
+    L4 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
     Scenario3 --> SieveRemainder{Remaining Qty?}
     
-    SieveRemainder -->|Yes| L4[Level 4: Return Refinement]
+    SieveRemainder -->|Yes| L5[Level 5: Return Refinement]
     SieveRemainder -->|No| Exit
-    L3 -->|toReturn > 0| L4
+    L4 -->|toReturn > 0| L5
     
-    L4 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
-    L4 -->|restockType=NO_RESTOCK| L4_Sub{Location Set?}
-    L4_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
-    L4_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
+    L5 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
+    L5 -->|restockType=NO_RESTOCK| L5_Sub{Location Set?}
+    L5_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
+    L5_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
     
     Scenario1 --> Exit
     Scenario7 --> Exit
     Scenario2 --> Exit
-
-    %% Parallel Flag Check for Special Items
-    Exit -.->|isGiftCard?| Scenario9[Scenario 9: Gift Card Special Post-Processing]
 ```
 
 ---
@@ -62,33 +64,38 @@ graph TD
     - If `refundShippingLines` exist -> **Scenario 8 (Shipping Refund)**.
     - Otherwise -> **EXIT** (Metadata/Zero-Value Update).
 
-### Level 2: Actionable Context (Compute Exchange)
-- **Lazy Computation**: This Boolean is only computed if Level 1 confirms we have items.
+### Level 2: Item Type Check (isGiftCard?)
+- **Lazy Computation**: Performed contextually for the line item.
+- **Check**: `lineItem.isGiftCard == true`.
+- **Exit Path**: If true, handle as **Scenario 9 (Gift Card Return)** and **EXIT**. This bypasses physical inventory and exchange logic.
+
+### Level 3: Actionable Context (Compute Exchange?)
+- **Check**: Is this a physical exchange session?
 - **Computation**: Check Native `exchangeV2s` OR Return `exchangeLineItems` OR Loop App Agreement.
 - **Exit Path**: If `isExchange` is True, perform exchange-specific ledger allocation and **EXIT**.
 
 ---
 
-## 2. The Sieve (Level 3: Attribution)
+## 2. The Sieve (Level 4: Attribution)
 
-Performed only if `isExchange` is False.
+Performed only if `isGiftCard` is False AND `isExchange` is False.
 
-- **Check**: Distribute `quantity` based on Moqui State.
+- **Check**: Distribute `quantity` based on Moqui Physical State.
 - **Computation**: 
     - `toCancel = min(qty, moquiApproved)`
     - `toReturn = min(qty - toCancel, moquiShipped)`
-- **Exit Path**: If `toCancel` exists, process cancel. If `toReturn > 0`, proceed to Level 4.
+- **Exit Path**: If `toCancel` exists, process cancel. If `toReturn > 0`, proceed to Level 5.
 
 ---
 
-## 3. Return Refinement (Level 4: Shopify Flags)
+## 3. Return Refinement (Level 5: Shopify Flags)
 
-Performed only for the `toReturn` portion of the quantity.
+Performed only for the physical `toReturn` portion.
 
 - **Check**: What is the Shopify intent for the shipped item?
 - **Scenario 1**: `restockType == RETURN` -> Standard Return.
 - **Scenario 7**: `restockType == NO_RESTOCK` AND `location == null` -> Lost in Shipment Appeasement.
-- **Scenario 2**: `restockType == NO_RESTOCK` AND `location != null` -> Damaged/Field Scrap (Refund but no stock).
+- **Scenario 2**: `restockType == NO_RESTOCK` AND `location != null` -> Damaged/Field Scrap.
 
 ---
 
@@ -96,7 +103,6 @@ Performed only for the `toReturn` portion of the quantity.
 
 These logic blocks run after the primary scenario is decided, before final exit.
 
-- **Scenario 9 (Gift Card)**: If `isGiftCard = true`, bypass SKU validation and map to gift card GL accounts.
 - **Scenario 6 (Loop)**: If Agreement App is "Loop", override the return source/channel.
 
 ---
