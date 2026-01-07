@@ -6,100 +6,100 @@ This document defines the logic used by the `create#ShopifyRefunds` service to c
 
 ```mermaid
 graph TD
-    Start[Shopify Refund/Return Data Received] --> OrphanCheck{Order exists in OMS?}
+    Start[Shopify Data Received] --> L0{Level 0: Global Check}
     
-    OrphanCheck -- No --> Scenario10[Scenario 10: Orphan Return]
-    OrphanCheck -- Yes --> RLI_Check{Are there refundLineItems?}
+    L0 -->|Orphan?| Scenario10[Scenario 10: Orphan Return]
+    Scenario10 --> Exit[EXIT]
+    
+    L0 -->|Order Exists| L1{Level 1: Intent Check}
+    
+    L1 -->|No Refund Line Items| L1_Sub{Appeasement / Shipping?}
+    L1_Sub -->|Transactions| Scenario5[Scenario 5: Pure Appeasement]
+    L1_Sub -->|Shipping Lines| Scenario8[Scenario 8: Shipping Only]
+    L1_Sub -->|None| Exit
+    Scenario5 --> Exit
+    Scenario8 --> Exit
 
-    RLI_Check -- No --> AppeasementCheck{Are there transactions?}
-    AppeasementCheck -- Yes --> Scenario5[Scenario 5: Pure Appeasement]
-    AppeasementCheck -- No --> ShippingCheck{Are there refundShippingLines?}
-    ShippingCheck -- Yes --> Scenario8[Scenario 8: Shipping Only Refund]
-    ShippingCheck -- No --> Ignore[Ignore / Metadata Update]
+    L1 -->|Has Refund Line Items| L2{Level 2: Compute Exchange?}
+    L2 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
+    Scenario11 --> ExchangeExit[Process Exchange & EXIT]
 
-    RLI_Check -- Yes --> CaseCheck{Is it an Exchange?}
+    L2 -->|isExchange=False| L3{Level 3: Run Sieve}
+    L3 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
+    Scenario3 --> SieveRemainder{Remaining Qty?}
     
-    CaseCheck -- Yes --> Scenario11[Scenario 11: Exchange]
-    Scenario11 --> ExchangeType[Compute exchangeCredit & totalReturnedAmount]
+    SieveRemainder -->|Yes| L4[Level 4: Return Refinement]
+    SieveRemainder -->|No| Exit
+    L3 -->|toReturn > 0| L4
+    
+    L4 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
+    L4 -->|restockType=NO_RESTOCK| L4_Sub{Location Set?}
+    L4_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
+    L4_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
+    
+    Scenario1 --> Exit
+    Scenario7 --> Exit
+    Scenario2 --> Exit
 
-    CaseCheck -- No --> Sieve[Run Phase B: The Capacity Sieve]
-    
-    Sieve --> SieveResult{Moqui State Attribution?}
-    
-    SieveResult -- Approved/Unfulfilled --> Scenario3[Scenario 3: Unfulfilled Item Refund / Cancel]
-    
-    SieveResult -- Shipped --> ReturnType{Is restockType = RETURN?}
-    
-    ReturnType -- Yes --> Scenario1[Scenario 1: Normal Return with Restock]
-    
-    ReturnType -- No --> LocationCheck{Is location empty?}
-    LocationCheck -- Yes --> Scenario7[Scenario 7: Lost in Shipment Appeasement]
-    LocationCheck -- No --> Scenario2[Scenario 2: Refund No Restock]
-
-    SieveResult -- No Capacity --> Error[Log Attribution Error / Historical Refund]
-
-    %% Special Flag Checks (applied in parallel)
-    Scenario1 -->|isGiftCard?| Scenario9[Scenario 9: Gift Card Return]
-    Scenario2 -->|isGiftCard?| Scenario9
-    Scenario3 -->|isGiftCard?| Scenario9
-    
-    Scenario1 -->|App is LOOP?| Scenario6[Scenario 6: Loop Return]
-    Scenario2 -->|App is LOOP?| Scenario6
+    %% Parallel Flag Check for Special Items
+    Exit -.->|isGiftCard?| Scenario9[Scenario 9: Gift Card Special Post-Processing]
 ```
 
 ---
 
 ## 1. Primary Classification Nodes
 
-### Node 1: The Orphan Check
-- **Data Element**: `order.id` (Shopify) matched against `OrderHeader.externalId` (Moqui).
-- **Outcome**: If missing, we cannot attribute to an existing order. We must create a standalone return context.
+## 1. Primary Classification (Layered Execution)
 
-### Node 2: The Appeasement Check
-- **Data Element**: `refund.refundLineItems` is empty AND `refund.transactions` is NOT empty.
-- **Outcome**: This is **Scenario 5 (Pure Appeasement)**. No inventory is affected. Moqui should create a `ReturnItem` of type `Appeasement` or directly issue a `Invoice` credit.
+### Level 0: Global Perimeter
+- **Check**: Does the Order ID exist in Moqui?
+- **Computation**: Database lookup by `externalId`.
+- **Exit Path**: If false, immediately drop into **Scenario 10 (Orphan)**.
 
-### Node 3: The Exchange Detector
-- **Data Elements**: 
-    1. `order.exchangeV2s` exists.
-    2. `refund.return.exchangeLineItems` exists.
-    3. `agreements.app.title == "LOOP"` AND `restockType == NO_RESTOCK`.
-- **Outcome**: **Scenario 11 (Exchange)**. Trigger `exchangeCredit` logic.
+### Level 1: Intent Classification (Root Level)
+- **Check**: Are there `refundLineItems`?
+- **Computation**: Count of items in the refund object.
+- **Exit Path (No Items)**:
+    - If `transactions` exist -> **Scenario 5 (Appeasement)**.
+    - If `refundShippingLines` exist -> **Scenario 8 (Shipping Refund)**.
+    - Otherwise -> **EXIT** (Metadata/Zero-Value Update).
 
----
-
-## 2. The Sieve (Attribution Logic)
-
-When `refundLineItems` exist, we decide between **Cancel** and **Return** based on Moqui's inventory ownership.
-
-| If Moqui Status is... | Condition | Scenario Deduction |
-| :--- | :--- | :--- |
-| **Approved / Pending** | `quantity <= cancelCapacity` | **Scenario 3**: Unfulfilled Item Refund. |
-| **Shipped / Completed** | `quantity <= returnCapacity` | **Scenario 1 or 2**: Fulfilled Item Return. |
+### Level 2: Actionable Context (Compute Exchange)
+- **Lazy Computation**: This Boolean is only computed if Level 1 confirms we have items.
+- **Computation**: Check Native `exchangeV2s` OR Return `exchangeLineItems` OR Loop App Agreement.
+- **Exit Path**: If `isExchange` is True, perform exchange-specific ledger allocation and **EXIT**.
 
 ---
 
-## 3. Secondary Signal Refinement
+## 2. The Sieve (Level 3: Attribution)
 
-Once attributed as a **Return** (Shipped), we use Shopify flags to refine the "Successor" state:
+Performed only if `isExchange` is False.
 
-### Scenario 1 vs 2 (Restock Intent)
-- **Flag**: `restockType`.
-- **Logic**: 
-    - `RETURN` -> **Scenario 1** (Normal Return).
-    - `NO_RESTOCK` -> **Scenario 2** (Refund only, no inventory impact).
+- **Check**: Distribute `quantity` based on Moqui State.
+- **Computation**: 
+    - `toCancel = min(qty, moquiApproved)`
+    - `toReturn = min(qty - toCancel, moquiShipped)`
+- **Exit Path**: If `toCancel` exists, process cancel. If `toReturn > 0`, proceed to Level 4.
 
-### Scenario 7 (Lost in Shipment)
-- **Flags**: `restockType == NO_RESTOCK` AND `location == null`.
-- **Outcome**: This is a specific CSR appeasement for lost items.
+---
 
-### Scenario 6 (Loop Return)
-- **Flag**: `agreements.app.title == "Loop Returns & Exchanges"`.
-- **Outcome**: Signals third-party managed logic. Typically high-confidence for "Return" even if native signals are missing.
+## 3. Return Refinement (Level 4: Shopify Flags)
 
-### Scenario 9 (Gift Card)
-- **Flag**: `lineItem.isGiftCard == true`.
-- **Outcome**: Special handling for non-SKU items.
+Performed only for the `toReturn` portion of the quantity.
+
+- **Check**: What is the Shopify intent for the shipped item?
+- **Scenario 1**: `restockType == RETURN` -> Standard Return.
+- **Scenario 7**: `restockType == NO_RESTOCK` AND `location == null` -> Lost in Shipment Appeasement.
+- **Scenario 2**: `restockType == NO_RESTOCK` AND `location != null` -> Damaged/Field Scrap (Refund but no stock).
+
+---
+
+## 4. Post-Processing Hooks (Parallel)
+
+These logic blocks run after the primary scenario is decided, before final exit.
+
+- **Scenario 9 (Gift Card)**: If `isGiftCard = true`, bypass SKU validation and map to gift card GL accounts.
+- **Scenario 6 (Loop)**: If Agreement App is "Loop", override the return source/channel.
 
 ---
 
