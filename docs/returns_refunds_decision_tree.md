@@ -1,129 +1,92 @@
-# Decision Tree: Shopify Returns & Refunds Integration
+# Decision Tree: Shopify Returns & Refunds Refactored
 
-This document defines the logic used by the `create#ShopifyRefunds` service to classify Shopify data into business scenarios and attribute them correctly in Moqui/OMS.
+This document defines the core logic for the `create#ShopifyRefunds` service, focusing on accurate inventory attribution and financial reconciliation.
 
-## The Logic Flow
+## 1. The Decision Hierarchy
 
 ```mermaid
 graph TD
-    Start[Shopify Data Received] --> L0{Level 0: Global Check}
+    Start[Shopify Refund Received] --> L0{Level 0: Global Check}
     
-    L0 -->|Orphan?| Scenario10[Scenario 10: Orphan Return]
-    Scenario10 --> Exit[EXIT]
+    L0 -->|Order Missing| Scenario10[Scenario 10: Orphan Return]
+    L0 -->|Order Exists| L1{Level 1: Refund Shape}
     
-    L0 -->|Order Exists| L1{Level 1: Intent Check}
+    L1 -->|No Item Lines| L1_Sub{Check Charges}
+    L1_Sub -->|Transactions Only| Scenario5[Scenario 5: Pure Appeasement]
+    L1_Sub -->|Shipping Lines| Scenario8[Scenario 8: Shipping Refund]
     
-    L1 -->|No Refund Line Items| L1_Sub{Appeasement / Shipping?}
-    L1_Sub -->|Transactions| Scenario5[Scenario 5: Pure Appeasement]
-    L1_Sub -->|Shipping Lines| Scenario8[Scenario 8: Shipping Only]
-    L1_Sub -->|None| Exit
-    Scenario5 --> Exit
-    Scenario8 --> Exit
-
-    L1 -->|Has Refund Line Items| LoopStart[FOR EACH refundLineItem]
+    L1 -->|Has Item Lines| Loop[FOR EACH refundLineItem]
     
-    subgraph ItemLevel[Item-Level Attribution]
-        LoopStart --> L2{Level 2: Item Type}
-        L2 -->|isGiftCard=True| Scenario9[Scenario 9: Gift Card Return]
+    subgraph Item_Attribution [Item attribution & Context]
+        Loop --> Sieve{Step A: The Sieve}
+        Sieve -->|Moqui Approved| S_Cancel[Scenario 3: Cancel]
+        Sieve -->|Moqui Shipped| S_Return[Return Context]
         
-        L2 -->|isGiftCard=False| L3{Level 3: The Sieve}
-        L3 -->|Capacity: OK| SieveRes[Determine toCancel / toReturn]
+        S_Return --> StepB{Step B: Financial Context}
+        StepB -->|isExchange?| X_Flag[Add Exchange Relationship]
+        StepB -->|isGiftCard?| Scenario9[Scenario 9: Gift Card]
+        
+        S_Return --> StepC{Step C: Restock Intent}
+        StepC -->|RETURN| Scenario1[Scenario 1: Normal Return]
+        StepC -->|NO_RESTOCK + Location| Scenario2[Scenario 2: Damaged/Refuse]
+        StepC -->|NO_RESTOCK + No Location| Scenario7[Scenario 7: Lost in Shipment]
     end
 
-    SieveRes --> L4{Level 4: Exchange Context}
+    Scenario1 --> Next[Next Item?]
+    Scenario2 --> Next
+    Scenario3 --> Next
+    Scenario7 --> Next
+    Scenario9 --> Next
+    X_Flag --> Next
     
-    L4 -->|Exchange Flag Found?| L4_Sub{Exchange Type?}
-    L4_Sub -->|Native/V2/Return-Linked| Scenario11[Scenario 11: Shopify Exchange]
-    L4_Sub -->|POS/Temporal| Scenario12[Scenario 12: POS Top-up Exchange]
-    
-    L4 -->|No Exchange| L5{Level 5: Physical Refinement}
-    
-    L5 -->|toCancel > 0| Scenario3[Scenario 3: Normal Cancel]
-    L5 -->|toReturn > 0| L5_Sub{Restock Type?}
-    
-    L5_Sub -->|RETURN| Scenario1[Scenario 1: Normal Return]
-    L5_Sub -->|NO_RESTOCK| L5_Cond{Location Set?}
-    L5_Cond -->|No| Scenario7[Scenario 7: Lost in Shipment]
-    L5_Cond -->|Yes| Scenario2[Scenario 2: Damaged/No Restock]
-
-    Scenario9 --> NextItem{More Items?}
-    Scenario11 --> NextItem
-    Scenario12 --> NextItem
-    Scenario3 --> NextItem
-    Scenario1 --> NextItem
-    Scenario7 --> NextItem
-    Scenario2 --> NextItem
-    
-    NextItem -->|Yes| LoopStart
-    NextItem -->|No| Recon[Level 6: Reconciliation & Channel Stats]
-    Recon --> Exit
+    Next -->|Yes| Loop
+    Next -->|No| Recon[Level 2: Money Situation Reconciliation]
+    Recon --> Exit[Update Moqui & EXIT]
 ```
 
 ---
 
-## 1. Primary Classification (Layered Execution)
+## 2. Core Logic Definitions
 
-### Level 0: Global Perimeter (Refund Level)
-- **Check**: Does the Order ID exist in Moqui?
-- **Computation**: Database lookup by `externalId`.
-- **Exit Path**: If false, immediately drop into **Scenario 10 (Orphan)** and EXIT.
+### Level 0: Global Perimeter
+- **Check**: Database lookup of `OrderHeader.externalId` using Shopify Order ID.
+- **Outcome**: If missing, treat as an **Orphan Return (Scenario 10)**.
 
-### Level 1: Intent Classification (Refund Level)
-- **Check**: Are there `refundLineItems`?
-- **Computation**: Count of items in the refund object.
-- **Exit Path (No Items)**:
-    - If `transactions` exist -> **Scenario 5 (Appeasement)**.
-    - If `refundShippingLines` exist -> **Scenario 8 (Shipping Refund)**.
-    - Otherwise -> **EXIT** (Metadata/Zero-Value Update).
+### Level 1: Refund Shape
+- If `refundLineItems` is empty, determine if it's **Pure Appeasement (Scenario 5)** or a **Shipping Refund (Scenario 8)** based on transaction and shipping line presence.
 
 ---
 
-## 2. Item-Level Decision Loop
+## 3. Item-Level Attribution (Decoupled Sieve)
 
-For **each** `refundLineItem` in the Shopify refund, we first attribute the item physically, then qualify it with financial context.
+For every line item in the refund, we apply the following logic sequentially:
 
-### Level 2: Item Type (isGiftCard?)
-- **Condition**: `lineItem.isGiftCard == true`.
-- **Exit Path**: Handle as **Scenario 9 (Gift Card Return)** and proceed to next item.
+### Step A: The Physical Sieve (Capacity Attribution)
+Based on Moqui's inventory state, we distribute the quantity:
+1. **toCancel**: `min(qty, moquiApprovedPool)` -> **Cancel Unfulfilled (Scenario 3)**.
+2. **toReturn**: `min(qty - toCancel, moquiShippedPool)` -> Proceed to Return Context.
 
-### Level 3: The Sieve (Physical Attribution)
-- **Computation**: Determine `toCancel` and `toReturn` based on Moqui Capacity Pools.
-- **Output**: Physical quantities used for the next levels.
+### Step B: Financial Context (Overlays)
+These flags qualify the return but do not change its physical status:
+- **Exchange Relationship**: Identify if the item is part of an exchange session (Native V2, Return exchange items, or POS Temporal Salle).
+- **Gift Card**: If `isGiftCard = true`, bypass physical inventory movement.
 
-### Level 4: Exchange Context (Financial Attribution)
-The system checks three primary signals to identify the "Exchange Relationship":
-1. **Shopify Native (V2)**: Order has `exchangeV2s` additions. (**Scenario 11**)
-2. **Shopify Return-Linked**: `refund.return.exchangeLineItems` is non-empty. (**Scenario 11**)
-3. **POS Temporal Rule**: $0 Cash Refund followed immediately by a `SALE` transaction. (**Scenario 12**)
-
-*Note: If any of these signals are present, the item value is attributed as "Exchange Credit" in the financial reconciliation.*
-
-### Level 5: Physical Refinement (Non-Exchange Only)
-If no exchange relationship is detected, calibrate the intent for the `toReturn` portion:
+### Step C: Restock intent (Refinement)
+For the `toReturn` portion, identify the inventory impact:
 - **Scenario 1**: Standard Return (`RETURN`).
-- **Scenario 7**: Lost in Shipment (`NO_RESTOCK` + location=null).
-- **Scenario 2**: Damaged/No Restock (`NO_RESTOCK` + location!=null).
-- **Scenario 3**: Standard Cancel (from `toCancel` portion).
+- **Scenario 7**: Lost in Shipment (`NO_RESTOCK` with no location set).
+- **Scenario 2**: Damaged / Field Scrap (`NO_RESTOCK` with location set).
 
 ---
 
-## 3. Reconciliation & Attribution (Level 6)
+## 4. Money Situation Reconciliation (Level 2)
 
-After all line items are processed, the service performs the final financial and metadata balancing:
-
-1. **Exchange Reconciliation**:
-    - `totalReturnedAmount = Sum(itemValue) + shippingRefund`
-    - `aRefundAmt (Cash Out) = Sum(refundTransactions)`
-    - `exchangeCredit = totalReturnedAmount - aRefundAmt`
-2. **Channel/Origin Attribution**:
-    - If a `refundAgreement.app.title` is present (e.g., "Loop"), tag the Moqui `ReturnHeader.originEnumId` accordingly. Loop is treated as **metadata** to track the return's origin, not a logic-branching signal.
+Final financial balancing for the entire refund:
+1. **totalReturnedAmount**: The gross value of all returned/cancelled items + shipping refund.
+2. **aRefundAmt**: The actual cash-out value from Shopify `transactions`.
+3. **exchangeCredit**: `totalReturnedAmount - aRefundAmt`. This value represents the financial "swap" to be applied to new items or credit memos.
 
 ---
 
-## 4. Calculated Outputs
-
-| Field | Source / Formula | Use Case |
-| :--- | :--- | :--- |
-| **totalReturnedAmount** | `subtotal + tax + adjustments` | Ledger balancing. |
-| **exchangeCredit** | `totalReturnedAmount - cashRefunded` | Determining how much value was "swapped". |
-| **A-Refund-Amt** | `refund.transactions.amount` | Actual cash impact. |
+## 5. Channel Attribution (Metadata)
+- **Origin**: Use `refundAgreement.app.title` (e.g., "Loop", "POS") as metadata to track the channel, without forking the primary logic.
