@@ -39,12 +39,12 @@ graph TD
     SieveResult -- No Capacity --> Error[Log Attribution Error / Historical Refund]
 
     %% Special Flag Checks (applied in parallel)
-    Scenario1 -- isGiftCard? --> Scenario9[Scenario 9: Gift Card Return]
-    Scenario2 -- isGiftCard? --> Scenario9
-    Scenario3 -- isGiftCard? --> Scenario9
+    Scenario1 -->|isGiftCard?| Scenario9[Scenario 9: Gift Card Return]
+    Scenario2 -->|isGiftCard?| Scenario9
+    Scenario3 -->|isGiftCard?| Scenario9
     
-    Scenario1 -- App="LOOP"? --> Scenario6[Scenario 6: Loop Return]
-    Scenario2 -- App="LOOP"? --> Scenario6
+    Scenario1 -->|App is LOOP?| Scenario6[Scenario 6: Loop Return]
+    Scenario2 -->|App is LOOP?| Scenario6
 ```
 
 ---
