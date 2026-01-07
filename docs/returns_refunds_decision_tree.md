@@ -20,43 +20,48 @@ graph TD
     Scenario5 --> Exit
     Scenario8 --> Exit
 
-    L1 -->|Has Refund Line Items| L2{Level 2: Item Type Check}
+    L1 -->|Has Refund Line Items| LoopStart[FOR EACH refundLineItem]
     
-    L2 -->|isGiftCard=True| Scenario9[Scenario 9: Gift Card Return]
-    Scenario9 --> Exit
-    
-    L2 -->|isGiftCard=False| L3{Level 3: Compute Exchange?}
-    L3 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
-    Scenario11 --> ExchangeExit[Process Exchange & EXIT]
+    subgraph ItemLevel[Item-Level Attribution]
+        LoopStart --> L2{Level 2: Item Type Check}
+        
+        L2 -->|isGiftCard=True| Scenario9[Scenario 9: Gift Card Return]
+        
+        L2 -->|isGiftCard=False| L3{Level 3: Compute Exchange?}
+        L3 -->|isExchange=True| Scenario11[Scenario 11: Exchange]
 
-    L3 -->|isExchange=False| L4{Level 4: Run Sieve}
-    L4 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
-    Scenario3 --> SieveRemainder{Remaining Qty?}
+        L3 -->|isExchange=False| L4{Level 4: Run Sieve}
+        
+        L4 -->|toCancel > 0| Scenario3[Scenario 3: Cancel Unfulfilled]
+        L4 -->|toReturn > 0| L5[Level 5: Return Refinement]
+        
+        L5 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
+        L5 -->|restockType=NO_RESTOCK| L5_Sub{Location Set?}
+        L5_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
+        L5_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
+    end
+
+    Scenario9 --> NextItem{More Items?}
+    Scenario11 --> NextItem
+    Scenario3 --> NextItem
+    Scenario1 --> NextItem
+    Scenario7 --> NextItem
+    Scenario2 --> NextItem
     
-    SieveRemainder -->|Yes| L5[Level 5: Return Refinement]
-    SieveRemainder -->|No| Exit
-    L4 -->|toReturn > 0| L5
-    
-    L5 -->|restockType=RETURN| Scenario1[Scenario 1: Normal Return]
-    L5 -->|restockType=NO_RESTOCK| L5_Sub{Location Set?}
-    L5_Sub -->|No| Scenario7[Scenario 7: Lost in Shipment]
-    L5_Sub -->|Yes| Scenario2[Scenario 2: Refund No Restock]
-    
-    Scenario1 --> Exit
-    Scenario7 --> Exit
-    Scenario2 --> Exit
+    NextItem -->|Yes| LoopStart
+    NextItem -->|No| Exit
 ```
 
 ---
 
 ## 1. Primary Classification (Layered Execution)
 
-### Level 0: Global Perimeter
+### Level 0: Global Perimeter (Refund Level)
 - **Check**: Does the Order ID exist in Moqui?
 - **Computation**: Database lookup by `externalId`.
-- **Exit Path**: If false, immediately drop into **Scenario 10 (Orphan)**.
+- **Exit Path**: If false, immediately drop into **Scenario 10 (Orphan)** and EXIT.
 
-### Level 1: Intent Classification (Root Level)
+### Level 1: Intent Classification (Refund Level)
 - **Check**: Are there `refundLineItems`?
 - **Computation**: Count of items in the refund object.
 - **Exit Path (No Items)**:
@@ -64,46 +69,44 @@ graph TD
     - If `refundShippingLines` exist -> **Scenario 8 (Shipping Refund)**.
     - Otherwise -> **EXIT** (Metadata/Zero-Value Update).
 
+---
+
+## 2. Item-Level Decision Loop
+
+For **each** `refundLineItem` in the Shopify refund, execute Levels 2 through 5. Every line item is independently attributed to exactly one scenario.
+
 ### Level 2: Item Type Check (isGiftCard?)
-- **Lazy Computation**: Performed contextually for the line item.
 - **Check**: `lineItem.isGiftCard == true`.
-- **Exit Path**: If true, handle as **Scenario 9 (Gift Card Return)** and **EXIT**. This bypasses physical inventory and exchange logic.
+- **Exit Path**: If true, handle as **Scenario 9 (Gift Card Return)** and proceed to next item. This bypasses physical inventory and exchange logic.
 
 ### Level 3: Actionable Context (Compute Exchange?)
 - **Check**: Is this a physical exchange session?
 - **Computation**: Check Native `exchangeV2s` OR Return `exchangeLineItems` OR Loop App Agreement.
-- **Exit Path**: If `isExchange` is True, perform exchange-specific ledger allocation and **EXIT**.
+- **Exit Path**: If `isExchange` is True, perform exchange-specific ledger allocation and proceed to next item.
 
----
+### Level 4: The Sieve (Physical Attribution)
+- **Check**: Distribute `quantity` based on Moqui State.
+- **Lazy Computation**: Initialize "Capacity Pools" at the start of the service and subtract for each item processed.
+    - `toCancel = min(rli.qty, cancelPool[sku])`
+    - `toReturn = min(rli.qty - toCancel, returnPool[sku])`
+- **Output**: 
+    - If `toCancel > 0` -> Create `OrderCancel` / **Scenario 3**.
+    - If `toReturn > 0` -> Proceed to Level 5 for restock refinement.
 
-## 2. The Sieve (Level 4: Attribution)
-
-Performed only if `isGiftCard` is False AND `isExchange` is False.
-
-- **Check**: Distribute `quantity` based on Moqui Physical State.
-- **Computation**: 
-    - `toCancel = min(qty, moquiApproved)`
-    - `toReturn = min(qty - toCancel, moquiShipped)`
-- **Exit Path**: If `toCancel` exists, process cancel. If `toReturn > 0`, proceed to Level 5.
-
----
-
-## 3. Return Refinement (Level 5: Shopify Flags)
-
-Performed only for the physical `toReturn` portion.
-
-- **Check**: What is the Shopify intent for the shipped item?
+### Level 5: Return Refinement (Shopify Flags)
+- **Check**: Shopify intent for the **shipped** portion (`toReturn`).
 - **Scenario 1**: `restockType == RETURN` -> Standard Return.
 - **Scenario 7**: `restockType == NO_RESTOCK` AND `location == null` -> Lost in Shipment Appeasement.
 - **Scenario 2**: `restockType == NO_RESTOCK` AND `location != null` -> Damaged/Field Scrap.
 
 ---
 
-## 4. Post-Processing Hooks (Parallel)
+## 3. Global Refinements (Level 6)
 
-These logic blocks run after the primary scenario is decided, before final exit.
-
-- **Scenario 6 (Loop)**: If Agreement App is "Loop", override the return source/channel.
+### Scenario 6: Loop Channel Attribution
+- **Check**: Did the agreement come from the "Loop" app?
+- **Computation**: Agreement lookup by `refundId`.
+- **Outcome**: Override return source to "Loop" and apply specialized Loop return fee logic if applicable.
 
 ---
 
