@@ -325,4 +325,25 @@ under the License.
         <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
         <parameters parameterName="shopifyProductIds" parameterValue=""/>
     </moqui.service.job.ServiceJob>
+
+
+    <moqui.service.job.ServiceJob jobName="queue_BulkQuerySystemMessage_BulkProductAndVariantsById" description="Queue bulk products query"
+                                  serviceName="co.hotwax.shopify.system.ShopifySystemMessageServices.queue#BulkQuerySystemMessage" cronExpression="0 0 * * * ?" paused="Y" instanceOfProductId="QUEUE_UPD_PRD_FEED">
+        <parameters parameterName="systemMessageTypeId" parameterValue="BulkProductAndVariantsByIdQuery"/>
+        <parameters parameterName="systemMessageRemoteId" parameterValue=""/>
+        <parameters parameterName="filterQuery" parameterValue=""/>
+        <parameters parameterName="fromDate" parameterValue=""/>
+        <parameters parameterName="thruDate" parameterValue=""/>
+        <parameters parameterName="fromDateLabel" parameterValue=""/>
+        <parameters parameterName="thruDateLabel" parameterValue=""/>
+    </moqui.service.job.ServiceJob>
+
+    <moqui.service.job.ServiceJob jobName="send_BulkProductAndVariantsByIdQueryProducedSystemMessages" description="Send All Bulk Product Variants By Id Query Produced SystemMessages"
+                                  serviceName="org.moqui.impl.SystemMessageServices.send#AllProducedSystemMessages" cronExpression="0 0/15 * * * ?" paused="Y">
+        <parameters parameterName="systemMessageTypeIds" parameterValue="BulkProductAndVariantsByIdQuery"/>
+    </moqui.service.job.ServiceJob>
+    <!-- NOTE: The poll_BulkOperationResult_ShopifyBulkQuery job will be used to get bulk operation result followed by product updates -->
+
+    <!-- Remove instanceOfProductId from existing job to remove it from the Job Manager PWA-->
+    <moqui.service.job.ServiceJob jobName="queue_UpdatedProductIdsFeed" instanceOfProductId=""/>
 </entity-facade-xml>
