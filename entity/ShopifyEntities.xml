@@ -62,8 +62,9 @@ under the License.
         <alias-all entity-alias="SMT"/>
     </view-entity>
      <entity entity-name="ShopifyRefundHistory" package="co.hotwax.shopify" title="Shopify Refund Attribution History">
-        <field name="shopifyRefundId" type="id-long" is-pk="true"/>
-        <field name="shopifyRefundLineId" type="id-long" is-pk="true"/>
+        <field name="shopifyRefundHistoryId" type="id" is-pk="true"/>
+        <field name="shopifyRefundId" type="id-long"/>
+        <field name="shopifyRefundLineId" type="id-long"/>
         <field name="shopifyOrderId" type="id-long"/>
         <field name="shopId" type="id"/>
         <field name="orderId" type="id"/>
