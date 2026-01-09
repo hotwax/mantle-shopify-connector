@@ -666,32 +666,30 @@ under the License.
     <service verb="create" noun="ShopifyRefunds" authenticate="anonymous-all">
        <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
        <in-parameters>
-           <parameter name="systemMessageRemoteId" required="true"/>
+           <parameter name="systemMessageRemoteId" required="false"/>
+           <parameter name="shopId" required="true"/>
            <parameter name="shopifyOrderId" required="true"/>
        </in-parameters>
        <actions>
         <log message="[Service Called] Entering create ShopifyRefunds service"/>
            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
-               <field-map field-name="systemMessageRemoteId"/>
+               <field-map field-name="internalId" from="shopId"/>
            </entity-find-one>
            <if condition="!systemMessageRemote">
                <return error="true" message="Invalid systemMessageRemoteId: ${systemMessageRemoteId}"/>
            </if>
-           <set field="shopId" from="systemMessageRemote.internalId"/>
+           <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
 
-           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
+           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
            <set field="orderMap" from="orderRefundDetails.order"/>
            <set field="orderMap.shopId" from="shopId"/>
 
-           <log message="[RefundDetails] - After assembling refunds: ${orderMap}"/>
 
            <script>
                import com.fasterxml.jackson.databind.ObjectMapper
                orderMapJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(orderMap)
            </script>
-
-
-           <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
+              <log message="[CompleteOrderRefundDetails] - Order Map JSON: ${orderMapJson}"/>
 
            <set field="filteredRefunds" from="[]"/>
 
@@ -982,6 +980,7 @@ under the License.
                </script>
                <set field="payLoadMap" from="jsonSlurper.parseText(writer.toString())"/>
                <set field="payLoad" from="payLoadMap.payLoad"/>
+               <log message="[Return Payload] - Refund ID: ${refund.id}, Payload: ${payLoad}"/>
                <entity-find entity-name="co.hotwax.shopify.ShopifyConfig" list="shopifyConfigList">
                    <econdition field-name="shopId" from="shopId"/>
                    <select-field field-name="shopifyConfigId"/>
@@ -1006,11 +1005,18 @@ under the License.
                    TODO
                        1. returnId and returnItemSeqId and other fields if required
                        2. decisionType and actionType -->
-               <iterate list="refund.refundLineItems" entry="refundLineItem">
+               <if condition="!refund.refundLineItems || refund.refundLineItems.isEmpty()">
                    <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id),
-                       shopifyRefundLineId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.id), shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                       shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
                        decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
-               </iterate>
+                   <else>
+                       <iterate list="refund.refundLineItems" entry="refundLineItem">
+                           <service-call name="create#co.hotwax.shopify.ShopifyRefundHistory" in-map="[shopifyRefundId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refund.id),
+                               shopifyRefundLineId:co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundLineItem.id), shopifyOrderId:shopifyOrderId, shopId:shopId, orderId:hcOrder?.orderId,
+                               decisionType:'FORCED', actionType:refund.attributionType, createdDate:ec.user.nowTimestamp]"/>
+                       </iterate>
+                   </else>
+               </if>
            </iterate>
            <!-- Cancellation -->
            <iterate list="cancelRefundsToProcess" entry="refund">
