@@ -662,7 +662,7 @@ under the License.
        <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
        <in-parameters>
            <parameter name="systemMessageRemoteId" required="false"/>
-           <parameter name="shopId" required="true"/>
+           <parameter name="shopId" required="false"/>
            <parameter name="shopifyOrderId" required="true"/>
        </in-parameters>
        <actions>
@@ -670,12 +670,12 @@ under the License.
            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
                <field-map field-name="internalId" from="shopId"/>
            </entity-find-one>
-           <if condition="!systemMessageRemote">
-               <return error="true" message="Invalid systemMessageRemoteId: ${systemMessageRemoteId}"/>
+           <if condition="!systemMessageRemote &amp;&amp; !systemMessageRemoteId">
+               <return error="true" message="Invalid shopId or systemMessageRemoteId"/>
            </if>
            <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
 
-           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId, shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
+           <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId? systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId , shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
            <set field="orderMap" from="orderRefundDetails.order"/>
            <set field="orderMap.shopId" from="shopId"/>
 
