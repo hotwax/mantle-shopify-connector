@@ -37,7 +37,7 @@
 </#if>
 
 <#assign shopifyShop = ec.entity.find("co.hotwax.shopify.ShopifyShop")
-                               .condition("shopId", shopId)
+                               .condition("shopId", "1000")
                                .useCache(true)
                                .one()>
 
@@ -61,7 +61,7 @@
     <#list orderMap.refundAgreements as ra>
         <#if ra.refund?? && ra.refund.id == refund.id>
             <#if ra.app?? && ra.app.title??>
-                <#if ra.app.title == "Loop">
+                <#if ra.app.title == "Loop Returns & Exchanges">
                     <#assign returnChannel = "LOOP_RETURN_CHANNEL">
                 <#elseif ra.app.title == "Point of Sale">
                     <#assign returnChannel = "POS_RTN_CHANNEL">
@@ -85,7 +85,7 @@
     <#assign shopifyLocationId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(refund.refundLineItems[0].location.id)>
     <#assign facility = ec.entity.find("co.hotwax.shopify.ShopifyShopLocation")
                                 .condition("shopifyLocationId", shopifyLocationId)
-                                .condition("shopId", shopId)
+                                .condition("shopId", "1000")
                                 .useCache(true)
                                 .one()!>
 
@@ -101,7 +101,6 @@
 
 <#assign totalItemReturnAmount = 0>
 <#assign refundAmount = 0>
-<#assign paymentAmount = 0>
 <#assign returnPaymentPrefList = []>
 
 
@@ -109,10 +108,7 @@
     <#if txn.kind == "REFUND" && txn.amountSet?? && txn.amountSet.presentmentMoney??>
         <#assign refundAmount += txn.amountSet.presentmentMoney.amount?number>
     </#if>
-    <#if txn.kind == "SALE" && txn.amountSet?? && txn.amountSet.presentmentMoney??>
-        <#assign paymentAmount += txn.amountSet.presentmentMoney.amount?number>
-    </#if>
-    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", orderMap.id).parameter("shopId", shopId).parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
+    <#assign mapTxnResp = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameter("shopifyOrderId", orderMap.id).parameter("shopId", "1000").parameter("shopifyTransaction", txn).call().orderPaymentPreference!/>
     <#if mapTxnResp?? && mapTxnResp.manualRefNum?has_content>
         <#assign returnPaymentPrefList += [mapTxnResp]>
         <#else>
@@ -160,11 +156,10 @@
 
 <#assign finalAdjustments = []>
 
-<#if refund.refundShippingLines??>
+<#if refund.refundShippingLines?? && refund.refundLineItems?has_content>
     <#list refund.refundShippingLines as rsl>
 
-        <#assign shippingRefund =
-            (rsl.subtotalAmountSet.presentmentMoney.amount?number)!0>
+        <#assign shippingRefund = (rsl.subtotalAmountSet.presentmentMoney.amount?number)!0>
         <#if shippingRefund gt 0>
             <#assign adj = {
                 "amount": shippingRefund,
@@ -181,8 +176,7 @@
             <#assign totalItemReturnAmount += shippingRefund>
         </#if>
 
-        <#assign shippingTaxRefund =
-            (rsl.taxAmountSet.presentmentMoney.amount?number)!0>
+        <#assign shippingTaxRefund = (rsl.taxAmountSet.presentmentMoney.amount?number)!0>
         <#if shippingTaxRefund gt 0>
             <#assign adj = {
                 "amount": shippingTaxRefund,
@@ -202,32 +196,23 @@
     </#list>
 </#if>
 
-<#if !refund.refundLineItems?has_content>
-    <#assign appeasementAmount = 0>
-    <#list refund.transactions?default([]) as txn>
-        <#if txn.kind == "REFUND">
-            <#assign appeasementAmount +=
-                (txn.amountSet.shopMoney.amount?number)!0>
-        </#if>
+<#if refund.orderAdjustments?? && refund.orderAdjustments?has_content>
+    <#list refund.orderAdjustments as orderAdj>
+        <#assign adjAmount = (orderAdj.amountSet.presentmentMoney.amount?number) * -1>
+            <#assign adj = {
+                "amount": adjAmount,
+                "type": "APPEASEMENT",
+                "comments": "Shopify Order Adjustment",
+                "description": "Refund Adjustment for orderId ${orderExternalId}"
+            }>
+
+            <#if orderId?has_content>
+                <#assign adj = adj + {"orderId": orderId}>
+            </#if>
+
+            <#assign finalAdjustments += [adj]>
+            <#assign totalItemReturnAmount += adjAmount>
     </#list>
-
-    <#assign appeasementAmount = appeasementAmount>
-
-    <#if appeasementAmount gt 0>
-        <#assign adj = {
-            "type": "APPEASEMENT",
-            "description": "Refund Adjustment for orderId ${orderExternalId}",
-            "comments": "Refund adjustment due to appeasement",
-            "amount": appeasementAmount
-        }>
-
-        <#if orderId?has_content>
-            <#assign adj = adj + {"orderId": orderId}>
-        </#if>
-
-        <#assign finalAdjustments += [adj]>
-        <#assign totalItemReturnAmount += appeasementAmount>
-    </#if>
 </#if>
 
 {
@@ -244,6 +229,16 @@
             "customerIdentificationValue": "${Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(orderMap.customer.id)}",
             <#else>
             "customerId": "_NA_",
+        </#if>
+
+       <#assign availableReturnItems = []>
+        <#if refund.return?? && refund.return.returnLineItems??>
+            <#list refund.return.returnLineItems as rli>
+                <#assign availableReturnItems += [{
+                    "quantity": rli.quantity!0,
+                    "reason": rli.returnReason!"UNKNOWN"
+                }]>
+            </#list>
         </#if>
 
         "currencyCode": "${currency}",
@@ -287,6 +282,31 @@
                         </#if>
                     </#list>
                 </#if>
+               <#assign returnReason = "UNKNOWN">
+                <#assign matchedIndex = -1>
+
+                <#list availableReturnItems as retItem>
+                    <#if retItem.quantity == rli.quantity>
+                        <#assign returnReason = retItem.reason>
+                        <#assign matchedIndex = retItem?index>
+                        <#break>
+                    </#if>
+                </#list>
+
+                <#if returnReason == "UNKNOWN" && availableReturnItems?size == 1>
+                    <#assign returnReason = availableReturnItems[0].reason>
+                    <#assign matchedIndex = 0>
+                </#if>
+
+                <#if matchedIndex gte 0>
+                    <#assign newAvailableReturnItems = []>
+                    <#list availableReturnItems as it>
+                        <#if it?index != matchedIndex>
+                            <#assign newAvailableReturnItems += [it]>
+                        </#if>
+                    </#list>
+                    <#assign availableReturnItems = newAvailableReturnItems>
+                </#if>
 
                 <#assign productId = "">
 
@@ -294,7 +314,7 @@
                     <#assign shopifyVariantId = Static["co.hotwax.shopify.util.ShopifyHelper"].resolveShopifyGid(rli.lineItem.variant.id)>
 
                     <#assign shopifyShopProduct = ec.entity.find("co.hotwax.shopify.ShopifyShopProduct")
-                                                           .condition("shopId", shopId)
+                                                           .condition("shopId", "1000")
                                                            .condition("shopifyProductId", shopifyVariantId)
                                                            .useCache(true)
                                                            .one()!>
@@ -321,16 +341,16 @@
                 <#assign restockType = (rli.restockType!"no_restock")?lower_case>
                 <#assign itemAmount = 0>
                 <#assign taxAmount = 0>
-                <#assign perUnitDiscount = 0>
+                <#assign totalItemAmount = 0>
 
-                <#if rli.subtotalSet?? && rli.subtotalSet.presentmentMoney??>
-                    <#assign itemAmount = rli.subtotalSet.presentmentMoney.amount?number>
-                    <#assign perUnitDiscount = totalDiscount / orderedQty>
-
-                    <#assign itemAmount = itemAmount + perUnitDiscount>
+                <#if rli.priceSet?? && rli.priceSet.shopMoney??>
+                    <#assign itemAmount = rli.priceSet.shopMoney.amount?number>
                 </#if>
-                <#if rli.totalTaxSet?? && rli.totalTaxSet.presentmentMoney??>
-                    <#assign taxAmount = rli.totalTaxSet.presentmentMoney.amount?number>
+                <#if rli.totalTaxSet?? && rli.totalTaxSet.shopMoney??>
+                    <#assign taxAmount = rli.totalTaxSet.shopMoney.amount?number>
+                </#if>
+                <#if rli.subtotalSet?? && rli.subtotalSet.presentmentMoney??>
+                    <#assign totalItemAmount = rli.subtotalSet.presentmentMoney.amount?number>
                 </#if>
 
                 {
@@ -339,16 +359,13 @@
                 "id": "${productId}",
                 "status": "RETURN_COMPLETED",
                 "quantity": ${rli.quantity!0},
-                "reason": "UNKNOWN",
+                "reason": "${returnReason}",
                 "returnType": "RTN_REFUND",
-                <#if orderId?? && orderId?has_content>
-                    "orderExternalId": "${orderExternalId}"
-                    <#if orderName?has_content>
-                    ,"orderName": "${orderName}"
-                    </#if>
-                    ,
+                <#if orderId?has_content>
+                    "orderExternalId": "${orderExternalId}",
+                    "orderName": "${orderName}",
                 </#if>
-
+                "includeAdjustments": "N",
                 <#if restockType == "no_restock">
                     "itemTypeId": "RET_LOST_ITEM",
                     "restockType": "INV_NOT_RETURNED",
@@ -359,7 +376,6 @@
                     "receivedQty": ${rli.quantity}
                 </#if>
 
-                    <#if !orderId?has_content>
                     ,"price": ${itemAmount}
                     <#if itemAdjustments?has_content>
                     ,"itemAdjustments": [
@@ -375,9 +391,8 @@
                         </#list>
                     ]
                     </#if>
-               </#if>
                 }
-                <#assign totalItemReturnAmount += (itemAmount + taxAmount)>
+                <#assign totalItemReturnAmount += (totalItemAmount + taxAmount)>
             </#list>
         ],
         <#assign hasExchange = false>
@@ -397,7 +412,6 @@
         },
 
         "refundAmount": ${refundAmount},
-        "paymentAmount": ${paymentAmount},
         "totalReturnAmount": ${totalItemReturnAmount},
         "exchangeCredit": ${exchangeAmount},
 
