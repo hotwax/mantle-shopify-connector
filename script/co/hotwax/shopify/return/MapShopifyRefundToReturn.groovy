@@ -1,10 +1,6 @@
 
-import groovy.json.JsonSlurper
-import groovy.json.JsonOutput
 import java.math.RoundingMode
 import co.hotwax.shopify.util.ShopifyHelper
-
-// Context variables 'order' and 'refund' are automatically available from the service input
 
 result = [
     payLoad: [
