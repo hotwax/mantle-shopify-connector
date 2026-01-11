@@ -752,4 +752,32 @@ under the License.
                 ]]></script>
         </actions>
     </service>
+    <service verb="map" noun="ShopifyRefundToReturn" type="script" location="component://shopify-connector/script/co/hotwax/shopify/return/MapShopifyRefundToReturn.groovy">
+        <description>Map Shopify refund to Return</description>
+        <in-parameters>
+            <parameter name="order" required="true" type="Map"/>
+            <parameter name="refund" required="true" type="Map"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="result" type="Map"/>
+        </out-parameters>
+    </service>
+    <service verb="create" noun="ShopifyRefunds" authenticate="anonymous-all">
+        <description> Fetch Shopify order refund-related data using orderId and orchestrate refund attribution, return creation, and cancellation creation. </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="false"/>
+            <parameter name="shopId" required="false"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <actions>
+            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId? systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId , shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
+            <set field="order" from="orderRefundDetails.order"/>
+            <iterate list="order.refunds" entry="refund">
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.map#ShopifyRefundToReturn" in-map="[order:order, refund:refund]" out-map="result"/>
+
+                <log message="======= \n ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(result))} \n ======"/>
+                
+            </iterate>
+        </actions>
+    </service>
 </services>
