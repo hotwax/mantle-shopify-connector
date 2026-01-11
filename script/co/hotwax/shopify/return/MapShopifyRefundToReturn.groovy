@@ -44,16 +44,14 @@ result = [
             ]
         },
         returnAdjustment: (
-            refund.refundShippingLines.collect { 
-                [type: "RET_SHIPPING_ADJ", amount: it.subtotalAmountSet?.shopMoney?.amount, description: "Shipping Refund"] 
-            } +
-            refund.refundShippingLines.collect { 
-                [type: "RET_SALES_TAX_ADJ", amount: it.taxAmountSet?.shopMoney?.amount, description: "Shipping Tax Refund"] 
-            } +
+            refund.refundShippingLines.flatMap {[
+                [type: "RET_SHIPPING_ADJ", amount: it.subtotalAmountSet?.shopMoney?.amount, description: "Shipping Refund"],
+                [type: "RET_SALES_TAX_ADJ", amount: it.taxAmountSet?.shopMoney?.amount, description: "Shipping Tax Refund"]
+            ]} +
             refund.orderAdjustments.collect { 
                 [type: "RET_ORDER_ADJ", amount: it.amountSet?.shopMoney?.amount, description: "Order Adjustment"] 
             }
-        ).findAll { it.amount > 0 },
+        ).findAll { it.amount },
         returnPaymentPref: refund.transactions
             .findAll { it.kind == "REFUND" && it.status == "SUCCESS" }
             .collect {[
