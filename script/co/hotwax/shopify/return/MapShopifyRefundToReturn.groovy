@@ -44,7 +44,7 @@ result = [
             ]
         },
         returnAdjustment: (
-            refund.refundShippingLines.flatMap {[
+            refund.refundShippingLines.collectMany {[
                 [type: "RET_SHIPPING_ADJ", amount: it.subtotalAmountSet?.shopMoney?.amount, description: "Shipping Refund"],
                 [type: "RET_SALES_TAX_ADJ", amount: it.taxAmountSet?.shopMoney?.amount, description: "Shipping Tax Refund"]
             ]} +
