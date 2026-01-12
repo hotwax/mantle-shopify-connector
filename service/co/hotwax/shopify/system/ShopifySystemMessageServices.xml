@@ -247,7 +247,10 @@ under the License.
             <if condition="'completed'.equalsIgnoreCase(status) &amp;&amp; !bulkOperationResult.response.url">
                 <set field="responseText" value="The bulk operation for systemMessageId:[${systemMessageId}] with systemMessageType:[${systemMessage.systemMessageTypeId}] completed successfully at Shopify but no result url received."/>
             </if>
-            <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId:systemMessageId, statusId:statusMap.get(status.toLowerCase())]"/>
+            <set field="statusId" from="statusMap.get(status.toLowerCase())"/>
+            <if condition="statusId">
+                <service-call name="update#moqui.service.message.SystemMessage" in-map="[systemMessageId: systemMessageId, statusId: statusId]"/>
+            </if>
 
             <if condition="responseText">
                 <return message="${responseText}"/>
