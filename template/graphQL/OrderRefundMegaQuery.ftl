@@ -15,6 +15,16 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
             id
             createdAt
             note
+            totalRefundedSet {
+                presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+            }
             refundLineItems(first: 20) {
                 edges {
                     node {
@@ -184,6 +194,11 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
                                 id
                                 returnReason
                                 quantity
+                                fulfillmentLineItem {
+                                    lineItem {
+                                        id
+                                    }
+                                }
                                 withCodeDiscountedTotalPriceSet {
                                     presentmentMoney {
                                         amount
