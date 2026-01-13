@@ -167,7 +167,7 @@ under the License.
                 <econdition field-name="systemMessageRemoteId" operator="equals" from="systemMessage.systemMessageRemoteId"/>
             </entity-find>
             <if condition="additionalParameters">
-                <iterate list="additionalParametrs" entry="paramMap">
+                <iterate list="additionalParameters" entry="paramMap">
                     <script>requestBody.put(${paramMap.parameterName}, ${paramMap.parameterValue})</script>
                 </iterate>
             </if>
