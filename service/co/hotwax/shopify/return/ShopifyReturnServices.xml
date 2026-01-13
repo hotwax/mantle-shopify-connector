@@ -672,12 +672,24 @@ under the License.
        </in-parameters>
        <actions>
         <log message="[Service Called] Entering create ShopifyRefunds service"/>
-           <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
-               <field-map field-name="internalId" from="shopId"/>
-           </entity-find-one>
-           <if condition="!systemMessageRemote &amp;&amp; !systemMessageRemoteId">
+           <log message="[Input Parameters] systemMessageRemoteId=${systemMessageRemoteId}, shopId=${shopId}, shopifyOrderId=${shopifyOrderId}"/>
+           <if condition="systemMessageRemoteId">
+               <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
+                   <field-map field-name="systemMessageRemoteId" from="systemMessageRemoteId"/>
+               </entity-find-one>
+           </if>
+           <if condition="!shopId &amp;&amp; systemMessageRemote">
+               <set field="shopId" from="systemMessageRemote.internalId"/>
+           </if>
+           <if condition="!systemMessageRemote &amp;&amp; shopId">
+               <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
+                   <field-map field-name="internalId" from="shopId"/>
+               </entity-find-one>
+           </if>
+           <if condition="!systemMessageRemote">
                <return error="true" message="Invalid shopId or systemMessageRemoteId"/>
            </if>
+
            <set field="shopifyOrderId" from="co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(shopifyOrderId)"/>
 
            <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId? systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId , shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
