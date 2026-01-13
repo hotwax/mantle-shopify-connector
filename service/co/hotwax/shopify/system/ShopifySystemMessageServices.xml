@@ -1093,44 +1093,6 @@ under the License.
             </if>
         </actions>
     </service>
-<<<<<<< HEAD
-    <service verb="generate" noun="ExchangeOrderFeed" authenticate="anonymous-all" transaction-timeout="1800">
-        <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
-        <actions>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageAndType" value-field="systemMessage"/>
-
-            <entity-find-one entity-name="moqui.service.message.SystemMessageTypeParameter" value-field="sendSmrParam">
-                <field-map field-name="systemMessageTypeId" from="systemMessage.systemMessageTypeId"/>
-                <field-map field-name="parameterName" value="sendSmrId"/>
-                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-            </entity-find-one>
-            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="systemMessageRemote">
-                <field-map field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-            </entity-find-one>
-            <set field="shopId" from="systemMessageRemote?.internalId"/>
-            <if condition="sendSmrParam">
-                <set field="sendSmrId" from="sendSmrParam.parameterValue"/>
-            </if>
-
-            <if condition="sendSmrId">
-                <!-- Find SystemMessageType related to systemMessage.systemMessageType to produce corresponding system message -->
-                <entity-find-one entity-name="moqui.basic.Enumeration" value-field="enumValue">
-                    <field-map field-name="enumId" from="systemMessage.systemMessageTypeId"/>
-                </entity-find-one>
-
-                <if condition="enumValue &amp;&amp; enumValue.relatedEnumId">
-                    <entity-find-one entity-name="moqui.service.message.SystemMessageType" value-field="relatedSystemMessageType">
-                        <field-map field-name="systemMessageTypeId" from="enumValue.relatedEnumId"/>
-                    </entity-find-one>
-                    <if condition="!relatedSystemMessageType"><log level="warn" message="Could not find SystemMessageType with ID ${enumValue.relatedEnumId}, not producing related system message."/></if>
-                    <else>
-                        <log level="warn" message="Related SystemMessageType to produce for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
-                    </else>
-                </if>
-                <else>
-                    <log level="warn" message="sendSmrId not defined for ${systemMessage.systemMessageTypeId} not defined, not producing related system message."/>
-                </else>
-            </if>
 
     <service verb="generate" noun="ReturnAndCancellationFeed" authenticate="anonymous-all" transaction-timeout="1800">
         <implements service="org.moqui.impl.SystemMessageServices.consume#SystemMessage"/>
