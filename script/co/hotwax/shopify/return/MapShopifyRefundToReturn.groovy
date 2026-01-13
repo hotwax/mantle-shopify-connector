@@ -6,9 +6,13 @@ result = [
     payLoad: [
         externalId: ShopifyHelper.resolveShopifyGid(refund.id),
         orderExternalId: ShopifyHelper.resolveShopifyGid(order.id),
-        type: "CUSTOMER_RETURN",
+        type: "CUSTOMER_RETURN", // TODO: Add logic for APPEASEMENT
         status: "RETURN_COMPLETED",
-        createdDate: refund.createdAt,
+        companyId: '_NA_', // TODO: Context needed (ProductStore.payToPartyId)
+        returnDate: refund.createdAt, // TODO: Format timestamp if needed
+        returnChannelEnumId: null, // TODO: Logic based on refundAgreements (Loop, POS)
+        customerIdentification: null, // TODO: Map from orderMap.customer
+        shipTo: null, // TODO: Resolve via ShopifyShopLocation
         currencyCode: refund.totalRefundedSet.shopMoney.currencyCode,
         grandTotal: refund.totalRefundedSet.shopMoney.amount,
         items: refund.refundLineItems.collect { rli ->
@@ -18,14 +22,17 @@ result = [
             def prorate = { val -> (val as BigDecimal * qtyRatio).setScale(2, RoundingMode.HALF_UP) }
 
             [
-                id: ShopifyHelper.resolveShopifyGid(lineItem.variant?.id),
-                itemExternalId: ShopifyHelper.resolveShopifyGid(lineItem.id),
+                id: ShopifyHelper.resolveShopifyGid(lineItem.variant?.id), // TODO: Requires internal productId resolution
+                itemExternalId: ShopifyHelper.resolveShopifyGid(rli.id), // Refund Line Item ID
+                orderItemExternalId: ShopifyHelper.resolveShopifyGid(lineItem.id), // Order Line Item ID
                 sku: lineItem.sku,
                 quantity: rli.quantity,
                 status: "RETURN_COMPLETED",
                 price: rli.priceSet.shopMoney.amount,
                 returnType: "RTN_REFUND",
-                restockType: rli.restockType,
+                restockType: rli.restockType, // TODO: Map to Enum INV_RETURNED/INV_NOT_RETURNED
+                itemTypeId: null, // TODO: RET_FPROD_ITEM or RET_LOST_ITEM
+                reason: null, // TODO: Deduce from return items
                 itemAdjustments: (
                     lineItem.discountAllocations.collect { [
                         type: "RET_EXT_PRM_ADJ", 
