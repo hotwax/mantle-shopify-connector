@@ -22,6 +22,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundLineItems" type="List"/>
@@ -51,6 +52,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundShippingLines" type="List"/>
@@ -80,6 +82,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundTransactions" type="Map"/>
@@ -513,6 +516,7 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyOrderId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
             <parameter name="refundAgreements" type="List"/>
@@ -587,12 +591,13 @@ under the License.
         <in-parameters>
             <parameter name="systemMessageRemoteId" required="true"/>
             <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor"/>
         </in-parameters>
         <out-parameters>
-            <parameter name="orderAdj"/>
+            <parameter name="orderAdjustments"/>
         </out-parameters>
         <actions>
-            <set field="orderAdj" from="[]"/>
+            <set field="orderAdjustments" from="[]"/>
             <set field="hasNextPage" value="true" type="Boolean"/>
             <while condition="hasNextPage">
                 <script>
@@ -603,7 +608,7 @@ under the License.
                     <return type="warning" message="No Shopify refund found for id: ${shopifyRefundId}"/>
                 </if>
                 <if condition="responseMap.response.refund.orderAdjustments?.edges">
-                    <script>orderAdj.addAll(responseMap.response.refund.orderAdjustments.edges.node)</script>
+                    <script>orderAdjustments.addAll(responseMap.response.refund.orderAdjustments.edges.node)</script>
                 </if>
                 <set field="hasNextPage" from="responseMap.response.refund.orderAdjustments.pageInfo.hasNextPage"/>
                 <set field="cursor" from="responseMap.response.refund.orderAdjustments.pageInfo.endCursor"/>
@@ -1116,5 +1121,95 @@ under the License.
                </iterate>
            </iterate>
        </actions>
+    </service>
+
+    <service verb="get" noun="ReturnLineItemsByRefundV2" authenticate="anonymous-all">
+        <description>Fetch return line items for a given refund with pagination support.</description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyRefundId" required="true"/>
+            <parameter name="cursor" required="false"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="returnLineItems" type="List"/>
+        </out-parameters>
+        <actions>
+            <set field="hasNextPage" type="Boolean" value="true"/>
+            <set field="returnLineItems" from="[]"/>
+            <while condition="hasNextPage">
+                <script>
+                    queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/ReturnLineItemsByRefundIdQuery.ftl", "")
+                </script>
+                <log message="Executing query: ${queryText}"/>
+                <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest" in-map="[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText]" out-map="returnLineItemsResponse"/>
+                <if condition="!returnLineItemsResponse.response.refund">
+                    <return message="No Shopify refund found for Shopify refundId: ${shopifyRefundId}"/>
+                </if>
+                <if condition="!returnLineItemsResponse.response.refund.return">
+                    <return message="No associated return found for Shopify refundId: ${shopifyRefundId}"/>
+                </if>
+                <if condition="returnLineItemsResponse.response.refund.return.returnLineItems.edges">
+                    <script>returnLineItems.addAll(returnLineItemsResponse.response.refund.return.returnLineItems?.edges.node)</script>
+                </if>
+                <set field="hasNextPage" from="returnLineItemsResponse.response.refund.return.returnLineItems?.pageInfo?.hasNextPage"/>
+                <set field="cursor" from="returnLineItemsResponse.response.refund.return.returnLineItems?.pageInfo?.endCursor"/>
+            </while>
+        </actions>
+    </service>
+
+    <service verb="get" noun="CompleteOrderRefundDetails" authenticate="anonymous-all">
+        <description>
+            Fetch complete order and refund data in one call.
+            Executes Mega Query and automatically handles pagination overflow.
+        </description>
+        <in-parameters>
+            <parameter name="systemMessageRemoteId" required="true"/>
+            <parameter name="shopifyOrderId" required="true"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="order" type="Map"/>
+        </out-parameters>
+        <actions>
+            <script>queryText = ec.resourceFacade.template("component://shopify-connector/template/graphQL/OrderRefundMegaQuery.ftl", "")</script>
+            <service-call name="co.hotwax.shopify.common.ShopifyHelperServices.send#ShopifyGraphqlRequest"
+                          in-map='[systemMessageRemoteId:systemMessageRemoteId, queryText:queryText, variables:[shopifyOrderId: "gid://shopify/Order/${shopifyOrderId}"]]'
+                          out-map="responseMap"/>
+
+            <if condition="!responseMap.response?.order">
+                <return type="warning" message="No Shopify order found for id: ${shopifyOrderId}"/>
+            </if>
+
+            <set field="order" from="responseMap.response.order"/>
+
+            <script><![CDATA[
+                def resolveConnection = { parent, parentIdKey, connectionName, serviceName, resultKey, serviceIdParam ->
+                    def connection = parent.get(connectionName)
+                    if (connection?.pageInfo?.hasNextPage) {
+                        def result = ec.service.sync().name(serviceName)
+                                .parameters([systemMessageRemoteId: systemMessageRemoteId, (serviceIdParam): parent.get(parentIdKey), cursor: connection.pageInfo.endCursor ])
+                                .call()
+                        connection.edges.addAll(result[resultKey].collect { [node: it] })
+                    }
+                    parent[connectionName] = connection?.edges?.findAll { it?.node != null }?.collect { it.node } ?: []
+                }
+
+                order.refunds?.each { refund ->
+                    resolveConnection(refund, 'id', 'refundLineItems', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundLineItems', 'refundLineItems', 'shopifyRefundId')
+                    resolveConnection(refund, 'id', 'refundShippingLines', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundShippingLines', 'refundShippingLines', 'shopifyRefundId')
+                    resolveConnection(refund, 'id', 'transactions', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundTransactions', 'refundTransactions', 'shopifyRefundId')
+                    resolveConnection(refund, 'id', 'orderAdjustments', 'co.hotwax.shopify.return.ShopifyReturnServices.get#OrderAdjustments', 'orderAdjustments', 'shopifyRefundId')
+
+                    if (refund.return) {
+                        refund.return.refundId = refund.id
+                        resolveConnection(refund.return, 'refundId', 'returnLineItems', 'co.hotwax.shopify.return.ShopifyReturnServices.get#ReturnLineItemsByRefundV2', 'returnLineItems', 'shopifyRefundId')
+                        resolveConnection(refund.return, null, 'exchangeLineItems', null, null, null)
+                    }
+                }
+                if(order.refundAgreements) {
+                    order.resolvedGid = co.hotwax.shopify.util.ShopifyHelper.resolveShopifyGid(order.id)
+                    resolveConnection(order, 'resolvedGid', 'refundAgreements', 'co.hotwax.shopify.return.ShopifyReturnServices.get#RefundAgreements', 'refundAgreements', 'shopifyOrderId')
+                }
+                ]]></script>
+        </actions>
     </service>
 </services>
