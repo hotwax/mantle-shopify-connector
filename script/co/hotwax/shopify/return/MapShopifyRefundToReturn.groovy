@@ -6,9 +6,9 @@ import org.moqui.util.CollectionUtilities
 shopifyShop = ec.entity.find("co.hotwax.shopify.ShopifyShop").condition("shopId", shopId).useCache(true).one()
 productStore = shopifyShop?.'org.apache.ofbiz.product.store.ProductStore'
 
-returnChannelEnumMapping = ['Loop Return & Echanges': "LOOP_RETURN_CHANNEL", "Point of Sale": "POS_RTN_CHANNEL"].withDefault {'ECOM_RTN_CHANNEL'}
+returnChannelEnumMapping = ['Loop Return & Echanges': "LOOP_RETURN_CHANNEL", "Point of Sale": "POS_RTN_CHANNEL"]
 
-refundChannel = order.refundAgreements.findAll {it.__typename == 'RefundAgreement'}.collectEntries {[(ShopifyHelper.resolveShopifyGid(it.refund.id)): returnChannelEnumMapping.get(it.app?.title)]}
+refundChannel = order.refundAgreements.findAll {it.__typename == 'RefundAgreement'}.collectEntries {[(ShopifyHelper.resolveShopifyGid(it.refund.id)): returnChannelEnumMapping.get(it.app?.title)]}.withDefault { 'ECOM_RTN_CHANNEL' }
 
 
 // Inside iteration
@@ -29,23 +29,26 @@ def returnReasonMap = refund.return?.returnLineItems?.collectEntries {
     [(ShopifyHelper.resolveShopifyGid(it.fulfillmentLineItem?.lineItem?.id)): it.returnReason]
 }
 
-refundId = ShopifyHelper.resolveShopifyGid(refund.id)
-shopifyOrderId = ShopifyHelper.resolveShopifyGid(order.id) // TODO: Remove as already they will be in the context
+def isOrphan = true
+
+def refundId = ShopifyHelper.resolveShopifyGid(refund.id)
+def shopifyOrderId = ShopifyHelper.resolveShopifyGid(order.id) // TODO: Remove as already they will be in the context
 
 
 BigDecimal totalReturnAmount = 0.0
+BigDecimal totalRefunded = refund.totalRefundedSet.shopMoney.amount as BigDecimal ?: 0.0
 
 def itemsList = refund.refundLineItems.collect { rli ->
     def lineItem = rli.lineItem
     def qtyRatio = rli.quantity / lineItem.quantity
-    def isRestocked = rli.restockType && rli.restockType != 'no_restock'
+    def isRestocked = rli.restockType && !'no_restock'.equalsIgnoreCase(rli.restockType)
     def prorate = { val -> (val as BigDecimal * qtyRatio).setScale(2, RoundingMode.HALF_UP) }
 
     def productId = ec.entity.find("co.hotwax.shopify.ShopifyShopProduct").condition("shopId", shopId).condition("shopifyProductId", ShopifyHelper.resolveShopifyGid(lineItem.variant?.id)).selectField("productId").useCache(true).one()?.productId
 
     if(!productId) {
         prodIdentifications = ec.entity.find("org.apache.ofbiz.product.product.GoodIdentification").condition(["productId": productId, "goodIdentificationTypeId": "SKU"]).selectField("productId,fromDate,thruDate").useCache(true).list()
-        productId = CollectionUtilities.filterMapListByDate(prodIdentifications, null, null, ec.user.nowTimestamp).get(0)?.productId
+        productId = CollectionUtilities.filterMapListByDate(prodIdentifications, null, null, ec.user.nowTimestamp).getAt(0)?.productId
     }
     
     def isCustomGiftCard = lineItem.isGiftCard && !(lineItem.variant?.id)
@@ -57,8 +60,8 @@ def itemsList = refund.refundLineItems.collect { rli ->
 
     [
         id: productId, // TODO: Handle custom gift card productId 
-        itemExternalId: ShopifyHelper.resolveShopifyGid(rli.id), // Refund Line Item ID
-        orderItemExternalId: ShopifyHelper.resolveShopifyGid(lineItem.id), // Order Line Item ID
+        itemExternalId: ShopifyHelper.resolveShopifyGid(rli.id),
+        orderItemExternalId: ShopifyHelper.resolveShopifyGid(lineItem.id),
         quantity: rli.quantity,
         status: "RETURN_COMPLETED",
         price: rli.priceSet.shopMoney.amount,
@@ -70,20 +73,22 @@ def itemsList = refund.refundLineItems.collect { rli ->
         includeAdjustments: 'N',
         itemAdjustments: (
             lineItem.discountAllocations.collect { [
+                itemExternalId: ShopifyHelper.resolveShopifyGid(rli.id),
                 type: "RET_EXT_PRM_ADJ", 
-                description: "External Discount", 
-                amount: prorate(it.allocatedAmountSet.shopMoney.amount), 
-                comments: "Prorated discount",
+                amount: prorate(it.allocatedAmountSet.shopMoney.amount).multiply(-1), 
+                comments: "External Discount", 
+                description: "Return External Promotion Adjustment",
             ] } +
             lineItem.taxLines.collect { [
+                itemExternalId: ShopifyHelper.resolveShopifyGid(rli.id),
                 type: "RET_SALES_TAX_ADJ", 
-                description: it.title, 
                 amount: prorate(it.priceSet.shopMoney.amount), 
                 sourcePercentage: it.rate * 100, 
-                comments: "${it.title} (${it.rate * 100}%)"
+                comments: "${it.title} (${it.rate * 100}%)",
+                description: "Return Sales Tax"
             ] }
         )
-    ].with { m -> if(!isOrphan) m.orderExternalId = shopifyOrderId; m }
+    ].tap { m -> if(!isOrphan) m.orderExternalId = shopifyOrderId }
 }
 
 
@@ -110,6 +115,18 @@ def adjustmentsList = (
     }
 ).findAll { it.amount }
 
+BigDecimal exchangeCreditAmount = totalReturnAmount.subtract(totalRefunded)
+def exchangeCreditPaymentPreference = []
+if (exchangeCreditAmount > 0) {
+    exchangeCreditPaymentPreference = [
+        paymentMethodTypeId: "EXCHANGE_CREDIT",
+        statusId: "PAYMENT_REFUNDED",
+        maxAmount: exchangeCreditAmount,
+        presentmentCurrency: refund.totalRefundedSet.shopMoney.currencyCode, // TODO: Verify currencyCode, it is actually a UOM value
+        orderId: orderId
+    ]
+}
+
 result = [
     payLoad: [
         externalId: refundId,
@@ -121,13 +138,12 @@ result = [
         customerIdentificationType: "SHOPIFY_CUST_ID",
         customerIdentificationValue: ShopifyHelper.resolveShopifyGid(order?.customer?.id),
         shipTo: [facilityId: shipToFacilityId],
-        currencyCode: refund.totalRefundedSet.shopMoney.currencyCode,
-        grandTotal: refund.totalRefundedSet.shopMoney.amount,
+        currencyCode: refund.totalRefundedSet.shopMoney.currencyCode, // TODO: Verify currencyCode, it is actually a UOM value
         totalReturnAmount: totalReturnAmount,
         items: itemsList,
         returnAdjustment: adjustmentsList,
         returnPaymentPref: refund.transactions
-            .findAll { it.kind == "REFUND" && it.status == "SUCCESS" }
+            .findAll { "refund".equalsIgnoreCase(it.kind) && "success".equalsIgnoreCase(it.status) }
             .collect {
                 txMappingResult = ec.service.sync().name("co.hotwax.sob.order.ShopifyOrderMappingServices.map#OrderTransaction").parameters([shopifyOrderId:shopifyOrderId, shopId:shopId, shopifyTransaction: it]).call()
                 if (ec.message.hasError()) {
@@ -135,7 +151,7 @@ result = [
                     ec.message.clearErrors()
                 }
                 txMappingResult?.orderPaymentPreference
-            }.findAll { it },
-        returnIdentifications: [returnIdentificationTypeId: "SHOPIFY_RTN_ID", idValue: refundId] + (isOrphan ? [returnIdentificationTypeId: "SHPY_ORPN_RTN_ORD_ID", idValue: ShopifyHelper.resolveShopifyGid(order.id)] : [])
+            }.findAll { it } + exchangeCreditPaymentPreference,
+        returnIdentifications: [[returnIdentificationTypeId: "SHOPIFY_RTN_ID", idValue: refundId]] + (isOrphan ? [returnIdentificationTypeId: "SHPY_ORPN_RTN_ORD_ID", idValue: ShopifyHelper.resolveShopifyGid(order.id)] : [])
     ]
 ]
