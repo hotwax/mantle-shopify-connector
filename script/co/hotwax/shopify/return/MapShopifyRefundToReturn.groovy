@@ -42,7 +42,7 @@ def itemsList = refund.refundLineItems.collect { rli ->
     def lineItem = rli.lineItem
     def qtyRatio = rli.quantity / lineItem.quantity
     def isRestocked = rli.restockType && !'no_restock'.equalsIgnoreCase(rli.restockType)
-    def prorate = { val -> (val as BigDecimal * qtyRatio).setScale(2, RoundingMode.HALF_UP) }
+    def prorate = { val -> (val as BigDecimal).multiply(rli.quantity).divide(lineItem.quantity, 2, RoundingMode.HALF_UP) }
 
     def productId = ec.entity.find("co.hotwax.shopify.ShopifyShopProduct").condition("shopId", shopId).condition("shopifyProductId", ShopifyHelper.resolveShopifyGid(lineItem.variant?.id)).selectField("productId").useCache(true).one()?.productId
 
@@ -64,7 +64,7 @@ def itemsList = refund.refundLineItems.collect { rli ->
         orderItemExternalId: ShopifyHelper.resolveShopifyGid(lineItem.id),
         quantity: rli.quantity,
         status: "RETURN_COMPLETED",
-        price: rli.priceSet.shopMoney.amount,
+        price: rli.priceSet?.shopMoney?.amount as BigDecimal ?: 0.0,
         returnType: "RTN_REFUND",
         restockType: isRestocked ? 'INV_RETURNED' : 'INV_NOT_RETURNED',
         itemTypeId: isRestocked ? 'RET_FPROD_ITEM' : 'RET_LOST_ITEM',

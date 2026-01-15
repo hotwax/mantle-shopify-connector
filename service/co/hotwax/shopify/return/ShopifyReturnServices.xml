@@ -757,6 +757,7 @@ under the License.
         <in-parameters>
             <parameter name="order" required="true" type="Map"/>
             <parameter name="refund" required="true" type="Map"/>
+            <parameter name="shopId" required="true"/>
         </in-parameters>
         <out-parameters>
             <parameter name="result" type="Map"/>
@@ -772,8 +773,12 @@ under the License.
         <actions>
             <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.get#CompleteOrderRefundDetails" in-map="[systemMessageRemoteId:systemMessageRemoteId? systemMessageRemoteId:systemMessageRemote.systemMessageRemoteId , shopifyOrderId:shopifyOrderId]" out-map="orderRefundDetails"/>
             <set field="order" from="orderRefundDetails.order"/>
+            <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="smr"/>
+            <set field="shopId" from="smr.internalId"/>
+            <log message="=========\n\n ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(order))} \n\n ========"/>
+
             <iterate list="order.refunds" entry="refund">
-                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.map#ShopifyRefundToReturn" in-map="[order:order, refund:refund]" out-map="result"/>
+                <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.map#ShopifyRefundToReturn" in-map="[order:order, refund:refund, shopId:shopId]" out-map="result"/>
 
                 <log message="======= \n ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(result))} \n ======"/>
                 

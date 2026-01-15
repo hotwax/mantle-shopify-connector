@@ -85,6 +85,10 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
                                 amount
                                 currencyCode
                             }
+                            shopMoney {
+                                amount
+                                currencyCode
+                            }
                         }
                         totalTaxSet {
                             presentmentMoney {
@@ -172,6 +176,10 @@ query GetOrderRefundDetails($shopifyOrderId: ID!) {
                         id
                         amountSet {
                             presentmentMoney {
+                                amount
+                                currencyCode
+                            }
+                            shopMoney {
                                 amount
                                 currencyCode
                             }
