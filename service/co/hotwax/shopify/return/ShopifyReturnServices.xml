@@ -749,9 +749,10 @@ under the License.
 
            <!-- Orphan Return -->
            <if condition="!hcOrder">
+               <set field="isOrphan" from="true" type="Boolean"/>
                <log message="Order [Shopify: ${shopifyOrderId}] - No matching OMS order found, defaulting refunds to RETURN"/>
                <iterate list="orderMap.refunds" entry="refund">
-                   <set field="refund.attributionType" value="RETURN"/>
+                   <set field="refund.attributionType" value="CUSTOMER_RETURN"/>
                    <script>returnsToCreateList.add(refund)</script>
                </iterate>
                <set field="skipAttribution" value="true"/>
@@ -781,7 +782,7 @@ under the License.
                            <continue/>
                        </if>
                        <!-- Otherwise RETURN -->
-                       <set field="refund.attributionType" value="RETURN"/>
+                       <set field="refund.attributionType" value="CUSTOMER_RETURN"/>
                        <script>returnsToCreateList.add(refund)</script>
                        <log message="Refund [ID: ${refund.id}] - Line items present on unapproved order, attributed as RETURN"/>
                    </iterate>
@@ -852,13 +853,6 @@ under the License.
 
                <!-- Absolute RETURN Attribution -->
                <set field="unassignedRefunds" from="[]"/>
-               <set field="refundAppMap" from="[:]"/>
-               <!-- TODO loop return attribution -->
-               <iterate list="orderMap.refundAgreements" entry="refundAgreement">
-                   <if condition="refundAgreement?.refund?.id &amp;&amp; refundAgreement?.app?.title">
-                       <set field="refundAppMap[co.hotwax.sob.shopify.ShopifyHelper.resolveShopifyGid(refundAgreement.refund.id)]" from="refundAgreement.app.title"/>
-                   </if>
-               </iterate>
                <iterate list="orderMap.refunds" entry="refund">
                    <if condition="refund.attributionType">
                        <continue/>
@@ -869,7 +863,7 @@ under the License.
                        <set field="isReturn" from="true"/>
                    </if>
                    <if condition="isReturn">
-                       <set field="refund.attributionType" value="RETURN"/>
+                       <set field="refund.attributionType" value="CUSTOMER_RETURN"/>
                        <script>returnsToCreateList.add(refund)</script>
 
 
@@ -938,7 +932,7 @@ under the License.
                     }
                     // FALLBACK: RETURN
                     else {
-                        refund.attributionType = "RETURN"
+                        refund.attributionType = "CUSTOMER_RETURN"
                         returnsToCreateList.add(refund)
 
                         for (refundLineItem in refund.refundLineItems) {
@@ -983,16 +977,9 @@ under the License.
 
            <!-- PREPARE RETURN / APPEASEMENT PAYLOADS -->
            <iterate list="returnsToCreateList" entry="refund">
-               <!-- transformation -->
-               <set field="templateLocation" value="component://shopify-connector/template/ftl/ShopifyRefundPayload.ftl"/>
-               <set field="writer" from="new StringWriter()"/>
-               <set field="jsonSlurper" from="new groovy.json.JsonSlurper()"/>
-               <script>
-                   ec.resourceFacade.template(templateLocation, writer)
-               </script>
-               <set field="payLoadMap" from="jsonSlurper.parseText(writer.toString())"/>
-               <set field="payLoad" from="payLoadMap.payLoad"/>
-               <log message="[Return Payload] - Refund ID: ${refund.id}, Payload: ${payLoad}"/>
+               <service-call name="co.hotwax.shopify.return.ShopifyReturnServices.map#ShopifyRefundToReturn" in-map="[refund:refund, shopId:shopId, order:orderMap, isOrphan: isOrphan]" out-map="payLoad"/>
+               <log message="[Return Payload] - Refund ID: ${refund.id}, Payload: ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(payLoad))}"/>
+<!--               <return/>-->
                <entity-find entity-name="co.hotwax.shopify.ShopifyConfig" list="shopifyConfigList">
                    <econdition field-name="shopId" from="shopId"/>
                    <select-field field-name="shopifyConfigId"/>
@@ -1133,6 +1120,19 @@ under the License.
                </iterate>
            </iterate>
        </actions>
+    </service>
+
+    <service verb="map" noun="ShopifyRefundToReturn" type="script" location="component://shopify-connector/script/co/hotwax/shopify/return/MapShopifyRefundToReturn.groovy">
+        <description>Map Shopify refund data to return creation payload</description>
+        <in-parameters>
+            <parameter name="refund" required="true" type="Map"/>
+            <parameter name="order" required="true" type="Map"/>
+            <parameter name="shopId" required="true"/>
+            <parameter name="isOrphan" type="boolean"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="payLoad" type="Map"/>
+        </out-parameters>
     </service>
 
     <service verb="get" noun="ReturnLineItemsByRefundV2" authenticate="anonymous-all">
